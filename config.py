@@ -1,4 +1,7 @@
-# config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ================= TELEGRAM API (Для Юзербота) =================
 TELEGRAM_API_ID = 32732137          # ЗАМЕНИ НА СВОЙ API_ID (цифры)
@@ -8,10 +11,11 @@ USER_PHONE = '+79294279309'        # ТВОЙ НОМЕР ДЕТЕКТИВА (с 
 # ================= TELEGRAM BOT (Для Менеджера) =================
 BOT_TOKEN = '8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4'   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
 
-# ================= GOOGLE GEMINI API (ИИ) =================
-GEMINI_API_KEY = 'AIzaSyD0QIB9Kmgvw9zFea_vbZiL6yYYm-tXn5k'       # ЗАМЕНИ НА КЛЮЧ ИИ
+# ================= OPENROUTER API (ИИ) =================
+OPENROUTER_API_KEY = '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'
 
-#AIzaSyCkHO8GHkUboHUm5OJnFlBYDDxo1brTDOM мой старый gemini api
+# ================= GEMINI API =================
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 SYSTEM_PROMPT_TEMPLATE = """
