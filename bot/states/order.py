@@ -27,3 +27,4 @@ class TargetStates(StatesGroup):
     waiting_for_habits = State()
     waiting_for_birthday = State()
     waiting_for_photo = State()
+    waiting_for_edit_value = State()

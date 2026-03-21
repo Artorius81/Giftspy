@@ -105,8 +105,17 @@ profile_kb = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="📝 О себе", callback_data="change_description"),
          InlineKeyboardButton(text="📸 Фото", callback_data="change_photo")],
         [InlineKeyboardButton(text="⚙️ Настройки", callback_data="open_settings")],
-        [InlineKeyboardButton(text="💳 Пополнить баланс", callback_data="add_funds"),
+        [InlineKeyboardButton(text="🛍 Магазин", callback_data="open_store"),
          InlineKeyboardButton(text="🎁 Бонусы", callback_data="referral")]
+    ]
+)
+
+store_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="1 Расследование — 99 ₽", callback_data="buy_inv_1")],
+        [InlineKeyboardButton(text="3 Расследования — 249 ₽", callback_data="buy_inv_3")],
+        [InlineKeyboardButton(text="👑 Premium (1 Мес) — 299 ₽", callback_data="buy_prem_1")],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_profile")]
     ]
 )
 
@@ -116,6 +125,14 @@ def get_settings_kb(spy_mode: bool) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text=f"{spy_icon} Шпионский режим (Премиум)", callback_data="toggle_spy_mode")],
             [InlineKeyboardButton(text="⬅️ Назад в профиль", callback_data="back_to_profile")]
+        ]
+    )
+
+def get_buy_confirm_kb(payload: str, price_text: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=f"💳 Оплатить {price_text} ₽", callback_data=f"confirm_{payload}")],
+            [InlineKeyboardButton(text="⬅️ Назад в магазин", callback_data="open_store")]
         ]
     )
 

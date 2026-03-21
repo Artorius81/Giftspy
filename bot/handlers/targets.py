@@ -341,3 +341,40 @@ async def edit_target(callback: CallbackQuery):
         reply_markup=kb, parse_mode="Markdown"
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("tedit_"))
+async def start_tedit(callback: CallbackQuery, state: FSMContext):
+    parts = callback.data.split("_")
+    field = parts[1]
+    target_id = int(parts[2])
+    
+    await state.update_data(tedit_target_id=target_id, tedit_field=field)
+    
+    prompts = {
+        "name": "✏️ Введите новое имя:",
+        "habits": "🎯 Введите новые привычки/увлечения:",
+        "bday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):"
+    }
+    await callback.message.edit_text(prompts[field])
+    await state.set_state(TargetStates.waiting_for_edit_value)
+    await callback.answer()
+
+@router.message(TargetStates.waiting_for_edit_value)
+async def process_tedit_value(message: Message, state: FSMContext):
+    data = await state.get_data()
+    target_id = data.get("tedit_target_id")
+    field = data.get("tedit_field")
+    value = message.text.strip()
+    
+    if field == "name":
+        await db.update_target_field(target_id, "name", value)
+        await message.answer(f"✅ Имя обновлено на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
+    elif field == "habits":
+        await db.update_target_field(target_id, "habits", value)
+        await message.answer("✅ Привычки/увлечения обновлены", reply_markup=main_menu)
+    elif field == "bday":
+        await db.update_target_field(target_id, "birthday", value)
+        await message.answer(f"✅ День рождения обновлен на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
+    
+    await state.clear()

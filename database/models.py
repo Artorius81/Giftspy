@@ -10,6 +10,7 @@ class User(Base):
     id = Column(BigInteger, primary_key=True)
     nickname = Column(Text, default=None)
     balance = Column(Integer, default=1)
+    premium_until = Column(DateTime, default=None)
     spy_mode = Column(Boolean, default=False)
     notifications_enabled = Column(Boolean, default=True)
     birthday = Column(Text, default=None)

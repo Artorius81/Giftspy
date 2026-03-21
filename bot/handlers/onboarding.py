@@ -7,14 +7,23 @@ router = Router()
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
+    from database import db
+    user_id = message.from_user.id
+    
+    is_existing = await db.is_user_exists(user_id)
+    await db._ensure_user(user_id)
+    
     welcome_text = (
         "Добро пожаловать в 🕵️‍♂️ Giftspy!\n\n"
         "Ломаете голову над выбором подарка? Отправьте к вашей «цели» нашего "
         "детектива! Он анонимно пообщается с человеком в формате интерактива, "
         "выведает его тайные желания и составит для вас подробное досье.\n\n"
-        "🔒 _Полная анонимность гарантирована. Никто не узнает, что это были вы. Только если вы сами не раскроетесь._\n\n"
-        "🎁 **Приветственный бонус: Мы начислили вам 1 бесплатное расследование!"
+        "🔒 _Полная анонимность гарантирована. Никто не узнает, что это были вы. Только если вы сами не раскроетесь._"
     )
+    
+    if not is_existing:
+        welcome_text += "\n\n🎁 **Приветственный бонус: Мы начислили вам 1 бесплатное расследование!**"
+        
     await message.answer(welcome_text, reply_markup=main_menu, parse_mode="Markdown")
 
 @router.message(F.text == "❓ Как это работает?")

@@ -12,6 +12,10 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///agency.db")
 engine = create_engine(DATABASE_URL, connect_args={} if "postgresql" in DATABASE_URL else {"check_same_thread": False})
+
+from database.auto_migrate import perform_auto_migration
+perform_auto_migration(engine)
+
 app = FastAPI()
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "giftspy2026")

@@ -254,6 +254,14 @@ async def upload_profile_photo(user_id: int, file_bytes: bytes) -> str:
     return url
 
 
+async def is_user_exists(user_id: int) -> bool:
+    """Checks if user already exists in DB."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('users').select('id').eq('id', user_id).execute()
+    )
+    return len(result.data) > 0
+
+
 async def _ensure_user(user_id):
     """Ensures user exists in DB (INSERT IF NOT EXISTS)."""
     await asyncio.to_thread(
@@ -271,13 +279,14 @@ async def get_user_profile(user_id):
     
     user_result = await asyncio.to_thread(
         lambda: _client.table('users')
-            .select('balance, nickname, spy_mode, birthday, description, photo_file_id')
+            .select('balance, premium_until, nickname, spy_mode, birthday, description, photo_file_id')
             .eq('id', user_id)
             .execute()
     )
     
     row = user_result.data[0] if user_result.data else {}
     balance = row.get('balance', 1)
+    premium_until = row.get('premium_until')
     nickname = row.get('nickname')
     spy_mode = bool(row.get('spy_mode', False))
     birthday = row.get('birthday')
@@ -294,28 +303,94 @@ async def get_user_profile(user_id):
     successful = sum(1 for c in cases_result.data if c['status'] in ('done', 'delivered'))
     active = sum(1 for c in cases_result.data if c['status'] in ('pending', 'started', 'in_progress', 'manual_mode'))
     
-    return balance, successful, active, nickname, spy_mode, birthday, description, photo
+    return balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo
 
 
 async def get_user_balance(user_id):
     await _ensure_user(user_id)
     result = await asyncio.to_thread(
         lambda: _client.table('users')
-            .select('balance')
+            .select('balance, premium_until')
             .eq('id', user_id)
             .execute()
     )
     if result.data:
-        return result.data[0]['balance']
+        balance = result.data[0]['balance']
+        premium_until = result.data[0]['premium_until']
+        
+        # Give unlimited if premium
+        if premium_until:
+            from datetime import datetime
+            if datetime.fromisoformat(premium_until) > datetime.utcnow():
+                return "Безлимит 👑"
+            
+        return balance
     return 1
 
 
 async def deduct_balance(user_id, amount=1):
+    # Check if premium first
+    result = await asyncio.to_thread(
+        lambda: _client.table('users').select('premium_until').eq('id', user_id).execute()
+    )
+    if result.data and result.data[0]['premium_until']:
+        from datetime import datetime
+        if datetime.fromisoformat(result.data[0]['premium_until']) > datetime.utcnow():
+            return # Don't deduct, user has premium
+            
     await asyncio.to_thread(
         lambda: _client.rpc('deduct_balance', {
             'p_user_id': user_id,
             'p_amount': amount
         }).execute()
+    )
+
+async def add_balance(user_id, amount):
+    await _ensure_user(user_id)
+    # Fetch current balance
+    result = await asyncio.to_thread(
+        lambda: _client.table('users').select('balance').eq('id', user_id).execute()
+    )
+    current_balance = result.data[0]['balance'] if result.data else 0
+    new_balance = current_balance + amount
+    
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({'balance': new_balance})
+            .eq('id', user_id)
+            .execute()
+    )
+
+async def set_premium(user_id, days):
+    await _ensure_user(user_id)
+    from datetime import datetime, timedelta
+    
+    # Check if user already has premium to stack it
+    result = await asyncio.to_thread(
+        lambda: _client.table('users').select('premium_until').eq('id', user_id).execute()
+    )
+    
+    current_premium = None
+    if result.data and result.data[0]['premium_until']:
+        try:
+            current_premium = datetime.fromisoformat(result.data[0]['premium_until'])
+        except:
+            pass
+            
+    now = datetime.utcnow()
+    if current_premium and current_premium > now:
+        new_premium_until = current_premium + timedelta(days=days)
+    else:
+        new_premium_until = now + timedelta(days=days)
+        
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({
+                'premium_until': new_premium_until.isoformat(),
+                'spy_mode': True # also enable spy mode for premium users
+            })
+            .eq('id', user_id)
+            .execute()
     )
 
 

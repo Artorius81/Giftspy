@@ -10,12 +10,18 @@ router = Router()
 @router.message(F.text == "🏠 Мой профиль")
 async def show_profile(message: Message):
     user_id = message.from_user.id
-    balance, successful_cases, active_cases, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    balance, premium_until, successful_cases, active_cases, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
     display_name = nickname or message.from_user.first_name or "Агент"
+    
+    premium_text = ""
+    if premium_until:
+        from datetime import datetime
+        if datetime.fromisoformat(premium_until) > datetime.utcnow():
+            premium_text = "\n👑 **Статус:** Premium"
     
     parts = [
         f"🕵️‍♂️ **{display_name}**",
-        f"ID: `{user_id}`",
+        f"ID: `{user_id}`{premium_text}",
         f"━━━━━━━━━━━━━",
         f"⭐️ Баланс: {balance} расследований",
         f"✅ Закрыто дел: {successful_cases}",
@@ -28,10 +34,22 @@ async def show_profile(message: Message):
     
     text = "\n".join(parts)
     
-    if photo:
-        await message.answer_photo(photo=photo, caption=text, reply_markup=profile_kb, parse_mode="Markdown")
-    else:
-        await message.answer(text, reply_markup=profile_kb, parse_mode="Markdown")
+    if photo and photo != "None":
+        try:
+            if photo.startswith("http"):
+                from aiogram.types import URLInputFile
+                photo_obj = URLInputFile(photo)
+            else:
+                photo_obj = photo
+            await message.answer_photo(photo=photo_obj, caption=text, reply_markup=profile_kb, parse_mode="Markdown")
+            return
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to send profile photo: {e}")
+            # Fallback to text
+            pass
+
+    await message.answer(text, reply_markup=profile_kb, parse_mode="Markdown")
 
 
 # ================= ИЗМЕНИТЬ НИКНЕЙМ =================
@@ -147,11 +165,19 @@ async def process_photo(message: Message, state: FSMContext):
         # Save URL to DB
         await db.update_user_field(message.from_user.id, 'photo_file_id', photo_url)
         
-        await processing_msg.edit_text("✅ Фото обновлено!", reply_markup=main_menu)
+        await processing_msg.delete()
+        await message.answer("✅ Фото обновлено!", reply_markup=main_menu)
+        
+        # Переход в Мой профиль
+        await show_profile(message)
     except Exception as e:
         import logging
         logging.error(f"Error uploading photo: {e}")
-        await processing_msg.edit_text("❌ Ошибка загрузки фото. Попробуйте позже.", reply_markup=main_menu)
+        try:
+            await processing_msg.delete()
+        except:
+            pass
+        await message.answer("❌ Ошибка загрузки фото. Попробуйте позже.", reply_markup=main_menu)
         
     await state.clear()
 
@@ -192,12 +218,18 @@ async def toggle_spy(callback: CallbackQuery):
 @router.callback_query(F.data == "back_to_profile")
 async def back_to_profile(callback: CallbackQuery):
     user_id = callback.from_user.id
-    balance, successful_cases, active_cases, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    balance, premium_until, successful_cases, active_cases, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
     display_name = nickname or callback.from_user.first_name or "Агент"
+    
+    premium_text = ""
+    if premium_until:
+        from datetime import datetime
+        if datetime.fromisoformat(premium_until) > datetime.utcnow():
+            premium_text = "\n👑 **Статус:** Premium"
     
     parts = [
         f"🕵️‍♂️ **{display_name}**",
-        f"ID: `{user_id}`",
+        f"ID: `{user_id}`{premium_text}",
         f"━━━━━━━━━━━━━",
         f"⭐️ Баланс: {balance} расследований",
         f"✅ Закрыто дел: {successful_cases}",
@@ -211,8 +243,38 @@ async def back_to_profile(callback: CallbackQuery):
     text = "\n".join(parts)
     
     try:
+        if photo and photo != "None":
+            await callback.message.delete()
+            try:
+                if photo.startswith("http"):
+                    from aiogram.types import URLInputFile
+                    photo_obj = URLInputFile(photo)
+                else:
+                    photo_obj = photo
+                await callback.message.answer_photo(photo=photo_obj, caption=text, reply_markup=profile_kb, parse_mode="Markdown")
+                await callback.answer()
+                return
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to send profile photo on back_to_profile: {e}")
+                # Fallback to text
+                
+        # Send text only
         await callback.message.edit_text(text, reply_markup=profile_kb, parse_mode="Markdown")
     except Exception:
         await callback.message.delete()
+        if photo and photo != "None":
+            try:
+                if photo.startswith("http"):
+                    from aiogram.types import URLInputFile
+                    photo_obj = URLInputFile(photo)
+                else:
+                    photo_obj = photo
+                await callback.message.answer_photo(photo=photo_obj, caption=text, reply_markup=profile_kb, parse_mode="Markdown")
+                await callback.answer()
+                return
+            except Exception as e:
+                pass
         await callback.message.answer(text, reply_markup=profile_kb, parse_mode="Markdown")
+
     await callback.answer()

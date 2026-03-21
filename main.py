@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telethon import TelegramClient, events
 
-from bot.handlers import onboarding, profile, dossier, investigation, shadow_mode, manual_interceptor, feedback
+from bot.handlers import onboarding, profile, dossier, investigation, shadow_mode, manual_interceptor, feedback, payments
 from bot.handlers import targets
 from bot.keyboards.common import resolve_target_display_name
 from services.ai_detective import AIDetectiveService
@@ -34,6 +34,7 @@ dp.include_router(shadow_mode.router)
 dp.include_router(investigation.router)
 dp.include_router(feedback.router)
 dp.include_router(manual_interceptor.router)
+dp.include_router(payments.router)
 
 
 # ================= SPY MODE HELPERS =================
