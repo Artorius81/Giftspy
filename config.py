@@ -12,7 +12,7 @@ USER_PHONE = '+79294279309'        # ТВОЙ НОМЕР ДЕТЕКТИВА (с 
 BOT_TOKEN = '8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4'   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
 
 # ================= OPENROUTER API (ИИ) =================
-OPENROUTER_API_KEY = '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'
+OPENROUTER_API_KEY = 'sk-zK4Ex3JBdMQ8D5YJ3XS2FOC0fXVbXSv2'
 
 # ================= GEMINI API =================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
