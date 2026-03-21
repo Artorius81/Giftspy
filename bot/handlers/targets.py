@@ -354,7 +354,7 @@ async def start_tedit(callback: CallbackQuery, state: FSMContext):
     prompts = {
         "name": "✏️ Введите новое имя:",
         "habits": "🎯 Введите новые привычки/увлечения:",
-        "bday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):"
+        "birthday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):"
     }
     await callback.message.edit_text(prompts[field])
     await state.set_state(TargetStates.waiting_for_edit_value)
@@ -368,13 +368,13 @@ async def process_tedit_value(message: Message, state: FSMContext):
     value = message.text.strip()
     
     if field == "name":
-        await db.update_target_field(target_id, "name", value)
+        await db.update_target(target_id, name=value)
         await message.answer(f"✅ Имя обновлено на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
     elif field == "habits":
-        await db.update_target_field(target_id, "habits", value)
+        await db.update_target(target_id, habits=value)
         await message.answer("✅ Привычки/увлечения обновлены", reply_markup=main_menu)
-    elif field == "bday":
-        await db.update_target_field(target_id, "birthday", value)
+    elif field == "birthday":
+        await db.update_target(target_id, birthday=value)
         await message.answer(f"✅ День рождения обновлен на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
     
     await state.clear()
