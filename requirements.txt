@@ -1,7 +1,7 @@
 aiogram==3.15.0
 telethon>=1.38.1
 openai
-aiosqlite>=0.20.0
+supabase>=2.0.0
 pytest
 pytest-asyncio
 apscheduler

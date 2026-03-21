@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -7,18 +7,21 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     nickname = Column(Text, default=None)
     balance = Column(Integer, default=1)
     spy_mode = Column(Boolean, default=False)
     notifications_enabled = Column(Boolean, default=True)
+    birthday = Column(Text, default=None)
+    description = Column(Text, default=None)
+    photo_file_id = Column(Text, default=None)
     registered_at = Column(DateTime, default=datetime.utcnow)
 
 class Case(Base):
     __tablename__ = 'cases'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    customer_id = Column(Integer)
+    customer_id = Column(BigInteger)
     target = Column(Text)
     holiday = Column(Text)
     context = Column(Text)
@@ -26,6 +29,7 @@ class Case(Base):
     budget = Column(Text)
     status = Column(Text, default='pending')
     report = Column(Text)
+    spy_message_id = Column(BigInteger, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     chats = relationship("ChatHistory", back_populates="case", cascade="all, delete-orphan")
@@ -67,7 +71,9 @@ class WishlistItem(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     target_id = Column(Integer, ForeignKey('targets.id'))
     gift_description = Column(Text)
+    category = Column(Text, default='Другое')
     added_by = Column(Text, default='user')  # 'user' or 'ai'
+    case_id = Column(Integer, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     target = relationship("Target", back_populates="wishlist")

@@ -12,8 +12,14 @@ from services.scheduler import background_tasks_worker, resolve_target
 from database import db
 import config
 
-logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+# Отключаем спам от http-запросов Supabase и Gemini
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("google_genai").setLevel(logging.WARNING)
 bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher()
 client = TelegramClient('user_session', config.TELEGRAM_API_ID, config.TELEGRAM_API_HASH)
@@ -32,7 +38,7 @@ dp.include_router(manual_interceptor.router)
 
 # ================= SPY MODE HELPERS =================
 
-def get_spy_kb(case_id: int, msg_index: int, total: int) -> InlineKeyboardMarkup:
+def get_spy_kb(case_id: int, msg_index: int, total: int, manual_mode: bool = False) -> InlineKeyboardMarkup:
     buttons = []
     
     nav_row = []
@@ -43,12 +49,15 @@ def get_spy_kb(case_id: int, msg_index: int, total: int) -> InlineKeyboardMarkup
         nav_row.append(InlineKeyboardButton(text="➡️", callback_data=f"spy_next_{case_id}_{msg_index}"))
     buttons.append(nav_row)
     
-    buttons.append([InlineKeyboardButton(text="🕹️ Взять управление", callback_data=f"pause_ai_{case_id}")])
+    if manual_mode:
+        buttons.append([InlineKeyboardButton(text="🕵🏻 Вернуть детективу", callback_data=f"resume_ai_{case_id}")])
+    else:
+        buttons.append([InlineKeyboardButton(text="🕹️ Взять управление", callback_data=f"pause_ai_{case_id}")])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-async def update_spy_message(case_id: int, customer_id: int, display_name: str, persona: str):
+async def update_spy_message(case_id: int, customer_id: int, display_name: str, persona: str, manual_mode: bool = False):
     """Обновляет или создаёт единственное spy-сообщение для дела."""
     total = await db.get_chat_history_count(case_id)
     if total == 0:
@@ -65,14 +74,15 @@ async def update_spy_message(case_id: int, customer_id: int, display_name: str, 
     else:
         header = f"🕵️‍♂ **{persona}**:"
     
+    mode_label = " 🕹️ _Перехват_" if manual_mode else ""
     text = (
-        f"📡 **Прямой эфир** — Дело по {display_name}\n"
+        f"📡 **Прямой эфир** — Дело по {display_name}{mode_label}\n"
         "━━━━━━━━━━━━━━━━━━\n"
         f"{header}\n{message_text}\n"
         "━━━━━━━━━━━━━━━━━━"
     )
     
-    kb = get_spy_kb(case_id, msg_index, total)
+    kb = get_spy_kb(case_id, msg_index, total, manual_mode=manual_mode)
     
     existing_msg_id = await db.get_spy_message_id(case_id)
     
@@ -98,7 +108,7 @@ async def update_spy_message(case_id: int, customer_id: int, display_name: str, 
     )
     await db.set_spy_message_id(case_id, sent.message_id)
     
-    # Fix #2: Закрепляем spy-сообщение
+    # Закрепляем spy-сообщение
     try:
         await bot.pin_chat_message(
             chat_id=customer_id,
@@ -127,10 +137,17 @@ async def _process_target_input(case, user_message, event):
     spy_mode = await db.get_user_spy_mode(customer_id)
     
     # Spy Mode — обновляем сообщение
+    is_manual = (status == 'manual_mode')
     if spy_mode:
-        await update_spy_message(case_id, customer_id, display_name, persona)
+        await update_spy_message(case_id, customer_id, display_name, persona, manual_mode=is_manual)
 
     if status == 'manual_mode':
+        # Уведомляем пользователя что цель ответила
+        await bot.send_message(
+            chat_id=customer_id,
+            text=f"💬 **{display_name}** ответил(а):\n_{user_message[:200]}_",
+            parse_mode="Markdown"
+        )
         return
 
     chat_entity = await event.get_chat()
@@ -160,7 +177,7 @@ async def _process_target_input(case, user_message, event):
                             target_id = saved_target[0]
                         
                         for category, description in gifts:
-                            await db.add_to_wishlist(target_id, description, category=category, added_by='ai')
+                            await db.add_to_wishlist(target_id, description, category=category, added_by='ai', case_id=case_id)
                         logging.info(f"🎁 Добавлено {len(gifts)} подарков в вишлист")
                     
                     import re
@@ -168,6 +185,19 @@ async def _process_target_input(case, user_message, event):
                     await db.update_case_status(case_id, 'done', clean_report)
                 else:
                     await db.update_case_status(case_id, 'done', report_text or '')
+                
+                # Открепляем и удаляем spy-сообщение
+                if spy_mode:
+                    spy_msg_id = await db.get_spy_message_id(case_id)
+                    if spy_msg_id:
+                        try:
+                            await bot.unpin_chat_message(chat_id=customer_id, message_id=spy_msg_id)
+                        except Exception:
+                            pass
+                        try:
+                            await bot.delete_message(chat_id=customer_id, message_id=spy_msg_id)
+                        except Exception:
+                            pass
                     
                 logging.info(f"✅ Дело №{case_id} успешно закрыто!")
 
@@ -338,66 +368,6 @@ async def spy_noop(callback):
     await callback.answer()
 
 
-# ================= Fix #8: AUTO-RECOVERY (неотвеченные сообщения) =================
-
-async def auto_reply_recovery():
-    """Фоновая задача: проверяет дела, где последнее сообщение от цели без ответа ИИ."""
-    await asyncio.sleep(15)  # Ждём стартовой инициализации
-    logging.info("🔄 Auto-reply recovery запущен")
-    
-    while True:
-        try:
-            # Находим все активные in_progress дела
-            import aiosqlite
-            from database.db import DB_PATH
-            async with aiosqlite.connect(DB_PATH) as conn:
-                async with conn.execute("""
-                    SELECT c.id, c.customer_id, c.target, c.holiday, c.context, c.persona, c.budget
-                    FROM cases c
-                    WHERE c.status IN ('in_progress', 'started')
-                """) as cursor:
-                    active_cases = await cursor.fetchall()
-            
-            for ac in active_cases:
-                case_id, customer_id, target, holiday, context, persona, budget = ac
-                
-                # Проверяем: последнее сообщение от 'user' и нет ответа 'ai' после него
-                import aiosqlite
-                async with aiosqlite.connect(DB_PATH) as conn:
-                    async with conn.execute("""
-                        SELECT sender, message FROM chat_history 
-                        WHERE case_id = ? ORDER BY id DESC LIMIT 1
-                    """, (case_id,)) as cursor:
-                        last = await cursor.fetchone()
-                
-                if last and last[0] == 'user':
-                    # Последнее сообщение от цели без ответа — генерируем ответ
-                    logging.info(f"🔄 Auto-recovery: Дело №{case_id}, отвечаем на неотвеченное сообщение цели")
-                    try:
-                        target_entity = await resolve_target(client, target)
-                        if not target_entity:
-                            continue
-                        
-                        chat_session = await ai_service.restore_chat_from_db(case_id, holiday, context, persona, budget)
-                        ai_text = await ai_service.generate_response(chat_session, last[1])
-                        
-                        if ai_text and "[ДЕЛО ЗАКРЫТО]" not in ai_text:
-                            await client.send_message(target_entity, ai_text, parse_mode="Markdown")
-                            await db.save_chat_message(case_id, 'ai', ai_text)
-                            
-                            spy_mode = await db.get_user_spy_mode(customer_id)
-                            if spy_mode:
-                                display_name = await resolve_target_display_name(customer_id, target)
-                                await update_spy_message(case_id, customer_id, display_name, persona)
-                            
-                            logging.info(f"✅ Auto-recovery: Ответ отправлен по делу №{case_id}")
-                    except Exception as e:
-                        logging.error(f"Auto-recovery error for case {case_id}: {e}")
-        
-        except Exception as e:
-            logging.error(f"Auto-recovery global error: {e}")
-        
-        await asyncio.sleep(30)  # Проверяем каждые 30 секунд
 
 
 # ================= STARTUP =================
@@ -416,7 +386,7 @@ async def main():
 
     asyncio.create_task(background_tasks_worker(bot, client))
     asyncio.create_task(start_uvicorn())
-    asyncio.create_task(auto_reply_recovery())  # Fix #8
+
 
     await client.start(phone=config.USER_PHONE)
     logging.info("🕵️‍♂️ Агент на связи!")

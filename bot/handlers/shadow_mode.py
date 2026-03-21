@@ -106,7 +106,7 @@ async def resume_ai_from_menu(message: Message):
     
     # Comeback
     try:
-        from main import client
+        from main import client, update_spy_message
         from services.ai_detective import AIDetectiveService
         from services.scheduler import resolve_target
         
@@ -119,6 +119,10 @@ async def resume_ai_from_menu(message: Message):
             if target_entity:
                 await client.send_message(target_entity, comeback_msg)
                 await db.save_chat_message(case_id, 'ai', comeback_msg)
+                # Обновляем spy-сообщение с сообщением детектива
+                spy_mode = await db.get_user_spy_mode(customer_id)
+                if spy_mode:
+                    await update_spy_message(case_id, customer_id, display_name, case[5])
     except Exception as e:
         logging.warning(f"Comeback failed: {e}")
 
@@ -143,7 +147,7 @@ async def resume_ai(callback: CallbackQuery):
     
     # Comeback
     try:
-        from main import client
+        from main import client, update_spy_message
         from services.ai_detective import AIDetectiveService
         from services.scheduler import resolve_target
         
@@ -156,5 +160,9 @@ async def resume_ai(callback: CallbackQuery):
             if target_entity:
                 await client.send_message(target_entity, comeback_msg)
                 await db.save_chat_message(case_id, 'ai', comeback_msg)
+                # Обновляем spy-сообщение с сообщением детектива
+                spy_mode = await db.get_user_spy_mode(customer_id)
+                if spy_mode:
+                    await update_spy_message(case_id, customer_id, display_name, case[5])
     except Exception as e:
         logging.warning(f"Comeback failed: {e}")

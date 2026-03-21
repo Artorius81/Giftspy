@@ -61,7 +61,6 @@ async def view_target(callback: CallbackQuery):
         return
     
     t_id, owner_id, identifier, name, habits, birthday, photo = target
-    wishlist = await db.get_wishlist(target_id)
     display_name = name or identifier
     
     parts = [f"👤 **{display_name}**", f"📱 {identifier}"]
@@ -70,20 +69,25 @@ async def view_target(callback: CallbackQuery):
     if habits:
         parts.append(f"🎯 {habits}")
     
-    # Вишлист с категориями
+    # Вишлист с группировкой по расследованию
+    wishlist = await db.get_wishlist_grouped(target_id)
     if wishlist:
         parts.append(f"\n🎁 **Вишлист ({len(wishlist)}):**")
-        categories = {}
+        groups = {}
         for item in wishlist:
-            item_id, desc, added_by, created, cat = item
-            cat = cat or 'Другое'
-            if cat not in categories:
-                categories[cat] = []
+            item_id, desc, added_by, created, cat, case_id_val, holiday, case_date = item
+            if case_id_val and holiday:
+                date_str = case_date[:10] if case_date else ""
+                key = f"🎉 {holiday}" + (f" ({date_str})" if date_str else "")
+            else:
+                key = "✍️ Добавлено вручную"
+            if key not in groups:
+                groups[key] = []
             source = "🤖" if added_by == 'ai' else "✍️"
-            categories[cat].append(f"  {source} {desc}")
+            groups[key].append(f"  {source} {desc}")
         
-        for cat, items in categories.items():
-            parts.append(f"\n📂 _{cat}_:")
+        for grp, items in groups.items():
+            parts.append(f"\n📂 _{grp}_:")
             for it in items[:3]:
                 parts.append(it)
             if len(items) > 3:
@@ -160,7 +164,7 @@ async def show_wishlist(callback: CallbackQuery):
         return
     
     display_name = target[3] or target[2]
-    wishlist = await db.get_wishlist(target_id)
+    wishlist = await db.get_wishlist_grouped(target_id)
     
     if not wishlist:
         kb = InlineKeyboardMarkup(
@@ -174,22 +178,27 @@ async def show_wishlist(callback: CallbackQuery):
         await callback.answer()
         return
     
-    # Группируем по категориям
-    categories = {}
+    # Группировка по расследованиям
+    groups = {}
     for item in wishlist:
-        item_id, desc, added_by, created, cat = item
-        cat = cat or 'Другое'
-        if cat not in categories:
-            categories[cat] = []
+        item_id, desc, added_by, created, cat, case_id_val, holiday, case_date = item
+        if case_id_val and holiday:
+            date_str = case_date[:10] if case_date else ""
+            key = f"🎉 {holiday}" + (f" ({date_str})" if date_str else "")
+        else:
+            key = "✍️ Добавлено вручную"
+        if key not in groups:
+            groups[key] = []
         source = "🕵️‍♂️ Детектив" if added_by == 'ai' else "✍️ Вы"
-        categories[cat].append((item_id, desc, source))
+        cat_text = f" _[{cat}]_" if cat and cat != 'Другое' else ""
+        groups[key].append((item_id, f"• {desc}{cat_text} {source}"))
     
     parts = [f"🎁 **Вишлист: {display_name}** ({len(wishlist)} идей)"]
     
-    for cat, items in categories.items():
-        parts.append(f"\n📂 **{cat}**:")
-        for item_id, desc, source in items:
-            parts.append(f"  • {desc} _{source}_")
+    for grp, items in groups.items():
+        parts.append(f"\n📂 **{grp}**:")
+        for item_id, text in items:
+            parts.append(f"  {text}")
     
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")]]
@@ -298,14 +307,12 @@ async def investigate_from_target(callback: CallbackQuery, state: FSMContext):
     if habits:
         await state.update_data(saved_context=habits)
     
-    from bot.keyboards.common import holiday_kb
+    from bot.handlers.investigation import _render_wizard_step
     from bot.states.order import OrderGift
     
-    display = name or identifier
-    await callback.message.answer(
-        f"🔎 Детектив к **{display}**!\n🎉 Какой повод?",
-        reply_markup=holiday_kb, parse_mode="Markdown"
-    )
+    data = await state.get_data()
+    await _render_wizard_step('holiday', data, callback.from_user.id,
+                               callback_msg=callback.message, state=state)
     await state.set_state(OrderGift.waiting_for_holiday)
     await callback.answer()
 

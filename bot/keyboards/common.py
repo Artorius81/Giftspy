@@ -7,42 +7,42 @@ PERSONAS = [
     {
         "name": "🕵️‍♂️ Детектив Виктор Блэк",
         "desc": "Проницательный профессионал в плаще. Идеален для коллег и старших родственников. Задаст вопросы строго по делу, не выходя из образа сыщика.",
-        "photo": "AgACAgIAAxkBAAP3aZvBwoJqoKKA-Z0lIOaX_3AFh8IAAoUTaxuW5-BIYo0E73g5pGcBAAMCAAN4AAM6BA"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image.png"
     },
     {
         "name": "🐶 Детектив Коржик",
         "desc": "Самый пушистый детектив в нашем штате! Гавкает, радуется жизни и вынюхивает след подарка. Идеально для друзей, девушек и любителей животных.",
-        "photo": "AgACAgIAAxkBAAPzaZvBpjqO8AmORxKweG9ISByVPPQAAoETaxuW5-BIWP60FplCgUUBAAMCAAN4AAM6BA"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(1).png"
     },
     {
         "name": "👽 Детектив Зорп из Туманности Андромеды",
         "desc": "Межгалактический следователь. Прилетел на Землю изучать странные 'человеческие ритуалы дарения'. Смешно удивляется обычным вещам. Отличный выбор для гиков и людей с чувством юмора.",
-        "photo": "AgACAgIAAxkBAAP1aZvBtV7Q-E_PH_DitBTLCZ1_OcEAAoQTaxuW5-BIweRau0q0jzABAAMCAAN4AAM6BA"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(2).png"
     },
     {
         "name": "🎩 Сэр Реджинальд Фезерстон",
         "desc": "Детектив голубых кровей. Общается исключительно на 'Вы', любит чай и светские беседы. Максимально галантен и обходителен в ведении расследования.",
-        "photo": "AgACAgIAAxkBAAP5aZvBzq3ch1oaVvsYZciFr64lqa4AAoYTaxuW5-BIrGF61Od8upkBAAMCAAN4AAM6BA"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(3).png"
     },
     {
         "name": "💀 Детектив Гробовщик",
         "desc": "Мрачный, но справедливый. Говорит короткими рублеными фразами, как в вестерне. Идеально для тех, кто ценит чёрный юмор и брутальный стиль.",
-        "photo": "https://i.postimg.cc/9fk0WkC8/Gemini-Generated-Image-wy9n4uwy9n4uwy9n.png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_wy9n4uwy9n4uwy9n.png"
     },
     {
         "name": "🤖 Агент Глитч",
         "desc": "Заикающийся робот-детектив. Пе-пе-периодически сбоит. Добавляет '01001' в речь. Забавный выбор для технарей и любителей мемов.",
-        "photo": "https://i.postimg.cc/FKz1Xv53/Gemini-Generated-Image-r9kl8ir9kl8ir9kl.png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_r9kl8ir9kl8ir9kl.png"
     },
     {
         "name": "🧙‍♂️ Гэндальф Подаркович",
         "desc": "Мудрый волшебник, который знает всё о желаниях смертных. Говорит загадками и цитатами. Идеально для фанатов фэнтези и Толкина.",
-        "photo": "https://i.postimg.cc/6QqTxKJN/Gemini-Generated-Image-j8tk6jj8tk6jj8tk.png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_j8tk6jj8tk6jj8tk.png"
     },
     {
         "name": "🏴‍☠️ Капитан Джек Подарроу",
         "desc": "Пиратский детектив! Говорит как настоящий пират, ищет 'сокровища желаний'. Всегда немного пьян и невероятно обаятелен. Для любителей приключений.",
-        "photo": "https://i.postimg.cc/xTVkJBHx/Gemini-Generated-Image-qmehf6qmehf6qmeh.png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_qmehf6qmehf6qmeh.png"
     }
 ]
 

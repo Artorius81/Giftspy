@@ -10,7 +10,8 @@ from database.models import User, Case, ChatHistory
 
 load_dotenv()
 
-engine = create_engine("sqlite:///agency.db", connect_args={"check_same_thread": False})
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///agency.db")
+engine = create_engine(DATABASE_URL, connect_args={} if "postgresql" in DATABASE_URL else {"check_same_thread": False})
 app = FastAPI()
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "giftspy2026")

@@ -17,6 +17,10 @@ OPENROUTER_API_KEY = 'sk-zK4Ex3JBdMQ8D5YJ3XS2FOC0fXVbXSv2'
 # ================= GEMINI API =================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# ================= SUPABASE =================
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
 
 SYSTEM_PROMPT_TEMPLATE = """
 Ты — ИИ-помощник из «Giftspy». Твоя задача — сыграть роль Детектива.

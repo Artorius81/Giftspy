@@ -168,4 +168,4 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
         except Exception as e:
             logging.error(f"Критическая ошибка в фоновых задачах: {e}")
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(15)

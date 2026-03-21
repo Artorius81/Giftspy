@@ -58,7 +58,8 @@ async def show_target_dossier(callback: CallbackQuery):
     target_cases = [c for c in cases if c[1] == target]
     
     if not target_cases:
-        await callback.answer("Досье не найдено")
+        # Redirect to full dossier list
+        await back_to_dossier_list(callback)
         return
     
     display_name = await resolve_target_display_name(customer_id, target)
@@ -151,16 +152,22 @@ async def show_case_detail(callback: CallbackQuery):
         safe_report = report.replace("**", "").replace("_", "")
         msg += f"━━━━━━━━━━━━━\n🎁 ОТЧЁТ:\n{safe_report[:800]}"
     
-    kb = [
+    kb_rows = [
         [InlineKeyboardButton(text="➕ Добавить идею", callback_data=f"add_idea_{case_id}")],
         [InlineKeyboardButton(text="📅 Напоминание", callback_data=f"remind_{case_id}")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data=f"dossier_{target}")]
     ]
     
+    if status in ['pending', 'started', 'in_progress', 'manual_mode']:
+        kb_rows.append([InlineKeyboardButton(text="❌ Отменить расследование", callback_data=f"cancel_case_confirm_{case_id}")])
+    else:
+        kb_rows.append([InlineKeyboardButton(text="🗑 Удалить дело", callback_data=f"delete_case_confirm_{case_id}")])
+    
+    kb_rows.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"dossier_{target}")])
+    
     try:
-        await callback.message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode="Markdown")
+        await callback.message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="Markdown")
     except Exception:
-        await callback.message.answer(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode="Markdown")
+        await callback.message.answer(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="Markdown")
     await callback.answer()
 
 
@@ -183,12 +190,11 @@ async def reinvestigate_target(callback: CallbackQuery, state: FSMContext):
     if saved and saved[3]:
         await state.update_data(saved_context=saved[3])
     
-    display_name = await resolve_target_display_name(customer_id, target)
-    from bot.keyboards.common import holiday_kb
-    await callback.message.answer(
-        f"🔄 Повторное расследование на **{display_name}**!\n🎉 Какой повод?",
-        reply_markup=holiday_kb, parse_mode="Markdown"
-    )
+    # Enter wizard flow at holiday step
+    from bot.handlers.investigation import _render_wizard_step
+    data = await state.get_data()
+    await _render_wizard_step('holiday', data, customer_id,
+                               callback_msg=callback.message, state=state)
     await state.set_state(OrderGift.waiting_for_holiday)
     await callback.answer()
 
@@ -346,3 +352,138 @@ async def remind_back(callback: CallbackQuery):
     
     await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
+
+
+# ================= ОТМЕНА / УДАЛЕНИЕ ДЕЛ =================
+
+@router.callback_query(F.data.startswith("cancel_case_confirm_"))
+async def cancel_case_confirm(callback: CallbackQuery):
+    case_id = int(callback.data.split("_")[3])
+    case = await db.get_case_by_id(case_id)
+    if not case:
+        await callback.answer("Дело не найдено")
+        return
+    
+    target = case[2]
+    display_name = await resolve_target_display_name(callback.from_user.id, target)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Да, отменить", callback_data=f"cancel_case_{case_id}"),
+         InlineKeyboardButton(text="⬅️ Нет", callback_data=f"case_detail_{case_id}")]
+    ])
+    await callback.message.edit_text(
+        f"⚠️ Отменить расследование на **{display_name}**?\n\n"
+        "💰 Монета будет возвращена на баланс.",
+        reply_markup=kb, parse_mode="Markdown"
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cancel_case_") & ~F.data.startswith("cancel_case_confirm_"))
+async def cancel_case(callback: CallbackQuery):
+    case_id = int(callback.data.split("_")[2])
+    case = await db.get_case_by_id(case_id)
+    if not case:
+        await callback.answer("Дело не найдено")
+        return
+    
+    customer_id = case[1]
+    target = case[2]
+    persona = case[5]
+    status = case[7]
+    
+    display_name = await resolve_target_display_name(customer_id, target)
+    
+    # Если детектив уже писал цели — отправить прощальное сообщение
+    chat_count = await db.get_chat_history_count(case_id)
+    if chat_count > 0 and status in ('started', 'in_progress', 'manual_mode'):
+        try:
+            import sys
+            main_module = sys.modules.get('main')
+            if main_module:
+                telethon_client = getattr(main_module, 'client', None)
+                if telethon_client:
+                    from services.scheduler import resolve_target
+                    target_entity = await resolve_target(telethon_client, target)
+                    if target_entity:
+                        farewell = (
+                            "Прошу прощения, но мне пора бежать! Задание было отменено заказчиком. "
+                            "Было приятно пообщаться. До свидания! 👋"
+                        )
+                        await telethon_client.send_message(target_entity, farewell)
+        except Exception as e:
+            import logging
+            logging.warning(f"Ошибка при отправке прощания цели: {e}")
+    
+    # Открепляем spy-сообщение если есть
+    spy_mode = await db.get_user_spy_mode(customer_id)
+    if spy_mode:
+        spy_msg_id = await db.get_spy_message_id(case_id)
+        if spy_msg_id:
+            try:
+                main_bot = callback.bot
+                await main_bot.unpin_chat_message(chat_id=customer_id, message_id=spy_msg_id)
+            except Exception:
+                pass
+            try:
+                await main_bot.delete_message(chat_id=customer_id, message_id=spy_msg_id)
+            except Exception:
+                pass
+    
+    await db.cancel_case(case_id)
+    await db.refund_balance(customer_id)
+    
+    extra = ""
+    if chat_count > 0:
+        extra = "\n📩 Детектив попрощался с целью."
+    
+    await callback.message.edit_text(
+        f"✅ Расследование на **{display_name}** отменено.{extra}\n"
+        "💰 Монета возвращена на баланс.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 К досье", callback_data=f"dossier_{target}")]
+        ])
+    )
+    await callback.answer("Отменено")
+
+
+@router.callback_query(F.data.startswith("delete_case_confirm_"))
+async def delete_case_confirm(callback: CallbackQuery):
+    case_id = int(callback.data.split("_")[3])
+    case = await db.get_case_by_id(case_id)
+    if not case:
+        await callback.answer("Дело не найдено")
+        return
+    
+    target = case[2]
+    display_name = await resolve_target_display_name(callback.from_user.id, target)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🗑 Да, удалить", callback_data=f"delete_case_{case_id}"),
+         InlineKeyboardButton(text="⬅️ Нет", callback_data=f"case_detail_{case_id}")]
+    ])
+    await callback.message.edit_text(
+        f"⚠️ Удалить дело №{case_id} на **{display_name}**?\n\n"
+        "Это удалит историю чата, подарки и напоминания.",
+        reply_markup=kb, parse_mode="Markdown"
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("delete_case_") & ~F.data.startswith("delete_case_confirm_"))
+async def delete_case(callback: CallbackQuery):
+    case_id = int(callback.data.split("_")[2])
+    case = await db.get_case_by_id(case_id)
+    if not case:
+        await callback.answer("Дело не найдено")
+        return
+    
+    target = case[2]
+    await db.delete_case(case_id)
+    
+    await callback.message.edit_text(
+        f"✅ Дело №{case_id} удалено.",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 К досье", callback_data=f"dossier_{target}")]
+        ])
+    )
+    await callback.answer("Удалено")

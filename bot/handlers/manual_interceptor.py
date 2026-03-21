@@ -42,14 +42,23 @@ async def manual_message_handler(message: Message, state: FSMContext):
     if manual_case_id:
         await db.save_chat_message(manual_case_id, 'ai', message.text)
         
-        from main import client
+        from main import client, update_spy_message
         from services.scheduler import resolve_target
+        from bot.keyboards.common import resolve_target_display_name
         
         target_entity = await resolve_target(client, target)
         if target_entity is None:
             await message.reply("❌ Не удалось найти цель.")
             return
         await client.send_message(target_entity, message.text)
+        
+        # Обновляем spy-сообщение
+        spy_mode = await db.get_user_spy_mode(customer_id)
+        if spy_mode:
+            case = await db.get_case_by_id(manual_case_id)
+            if case:
+                display_name = await resolve_target_display_name(customer_id, target)
+                await update_spy_message(manual_case_id, customer_id, display_name, case[5], manual_mode=True)
         
         await message.reply("📨 Отправлено!")
         return

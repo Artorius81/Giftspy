@@ -128,10 +128,32 @@ async def process_photo(message: Message, state: FSMContext):
         await message.answer("📸 Пожалуйста, отправьте фотографию.")
         return
     
-    photo_id = message.photo[-1].file_id
-    await db.update_user_field(message.from_user.id, 'photo_file_id', photo_id)
+    # Send processing message
+    processing_msg = await message.answer("⏳ Загрузка фото...")
+    
+    try:
+        # Download photo
+        photo_size = message.photo[-1]
+        file_info = await message.bot.get_file(photo_size.file_id)
+        # Using download to a memory buffer (BytesIO allows us to get bytes)
+        import io
+        file_stream = io.BytesIO()
+        await message.bot.download_file(file_info.file_path, destination=file_stream)
+        file_bytes = file_stream.getvalue()
+        
+        # Upload to Supabase
+        photo_url = await db.upload_profile_photo(message.from_user.id, file_bytes)
+        
+        # Save URL to DB
+        await db.update_user_field(message.from_user.id, 'photo_file_id', photo_url)
+        
+        await processing_msg.edit_text("✅ Фото обновлено!", reply_markup=main_menu)
+    except Exception as e:
+        import logging
+        logging.error(f"Error uploading photo: {e}")
+        await processing_msg.edit_text("❌ Ошибка загрузки фото. Попробуйте позже.", reply_markup=main_menu)
+        
     await state.clear()
-    await message.answer("✅ Фото обновлено!", reply_markup=main_menu)
 
 
 # ================= НАСТРОЙКИ =================
