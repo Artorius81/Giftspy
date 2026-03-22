@@ -1,0 +1,28 @@
+name: Deploy Bot to VPS
+
+on:
+  push:
+    branches:
+      - main # Пайплайн запустится только при пуше в ветку main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Запуск деплоя на сервере
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          # Укажите путь до папки вашего проекта на сервере вместо /root/Giftspy
+          script: |
+            cd /root/Giftspy
+            git pull origin main
+            
+            # Пересобираем и перезапускаем Docker контейнеры в фоновом режиме
+            docker compose up -d --build
+            
+            # Очищаем систему от старых неиспользуемых образов (по желанию, чтобы сервер не забивался)
+            docker image prune -f
