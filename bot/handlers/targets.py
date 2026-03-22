@@ -24,6 +24,8 @@ async def show_targets_list_callback(callback: CallbackQuery):
     try:
         await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown")
     except Exception:
+        try: await callback.message.delete()
+        except: pass
         await callback.message.answer(text, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
 
@@ -108,10 +110,17 @@ async def view_target(callback: CallbackQuery):
         ]
     )
     
-    try:
-        await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
-    except Exception:
-        await callback.message.answer(msg, reply_markup=kb, parse_mode="Markdown")
+    if photo:
+        try: await callback.message.delete()
+        except: pass
+        await callback.message.answer_photo(photo=photo, caption=msg, reply_markup=kb, parse_mode="Markdown")
+    else:
+        try:
+            await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
+        except Exception:
+            try: await callback.message.delete()
+            except: pass
+            await callback.message.answer(msg, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
 
 
@@ -132,11 +141,13 @@ async def confirm_delete_target(callback: CallbackQuery):
              InlineKeyboardButton(text="⬅️ Отмена", callback_data=f"target_view_{target_id}")]
         ]
     )
-    await callback.message.edit_text(
-        f"⚠️ Вы уверены, что хотите удалить **{display_name}**?\n\n"
-        "Вместе с профилем будет удалён весь вишлист.",
-        reply_markup=kb, parse_mode="Markdown"
-    )
+    msg = f"⚠️ Вы уверены, что хотите удалить **{display_name}**?\n\nВместе с профилем будет удалён весь вишлист."
+    try:
+        await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
+    except Exception:
+        try: await callback.message.delete()
+        except: pass
+        await callback.message.answer(msg, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
 
 
@@ -170,11 +181,13 @@ async def show_wishlist(callback: CallbackQuery):
         kb = InlineKeyboardMarkup(
             inline_keyboard=[[InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")]]
         )
-        await callback.message.edit_text(
-            f"📝 Вишлист **{display_name}** пуст.\n\n"
-            "Идеи появятся после расследования или добавления вручную.",
-            reply_markup=kb, parse_mode="Markdown"
-        )
+        msg = f"📝 Вишлист **{display_name}** пуст.\n\nИдеи появятся после расследования или добавления вручную."
+        try:
+            await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
+        except Exception:
+            try: await callback.message.delete()
+            except: pass
+            await callback.message.answer(msg, reply_markup=kb, parse_mode="Markdown")
         await callback.answer()
         return
     
@@ -208,6 +221,8 @@ async def show_wishlist(callback: CallbackQuery):
     try:
         await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown")
     except Exception:
+        try: await callback.message.delete()
+        except: pass
         await callback.message.answer(text, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
 
@@ -295,10 +310,13 @@ async def process_target_photo(message: Message, state: FSMContext):
     photo_url = None
     if photo_file_id:
         try:
+            import io
             import logging
             file_info = await message.bot.get_file(photo_file_id)
-            downloaded = await message.bot.download_file(file_info.file_path)
-            photo_url = await db.upload_target_photo(data['target_identifier'], downloaded.read())
+            file_stream = io.BytesIO()
+            await message.bot.download_file(file_info.file_path, destination=file_stream)
+            photo_url = await db.upload_target_photo(data['target_identifier'], file_stream.getvalue())
+            await message.answer("✅ Фото успешно загружено!")
         except Exception as e:
             import logging
             logging.error(f"Error uploading target photo: {e}")
@@ -367,10 +385,13 @@ async def edit_target(callback: CallbackQuery):
     keyboard_layout.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")])
     
     kb = InlineKeyboardMarkup(inline_keyboard=keyboard_layout)
-    await callback.message.edit_text(
-        f"✏️ Изменить в профиле **{display_name}**?",
-        reply_markup=kb, parse_mode="Markdown"
-    )
+    msg = f"✏️ Изменить в профиле **{display_name}**?"
+    try:
+        await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
+    except Exception:
+        try: await callback.message.delete()
+        except: pass
+        await callback.message.answer(msg, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()
 
 
@@ -388,7 +409,12 @@ async def start_tedit(callback: CallbackQuery, state: FSMContext):
         "birthday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):",
         "photo": "📸 Отправьте фото (именно как фото, не документом):"
     }
-    await callback.message.edit_text(prompts[field])
+    try:
+        await callback.message.edit_text(prompts[field])
+    except Exception:
+        try: await callback.message.delete()
+        except: pass
+        await callback.message.answer(prompts[field])
     await state.set_state(TargetStates.waiting_for_edit_value)
     await callback.answer()
 
@@ -411,10 +437,12 @@ async def process_tedit_value(message: Message, state: FSMContext):
                 return
             identifier = target[2]
             
+            import io
             import logging
             file_info = await message.bot.get_file(photo_file_id)
-            downloaded = await message.bot.download_file(file_info.file_path)
-            photo_url = await db.upload_target_photo(identifier, downloaded.read())
+            file_stream = io.BytesIO()
+            await message.bot.download_file(file_info.file_path, destination=file_stream)
+            photo_url = await db.upload_target_photo(identifier, file_stream.getvalue())
             
             await db.update_target(target_id, photo_file_id=photo_url)
             await message.answer("✅ Фото профиля обновлено", reply_markup=main_menu)
