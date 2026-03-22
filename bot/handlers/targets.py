@@ -242,6 +242,22 @@ async def process_target_identifier(message: Message, state: FSMContext):
 @router.message(TargetStates.waiting_for_name)
 async def process_target_name(message: Message, state: FSMContext):
     name = message.text.strip() if message.text != "⏩ Пропустить" else None
+    data = await state.get_data()
+    
+    if not name:
+        try:
+            from main import client
+            from services.scheduler import resolve_target
+            entity = await resolve_target(client, data['target_identifier'])
+            if entity:
+                first = getattr(entity, 'first_name', '') or ''
+                last = getattr(entity, 'last_name', '') or ''
+                fetched_name = f"{first} {last}".strip()
+                if fetched_name:
+                    name = fetched_name
+        except Exception:
+            pass
+
     await state.update_data(target_name=name)
     await message.answer("📝 Шаг 3: Привычки/увлечения?", reply_markup=skip_kb)
     await state.set_state(TargetStates.waiting_for_habits)
@@ -332,7 +348,7 @@ async def edit_target(callback: CallbackQuery):
         inline_keyboard=[
             [InlineKeyboardButton(text="✏️ Имя", callback_data=f"tedit_name_{target_id}"),
              InlineKeyboardButton(text="🎯 Привычки", callback_data=f"tedit_habits_{target_id}")],
-            [InlineKeyboardButton(text="🎂 ДР", callback_data=f"tedit_bday_{target_id}")],
+            [InlineKeyboardButton(text="🎂 ДР", callback_data=f"tedit_birthday_{target_id}")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")]
         ]
     )
