@@ -7,3 +7,5 @@ pytest-asyncio
 apscheduler
 python-dotenv
 google-genai
+fastapi
+uvicorn

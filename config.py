@@ -24,6 +24,10 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # ================= YOOKASSA =================
 YOOKASSA_TOKEN = os.getenv("YOOKASSA_TOKEN")
 
+# ================= WEBAPP =================
+WEBAPP_URL = os.getenv("WEBAPP_URL", "")  # URL for Telegram Mini App
+WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8001"))
+
 
 SYSTEM_PROMPT_TEMPLATE = """
 Ты — ИИ-помощник из «Giftspy». Твоя задача — сыграть роль Детектива.

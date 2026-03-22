@@ -371,6 +371,22 @@ async def spy_noop(callback):
 
 
 
+# ================= MINI APP SERVER =================
+
+async def start_webapp_server():
+    """Start FastAPI server for the Telegram Mini App."""
+    try:
+        import uvicorn
+        from webapp.api import app
+        port = config.WEBAPP_PORT
+        logging.info(f"🌐 Mini App API запущен на http://localhost:{port}")
+        uvi_config = uvicorn.Config(app=app, host="0.0.0.0", port=port, log_level="info")
+        server = uvicorn.Server(uvi_config)
+        await server.serve()
+    except Exception as e:
+        logging.error(f"Mini App server error: {e}")
+
+
 # ================= STARTUP =================
 
 async def main():
@@ -378,7 +394,7 @@ async def main():
     await db.init_db()
 
     asyncio.create_task(background_tasks_worker(bot, client))
-
+    asyncio.create_task(start_webapp_server())
 
     await client.start(phone=config.USER_PHONE)
     logging.info("🕵️‍♂️ Агент на связи!")
