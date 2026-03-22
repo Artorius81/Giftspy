@@ -373,20 +373,11 @@ async def spy_noop(callback):
 
 # ================= STARTUP =================
 
-async def start_uvicorn():
-    import uvicorn
-    from admin_app import app
-    logging.info("🌐 Запуск Admin Web Panel (http://localhost:8000/admin)...")
-    uvi_config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, log_level="info")
-    server = uvicorn.Server(uvi_config)
-    await server.serve()
-
 async def main():
     logging.info("🤖 Инициализация базы данных и запуск...")
     await db.init_db()
 
     asyncio.create_task(background_tasks_worker(bot, client))
-    asyncio.create_task(start_uvicorn())
 
 
     await client.start(phone=config.USER_PHONE)

@@ -7,6 +7,8 @@ from database import db
 
 router = Router()
 
+PHOTO_CACHE = {}
+
 
 # ================= СПИСОК ЦЕЛЕЙ =================
 
@@ -53,19 +55,16 @@ def _build_targets_list(targets):
 
 # ================= ПРОСМОТР ЦЕЛИ =================
 
-@router.callback_query(F.data.startswith("target_view_"))
-async def view_target(callback: CallbackQuery):
-    target_id = int(callback.data.split("_")[2])
+async def _get_target_profile_data(target_id: int):
     target = await db.get_target_by_id(target_id)
-    
     if not target:
-        await callback.answer("Цель не найдена")
-        return
-    
+        return None, None, None
+        
     t_id, owner_id, identifier, name, habits, birthday, photo = target
-    display_name = name or identifier
+    display_name = (name or identifier).replace('_', '\\_').replace('*', '')
+    safe_identifier = identifier.replace('_', '\\_')
     
-    parts = [f"👤 **{display_name}**", f"📱 {identifier}"]
+    parts = [f"👤 **{display_name}**", f"📱 {safe_identifier}"]
     if birthday:
         parts.append(f"🎂 {birthday}")
     if habits:
@@ -109,11 +108,23 @@ async def view_target(callback: CallbackQuery):
             [InlineKeyboardButton(text="⬅️ К списку", callback_data="targets_list")]
         ]
     )
+    return msg, kb, photo
+
+@router.callback_query(F.data.startswith("target_view_"))
+async def view_target(callback: CallbackQuery):
+    target_id = int(callback.data.split("_")[2])
+    msg, kb, photo = await _get_target_profile_data(target_id)
+    if not msg:
+        await callback.answer("Цель не найдена")
+        return
     
     if photo:
         try: await callback.message.delete()
         except: pass
-        await callback.message.answer_photo(photo=photo, caption=msg, reply_markup=kb, parse_mode="Markdown")
+        photo_to_send = PHOTO_CACHE.get(photo, photo)
+        sent_msg = await callback.message.answer_photo(photo=photo_to_send, caption=msg, reply_markup=kb, parse_mode="Markdown")
+        if photo not in PHOTO_CACHE and sent_msg.photo:
+            PHOTO_CACHE[photo] = sent_msg.photo[-1].file_id
     else:
         try:
             await callback.message.edit_text(msg, reply_markup=kb, parse_mode="Markdown")
@@ -134,7 +145,7 @@ async def confirm_delete_target(callback: CallbackQuery):
         await callback.answer("Цель не найдена")
         return
     
-    display_name = target[3] or target[2]
+    display_name = (target[3] or target[2]).replace('_', '\\_').replace('*', '')
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="❌ Да, удалить", callback_data=f"target_delete_{target_id}"),
@@ -174,7 +185,7 @@ async def show_wishlist(callback: CallbackQuery):
         await callback.answer("Цель не найдена")
         return
     
-    display_name = target[3] or target[2]
+    display_name = (target[3] or target[2]).replace('_', '\\_').replace('*', '')
     wishlist = await db.get_wishlist_grouped(target_id)
     
     if not wishlist:
@@ -312,11 +323,12 @@ async def process_target_photo(message: Message, state: FSMContext):
         try:
             import io
             import logging
+            status_msg = await message.answer("⏳ Загрузка фото...")
             file_info = await message.bot.get_file(photo_file_id)
             file_stream = io.BytesIO()
             await message.bot.download_file(file_info.file_path, destination=file_stream)
             photo_url = await db.upload_target_photo(data['target_identifier'], file_stream.getvalue())
-            await message.answer("✅ Фото успешно загружено!")
+            await status_msg.edit_text("✅ Фото успешно загружено!")
         except Exception as e:
             import logging
             logging.error(f"Error uploading target photo: {e}")
@@ -331,10 +343,11 @@ async def process_target_photo(message: Message, state: FSMContext):
         photo_file_id=photo_url
     )
     
-    display = data.get('target_name') or data['target_identifier']
+    display = (data.get('target_name') or data['target_identifier']).replace('_', '\\_').replace('*', '')
+    safe_id = data['target_identifier'].replace('_', '\\_')
     await state.clear()
     await message.answer(
-        f"✅ Профиль **{display}** создан!\n📱 {data['target_identifier']}",
+        f"✅ Профиль **{display}** создан!\n📱 {safe_id}",
         parse_mode="Markdown", reply_markup=main_menu
     )
 
@@ -374,14 +387,17 @@ async def edit_target(callback: CallbackQuery):
         await callback.answer("Цель не найдена")
         return
     
-    display_name = target[3] or target[2]
+    display_name = (target[3] or target[2]).replace('_', '\\_').replace('*', '')
     keyboard_layout = [
         [InlineKeyboardButton(text="✏️ Имя", callback_data=f"tedit_name_{target_id}"),
          InlineKeyboardButton(text="🎯 Привычки", callback_data=f"tedit_habits_{target_id}")],
         [InlineKeyboardButton(text="🎂 ДР", callback_data=f"tedit_birthday_{target_id}")]
     ]
     if not target[6]:  # no photo_file_id
-        keyboard_layout.append([InlineKeyboardButton(text="📸 Добавить фото", callback_data=f"tedit_photo_{target_id}")])
+        photo_btn_text = "📸 Добавить фото"
+    else:
+        photo_btn_text = "📸 Заменить фото"
+    keyboard_layout.append([InlineKeyboardButton(text=photo_btn_text, callback_data=f"tedit_photo_{target_id}")])
     keyboard_layout.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")])
     
     kb = InlineKeyboardMarkup(inline_keyboard=keyboard_layout)
@@ -439,13 +455,25 @@ async def process_tedit_value(message: Message, state: FSMContext):
             
             import io
             import logging
+            status_msg = await message.answer("⏳ Загрузка фото...")
             file_info = await message.bot.get_file(photo_file_id)
             file_stream = io.BytesIO()
             await message.bot.download_file(file_info.file_path, destination=file_stream)
             photo_url = await db.upload_target_photo(identifier, file_stream.getvalue())
             
             await db.update_target(target_id, photo_file_id=photo_url)
-            await message.answer("✅ Фото профиля обновлено", reply_markup=main_menu)
+            await status_msg.edit_text("✅ Фото профиля обновлено")
+            
+            p_msg, p_kb, p_photo = await _get_target_profile_data(target_id)
+            if p_msg:
+                photo_to_send = PHOTO_CACHE.get(p_photo, p_photo) if p_photo else None
+                if photo_to_send:
+                    sent_msg = await message.answer_photo(photo=photo_to_send, caption=p_msg, reply_markup=p_kb, parse_mode="Markdown")
+                    if p_photo not in PHOTO_CACHE and sent_msg.photo:
+                        PHOTO_CACHE[p_photo] = sent_msg.photo[-1].file_id
+                else:
+                    await message.answer(p_msg, reply_markup=p_kb, parse_mode="Markdown")
+                    
         except Exception as e:
             import logging
             logging.error(f"Error updating target photo: {e}")
@@ -455,15 +483,16 @@ async def process_tedit_value(message: Message, state: FSMContext):
         return
 
     value = message.text.strip() if message.text else ""
+    safe_value = value.replace('_', '\\_').replace('*', '')
     
     if field == "name":
         await db.update_target(target_id, name=value)
-        await message.answer(f"✅ Имя обновлено на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
+        await message.answer(f"✅ Имя обновлено на **{safe_value}**", parse_mode="Markdown", reply_markup=main_menu)
     elif field == "habits":
         await db.update_target(target_id, habits=value)
         await message.answer("✅ Привычки/увлечения обновлены", reply_markup=main_menu)
     elif field == "birthday":
         await db.update_target(target_id, birthday=value)
-        await message.answer(f"✅ День рождения обновлен на **{value}**", parse_mode="Markdown", reply_markup=main_menu)
+        await message.answer(f"✅ День рождения обновлен на **{safe_value}**", parse_mode="Markdown", reply_markup=main_menu)
     
     await state.clear()

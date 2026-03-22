@@ -13,14 +13,3 @@ services:
       # Важно: файлы сессий должны существовать до запуска docker-compose.
       - ./bot_session.session:/app/bot_session.session
       - ./user_session.session:/app/user_session.session
-
-  admin:
-    build:
-      context: .
-      dockerfile: Dockerfile.admin
-    container_name: giftspy_admin
-    restart: always
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env

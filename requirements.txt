@@ -7,8 +7,3 @@ pytest-asyncio
 apscheduler
 python-dotenv
 google-genai
-fastapi
-uvicorn
-sqlalchemy
-sqladmin[full]
-itsdangerous
