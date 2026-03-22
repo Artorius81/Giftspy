@@ -1,5 +1,0 @@
-ERROR:root:Error generating first message: <_InactiveRpcError of RPC that terminated with:
-	status = StatusCode.PERMISSION_DENIED
-	details = "Your newly created team doesn't have any credits or licenses yet. You can purchase those on https://console.x.ai/team/e7ae3218-cd18-4c4d-bcf6-7bf60bb0dac9."
-	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Your newly created team doesn\'t have any credits or licenses yet. You can purchase those on https://console.x.ai/team/e7ae3218-cd18-4c4d-bcf6-7bf60bb0dac9.", grpc_status:7}"
->
