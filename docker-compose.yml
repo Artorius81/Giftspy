@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile.bot
     container_name: giftspy_bot
     restart: always
+    ports:
+      - "8001:8001"
     env_file:
       - .env
     volumes:
