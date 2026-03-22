@@ -291,13 +291,26 @@ async def process_target_photo(message: Message, state: FSMContext):
         return
     
     data = await state.get_data()
+    
+    photo_url = None
+    if photo_file_id:
+        try:
+            import logging
+            file_info = await message.bot.get_file(photo_file_id)
+            downloaded = await message.bot.download_file(file_info.file_path)
+            photo_url = await db.upload_target_photo(data['target_identifier'], downloaded.read())
+        except Exception as e:
+            import logging
+            logging.error(f"Error uploading target photo: {e}")
+            pass
+            
     target_id = await db.add_target(
         owner_id=message.from_user.id,
         identifier=data['target_identifier'],
         name=data.get('target_name'),
         habits=data.get('target_habits'),
         birthday=data.get('target_birthday'),
-        photo_file_id=photo_file_id
+        photo_file_id=photo_url
     )
     
     display = data.get('target_name') or data['target_identifier']
@@ -344,14 +357,16 @@ async def edit_target(callback: CallbackQuery):
         return
     
     display_name = target[3] or target[2]
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="✏️ Имя", callback_data=f"tedit_name_{target_id}"),
-             InlineKeyboardButton(text="🎯 Привычки", callback_data=f"tedit_habits_{target_id}")],
-            [InlineKeyboardButton(text="🎂 ДР", callback_data=f"tedit_birthday_{target_id}")],
-            [InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")]
-        ]
-    )
+    keyboard_layout = [
+        [InlineKeyboardButton(text="✏️ Имя", callback_data=f"tedit_name_{target_id}"),
+         InlineKeyboardButton(text="🎯 Привычки", callback_data=f"tedit_habits_{target_id}")],
+        [InlineKeyboardButton(text="🎂 ДР", callback_data=f"tedit_birthday_{target_id}")]
+    ]
+    if not target[6]:  # no photo_file_id
+        keyboard_layout.append([InlineKeyboardButton(text="📸 Добавить фото", callback_data=f"tedit_photo_{target_id}")])
+    keyboard_layout.append([InlineKeyboardButton(text="⬅️ Назад", callback_data=f"target_view_{target_id}")])
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=keyboard_layout)
     await callback.message.edit_text(
         f"✏️ Изменить в профиле **{display_name}**?",
         reply_markup=kb, parse_mode="Markdown"
@@ -370,7 +385,8 @@ async def start_tedit(callback: CallbackQuery, state: FSMContext):
     prompts = {
         "name": "✏️ Введите новое имя:",
         "habits": "🎯 Введите новые привычки/увлечения:",
-        "birthday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):"
+        "birthday": "🎂 Введите новый день рождения (ДД.ММ.ГГГГ):",
+        "photo": "📸 Отправьте фото (именно как фото, не документом):"
     }
     await callback.message.edit_text(prompts[field])
     await state.set_state(TargetStates.waiting_for_edit_value)
@@ -381,7 +397,36 @@ async def process_tedit_value(message: Message, state: FSMContext):
     data = await state.get_data()
     target_id = data.get("tedit_target_id")
     field = data.get("tedit_field")
-    value = message.text.strip()
+    
+    if field == "photo":
+        if not message.photo:
+            await message.answer("📸 Пожалуйста, отправьте фото.")
+            return
+            
+        photo_file_id = message.photo[-1].file_id
+        try:
+            target = await db.get_target_by_id(target_id)
+            if not target:
+                await state.clear()
+                return
+            identifier = target[2]
+            
+            import logging
+            file_info = await message.bot.get_file(photo_file_id)
+            downloaded = await message.bot.download_file(file_info.file_path)
+            photo_url = await db.upload_target_photo(identifier, downloaded.read())
+            
+            await db.update_target(target_id, photo_file_id=photo_url)
+            await message.answer("✅ Фото профиля обновлено", reply_markup=main_menu)
+        except Exception as e:
+            import logging
+            logging.error(f"Error updating target photo: {e}")
+            await message.answer("❌ Ошибка при загрузке фото.")
+        
+        await state.clear()
+        return
+
+    value = message.text.strip() if message.text else ""
     
     if field == "name":
         await db.update_target(target_id, name=value)

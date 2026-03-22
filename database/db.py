@@ -254,6 +254,28 @@ async def upload_profile_photo(user_id: int, file_bytes: bytes) -> str:
     return url
 
 
+async def upload_target_photo(target_identifier: str, file_bytes: bytes) -> str:
+    """Uploads target's photo to Supabase storage and returns public URL."""
+    import time
+    import re
+    # Replace non-alphanumeric chars for safety
+    safe_id = re.sub(r'[^a-zA-Z0-9_]', '_', str(target_identifier))
+    file_name = f"{safe_id}_{int(time.time())}.jpg"
+    
+    # Upload to storage
+    await asyncio.to_thread(
+        lambda: _client.storage.from_("targets_photo").upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+    )
+    
+    # Get public URL
+    url = _client.storage.from_("targets_photo").get_public_url(file_name)
+    return url
+
+
 async def is_user_exists(user_id: int) -> bool:
     """Checks if user already exists in DB."""
     result = await asyncio.to_thread(
