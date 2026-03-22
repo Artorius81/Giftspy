@@ -204,6 +204,9 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
     saved = await db.find_target_by_identifier(user_id, target)
     display_name = saved[2] if saved and saved[2] else target
     
+    # Check if spy mode is enabled
+    spy_mode = await db.get_user_spy_mode(user_id)
+    
     return {
         "id": case_id,
         "target": target,
@@ -213,8 +216,25 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
         "persona": persona,
         "budget": budget,
         "status": status,
-        "report": report
+        "report": report,
+        "spy_mode": spy_mode
     }
+
+@app.get("/api/cases/{case_id}/chat")
+async def get_case_chat(case_id: int, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    spy_mode = await db.get_user_spy_mode(user_id)
+    if not spy_mode:
+         raise HTTPException(status_code=403, detail="Spy mode required")
+
+    history = await db.get_chat_history(case_id)
+    return [
+        {"sender": sender, "message": message}
+        for sender, message in history
+    ]
 
 
 @app.post("/api/cases")

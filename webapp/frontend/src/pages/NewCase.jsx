@@ -180,23 +180,34 @@ export default function NewCase() {
       )}
 
       {/* Step: Persona */}
-      {currentStepKey === 'persona' && persona && (
+      {currentStepKey === 'persona' && personas.length > 0 && (
         <div className="wizard-step">
           <div className="wizard-step__title">🕵️‍♂️ Выберите детектива</div>
-          <div className="persona-carousel">
-            <img src={persona.photo} alt={persona.name} className="persona-carousel__img" />
-            <div className="persona-carousel__name">{persona.name}</div>
-            <div className="persona-carousel__desc">{persona.desc}</div>
-            <div className="persona-carousel__nav">
-              <button onClick={() => setPersonaIdx(personaIdx > 0 ? personaIdx - 1 : personas.length - 1)}>⬅️</button>
-              <button onClick={() => setPersonaIdx(personaIdx < personas.length - 1 ? personaIdx + 1 : 0)}>➡️</button>
-            </div>
-            <button
-              className="btn btn--primary"
-              onClick={() => { setForm({ ...form, persona: persona.name }); setStep(4) }}
-            >
-              ✅ Выбрать {persona.name.split(' ').slice(-1)}
-            </button>
+          <div 
+            className="persona-swipe-container" 
+            onScroll={(e) => {
+              const newIdx = Math.round(e.target.scrollLeft / e.target.offsetWidth);
+              if (newIdx !== personaIdx) setPersonaIdx(newIdx);
+            }}
+          >
+            {personas.map((p, idx) => (
+              <div key={idx} className="persona-swipe-slide">
+                <img src={p.photo} alt={p.name} className="persona-carousel__img" />
+                <div className="persona-carousel__name">{p.name}</div>
+                <div className="persona-carousel__desc">{p.desc}</div>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => { setForm({ ...form, persona: p.name }); setStep(4) }}
+                >
+                  ✅ Выбрать {p.name.split(' ').slice(-1)[0]}
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="persona-swipe-dots">
+            {personas.map((_, idx) => (
+              <div key={idx} className={`swipe-dot ${idx === personaIdx ? 'active' : ''}`} />
+            ))}
           </div>
         </div>
       )}

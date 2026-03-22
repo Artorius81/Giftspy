@@ -12,12 +12,12 @@ PERSONAS = [
     {
         "name": "🐶 Детектив Коржик",
         "desc": "Самый пушистый детектив в нашем штате! Гавкает, радуется жизни и вынюхивает след подарка. Идеально для друзей, девушек и любителей животных.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(1).png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(2).png"
     },
     {
         "name": "👽 Детектив Зорп из Туманности Андромеды",
         "desc": "Межгалактический следователь. Прилетел на Землю изучать странные 'человеческие ритуалы дарения'. Смешно удивляется обычным вещам. Отличный выбор для гиков и людей с чувством юмора.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(2).png"
+        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(1).png"
     },
     {
         "name": "🎩 Сэр Реджинальд Фезерстон",

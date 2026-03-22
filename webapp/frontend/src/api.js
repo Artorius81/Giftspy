@@ -59,6 +59,7 @@ const api = {
   // Cases
   getCases: () => request('/api/cases'),
   getCase: (id) => request(`/api/cases/${id}`),
+  getCaseChat: (id) => request(`/api/cases/${id}/chat`),
   createCase: (data) => request('/api/cases', {
     method: 'POST', body: JSON.stringify(data)
   }),
