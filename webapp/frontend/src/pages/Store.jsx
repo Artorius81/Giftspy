@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../api'
+import { mutateData } from '../hooks/useData'
 
 const PRODUCTS = [
   {
@@ -20,15 +21,27 @@ const PRODUCTS = [
   {
     id: 'prem_1',
     icon: '👑',
-    title: 'Premium (1 месяц)',
+    title: 'Премиум (1 месяц)',
     desc: 'Безлимитные расследования + шпионский режим',
-    price: '299 ₽',
-    badge: 'Premium',
+    price: '1 ₽',
+    badge: 'Премиум',
   },
 ]
 
 export default function Store() {
   const [buying, setBuying] = useState(null)
+
+  // Refresh profile when user returns from payment page
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        api.getProfile().then(data => mutateData('profile', data)).catch(() => {})
+        api.getBalance().then(data => mutateData('balance', data)).catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   const handleBuy = async (productId) => {
     if (buying) return
@@ -63,7 +76,7 @@ export default function Store() {
       </div>
 
       <div style={{ marginBottom: 16, padding: '16px', background: 'var(--gradient-card)', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-md)' }}>
-        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>👑 Premium включает:</div>
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>👑 Премиум включает:</div>
         <ul style={{ fontSize: 13, color: 'var(--text-secondary)', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <li>• Безлимитное количество дел</li>
           <li>• Шпионский режим (чтение переписок)</li>

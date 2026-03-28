@@ -262,6 +262,17 @@ async def upload_target_photo(target_identifier: str, file_bytes: bytes) -> str:
     safe_id = re.sub(r'[^a-zA-Z0-9_]', '_', str(target_identifier))
     file_name = f"{safe_id}_{int(time.time())}.jpg"
     
+    # Try to create bucket if it doesn't exist
+    try:
+        await asyncio.to_thread(
+            lambda: _client.storage.create_bucket(
+                "targets_photo",
+                options={"public": True}
+            )
+        )
+    except Exception:
+        pass  # Bucket already exists
+    
     # Upload to storage
     await asyncio.to_thread(
         lambda: _client.storage.from_("targets_photo").upload(
@@ -273,6 +284,25 @@ async def upload_target_photo(target_identifier: str, file_bytes: bytes) -> str:
     
     # Get public URL
     url = _client.storage.from_("targets_photo").get_public_url(file_name)
+    return url
+
+
+async def upload_target_photo_fallback(target_identifier: str, file_bytes: bytes) -> str:
+    """Fallback: uploads target photo to the profile_photo bucket which is known to work."""
+    import time
+    import re
+    safe_id = re.sub(r'[^a-zA-Z0-9_]', '_', str(target_identifier))
+    file_name = f"target_{safe_id}_{int(time.time())}.jpg"
+    
+    await asyncio.to_thread(
+        lambda: _client.storage.from_("profile_photo").upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+    )
+    
+    url = _client.storage.from_("profile_photo").get_public_url(file_name)
     return url
 
 

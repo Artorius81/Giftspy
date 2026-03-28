@@ -321,16 +321,19 @@ def _build_target_selection_kb(targets):
 async def start_order(message: Message, state: FSMContext):
     await state.clear()
     
-    balance = await db.get_user_balance(message.from_user.id)
-    if balance <= 0:
-        await message.answer(
-            "🪙 **ВАШ БАЛАНС ПУСТ**\n\n"
-            "Для запуска нового расследования требуется 1 монета.\n"
-            "Пополните баланс в профиле или пригласите друзей!",
-            parse_mode="Markdown",
-            reply_markup=main_menu
-        )
-        return
+    # Premium users have unlimited investigations
+    has_premium = await db.is_premium(message.from_user.id)
+    if not has_premium:
+        balance = await db.get_user_balance(message.from_user.id)
+        if isinstance(balance, int) and balance <= 0:
+            await message.answer(
+                "🪙 **ВАШ БАЛАНС ПУСТ**\n\n"
+                "Для запуска нового расследования требуется 1 монета.\n"
+                "Пополните баланс в профиле или пригласите друзей!",
+                parse_mode="Markdown",
+                reply_markup=main_menu
+            )
+            return
 
     targets = await db.get_user_targets(message.from_user.id)
     
@@ -586,13 +589,16 @@ async def wz_confirm(callback: CallbackQuery, state: FSMContext):
     budget = user_data.get('budget', 'Не указан')
     customer_id = callback.from_user.id
 
-    balance = await db.get_user_balance(customer_id)
-    if balance <= 0:
-        await callback.message.edit_text("❌ Ошибка: недостаточно средств для начала дела.")
-        await callback.answer()
-        return
-
-    await db.deduct_balance(customer_id)
+    # Premium users don't pay for investigations
+    has_premium = await db.is_premium(customer_id)
+    if not has_premium:
+        balance = await db.get_user_balance(customer_id)
+        if isinstance(balance, int) and balance <= 0:
+            await callback.message.edit_text("❌ Ошибка: недостаточно средств для начала дела.")
+            await callback.answer()
+            return
+        await db.deduct_balance(customer_id)
+    
     await db.add_case(customer_id, target, holiday, context, persona, budget)
     
     contact_name = user_data.get('contact_display_name')

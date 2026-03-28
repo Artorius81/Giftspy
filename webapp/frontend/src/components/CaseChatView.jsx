@@ -112,9 +112,9 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
         <div className="empty-state">
           <div className="empty-state__icon">👑</div>
           <div className="empty-state__title">Премиум-функция</div>
-          <div className="empty-state__desc">Шпионский режим и перехват управления доступны только с подпиской Premium</div>
+          <div className="empty-state__desc">Шпионский режим и перехват управления доступны только с подпиской Премиум</div>
           <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={() => navigate('/store')}>
-            🛍 Купить Premium
+            🛍 Купить Премиум
           </button>
         </div>
       </div>

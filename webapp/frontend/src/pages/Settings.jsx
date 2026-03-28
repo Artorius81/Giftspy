@@ -67,7 +67,7 @@ export default function Settings() {
             <div className="settings-row__desc">
               {isPremium
                 ? 'Просматривайте переписку и перехватывайте контроль'
-                : 'Доступно с подпиской Premium'}
+                : 'Доступно с подпиской Премиум'}
             </div>
           </div>
           <button
@@ -87,7 +87,7 @@ export default function Settings() {
 
         {!isPremium && (
           <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={() => navigate('/store')}>
-            🛍 Купить Premium
+            🛍 Купить Премиум
           </button>
         )}
       </div>

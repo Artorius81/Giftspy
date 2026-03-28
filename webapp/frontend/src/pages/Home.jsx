@@ -60,7 +60,7 @@ export default function Home() {
         <div className="profile-header__id">ID: {profile.user_id}</div>
         {profile.is_premium && (
           <div className="profile-header__premium">
-            <span className="badge badge--success">👑 Premium</span>
+            <span className="badge badge--success">👑 Премиум</span>
             {profile.premium_until && (
               <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>
                 до {new Date(profile.premium_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
@@ -79,7 +79,7 @@ export default function Home() {
       {/* Stats */}
       <div className="stats-row">
         <div className="stat-card">
-          <div className="stat-card__value">{profile.balance}</div>
+          <div className="stat-card__value">{profile.is_premium ? '∞' : profile.balance}</div>
           <div className="stat-card__label">Расследований</div>
         </div>
         <div className="stat-card">

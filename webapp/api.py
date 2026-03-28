@@ -223,7 +223,16 @@ async def upload_target_photo_endpoint(target_id: int, file: UploadFile = File(.
     if len(file_bytes) > 10 * 1024 * 1024:  # 10MB limit
         raise HTTPException(status_code=400, detail="File too large")
     identifier = target[2]
-    photo_url = await db.upload_target_photo(identifier, file_bytes)
+    try:
+        photo_url = await db.upload_target_photo(identifier, file_bytes)
+    except Exception as e:
+        logging.error(f"Failed to upload target photo: {e}")
+        # Fallback: use profile_photo bucket which is known to work
+        try:
+            photo_url = await db.upload_target_photo_fallback(identifier, file_bytes)
+        except Exception as e2:
+            logging.error(f"Fallback upload also failed: {e2}")
+            raise HTTPException(status_code=500, detail="Ошибка загрузки фото")
     await db.update_target(target_id, photo_file_id=photo_url)
     return {"photo": photo_url}
 
@@ -292,7 +301,7 @@ async def get_case_chat(case_id: int, user_id: int = Depends(get_current_user)):
     
     # Premium check
     if not await db.is_premium(user_id):
-        raise HTTPException(status_code=403, detail="Требуется Premium подписка")
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
     
     spy_mode = await db.get_user_spy_mode(user_id)
     if not spy_mode:
@@ -307,16 +316,20 @@ async def get_case_chat(case_id: int, user_id: int = Depends(get_current_user)):
 
 @app.post("/api/cases")
 async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)):
-    balance = await db.get_user_balance(user_id)
-    if isinstance(balance, int) and balance <= 0:
-        raise HTTPException(status_code=402, detail="Insufficient balance")
+    # Premium users have unlimited investigations
+    has_premium = await db.is_premium(user_id)
+    if not has_premium:
+        balance = await db.get_user_balance(user_id)
+        if isinstance(balance, int) and balance <= 0:
+            raise HTTPException(status_code=402, detail="Insufficient balance")
     
     # Check no active case for this target
     existing = await db.get_active_case_by_target(data.target)
     if existing:
         raise HTTPException(status_code=409, detail="Active case already exists for this target")
     
-    await db.deduct_balance(user_id)
+    if not has_premium:
+        await db.deduct_balance(user_id)
     case_id = await db.add_case(user_id, data.target, data.holiday, data.context, data.persona, data.budget)
     
     # Auto-save target if not exists
@@ -351,7 +364,7 @@ class ChatMessage(BaseModel):
 async def toggle_spy_mode_endpoint(user_id: int = Depends(get_current_user)):
     # Premium check
     if not await db.is_premium(user_id):
-        raise HTTPException(status_code=403, detail="Требуется Premium подписка для шпионского режима")
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка для шпионского режима")
     new_val = await db.toggle_spy_mode(user_id)
     return {"spy_mode": bool(new_val)}
 
@@ -389,7 +402,7 @@ async def intercept_case(case_id: int, user_id: int = Depends(get_current_user))
     
     # Premium check
     if not await db.is_premium(user_id):
-        raise HTTPException(status_code=403, detail="Требуется Premium подписка для перехвата")
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка для перехвата")
     
     status = case[7]
     if status not in ('started', 'in_progress'):
@@ -425,7 +438,7 @@ async def get_balance(user_id: int = Depends(get_current_user)):
 PRODUCTS = {
     "inv_1": {"title": "1 Расследование", "amount": "1.00", "display_price": "1"},
     "inv_3": {"title": "3 Расследования", "amount": "249.00", "display_price": "249"},
-    "prem_1": {"title": "Premium (1 Месяц)", "amount": "299.00", "display_price": "299"},
+    "prem_1": {"title": "Премиум (1 Месяц)", "amount": "1.00", "display_price": "1"},
 }
 
 class PaymentCreate(BaseModel):
@@ -514,7 +527,7 @@ async def yookassa_webhook(request: Request):
         from aiogram import Bot
         bot = Bot(token=cfg.BOT_TOKEN)
         if payload == "prem_1":
-            await bot.send_message(user_id, "👑 Оплата успешна! Premium активирован на 1 месяц.")
+            await bot.send_message(user_id, "👑 Оплата успешна! Премиум активирован на 1 месяц.")
         else:
             count = 1 if payload == "inv_1" else 3
             await bot.send_message(user_id, f"🎉 Оплата успешна! +{count} расследований добавлено на баланс.")

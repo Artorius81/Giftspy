@@ -114,7 +114,7 @@ store_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="1 Расследование — 1 ₽", callback_data="buy_inv_1")],
         [InlineKeyboardButton(text="3 Расследования — 249 ₽", callback_data="buy_inv_3")],
-        [InlineKeyboardButton(text="👑 Premium (1 Мес) — 299 ₽", callback_data="buy_prem_1")],
+        [InlineKeyboardButton(text="👑 Премиум (1 Мес) — 1 ₽", callback_data="buy_prem_1")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_profile")]
     ]
 )

@@ -17,7 +17,7 @@ async def show_profile(message: Message):
     if premium_until:
         from datetime import datetime
         if datetime.fromisoformat(premium_until) > datetime.utcnow():
-            premium_text = "\n👑 **Статус:** Premium"
+            premium_text = "\n👑 **Статус:** Премиум"
     
     parts = [
         f"🕵️‍♂️ **{display_name}**",
@@ -205,7 +205,7 @@ async def toggle_spy(callback: CallbackQuery):
     # Premium check
     has_premium = await db.is_premium(callback.from_user.id)
     if not has_premium:
-        await callback.answer("👑 Требуется Premium подписка!", show_alert=True)
+        await callback.answer("👑 Требуется Премиум подписка!", show_alert=True)
         return
     
     new_value = await db.toggle_spy_mode(callback.from_user.id)
@@ -231,7 +231,7 @@ async def back_to_profile(callback: CallbackQuery):
     if premium_until:
         from datetime import datetime
         if datetime.fromisoformat(premium_until) > datetime.utcnow():
-            premium_text = "\n👑 **Статус:** Premium"
+            premium_text = "\n👑 **Статус:** Премиум"
     
     parts = [
         f"🕵️‍♂️ **{display_name}**",
