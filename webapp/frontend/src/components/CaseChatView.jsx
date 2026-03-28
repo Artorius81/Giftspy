@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { getTargetEmoji } from '../pages/TargetDetail'
 
+const POLL_INTERVAL = 3000 // 3 seconds for chat-like feel
+
 export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -9,6 +11,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
   const [sending, setSending] = useState(false)
   const [intercepting, setIntercepting] = useState(false)
   const messagesEndRef = useRef(null)
+  const prevMsgCountRef = useRef(0)
 
   const isManualMode = caseStatus === 'manual_mode'
   const canIntercept = ['started', 'in_progress'].includes(caseStatus)
@@ -20,7 +23,16 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
 
   const loadChat = () => {
     api.getCaseChat(caseId)
-      .then(setMessages)
+      .then(newMessages => {
+        setMessages(newMessages)
+        // Scroll only if new messages arrived
+        if (newMessages.length > prevMsgCountRef.current) {
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+          }, 100)
+        }
+        prevMsgCountRef.current = newMessages.length
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }
@@ -28,14 +40,19 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
   useEffect(() => {
     if (spyMode) {
       loadChat()
+      // Poll for new messages like a real chat
+      const interval = setInterval(loadChat, POLL_INTERVAL)
+      return () => clearInterval(interval)
     } else {
       setLoading(false)
     }
   }, [caseId, spyMode])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [loading])
 
   const handleSend = async () => {
     if (!inputText.trim() || !isManualMode || sending) return
@@ -44,6 +61,9 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
       await api.sendChatMessage(caseId, inputText.trim())
       setMessages(prev => [...prev, { sender: 'ai', message: inputText.trim() }])
       setInputText('')
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
     } catch (e) {
       alert(e.message)
     }
@@ -62,10 +82,13 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
   }
 
   const handleReturnDetective = async () => {
+    if (!confirm('Вернуть управление детективу?')) return
     setIntercepting(true)
     try {
-      await api.returnDetective(caseId)
-      onStatusChange?.('in_progress')
+      const result = await api.returnDetective(caseId)
+      if (result.ok) {
+        onStatusChange?.('in_progress')
+      }
     } catch (e) {
       alert(e.message)
     }
@@ -153,19 +176,16 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
             </div>
           </>
         ) : canIntercept ? (
-          <>
+          <div className="chat-intercept-area">
             <div className="chat-input-hint">Перехватите управление, чтобы писать от имени детектива</div>
-            <div className="chat-input-row">
-              <button
-                className="btn btn--primary"
-                style={{ flex: 1 }}
-                onClick={handleIntercept}
-                disabled={intercepting}
-              >
-                {intercepting ? '⏳ Перехват...' : '🕹 Перехватить управление'}
-              </button>
-            </div>
-          </>
+            <button
+              className="btn btn--primary"
+              onClick={handleIntercept}
+              disabled={intercepting}
+            >
+              {intercepting ? '⏳ Перехват...' : '🕹 Перехватить управление'}
+            </button>
+          </div>
         ) : (
           <div className="chat-input-hint" style={{ textAlign: 'center', padding: '8px 0' }}>
             Расследование завершено

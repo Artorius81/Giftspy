@@ -17,13 +17,27 @@ export default function Dossier() {
   const navigate = useNavigate()
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState({})
 
-  useEffect(() => {
+  const loadCases = () => {
     api.getCases()
       .then(setCases)
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadCases()
+    // Poll every 10 seconds for status updates
+    const interval = setInterval(() => {
+      api.getCases().then(setCases).catch(console.error)
+    }, 10000)
+    return () => clearInterval(interval)
   }, [])
+
+  const toggleGroup = (target) => {
+    setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
+  }
 
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
 
@@ -53,32 +67,41 @@ export default function Dossier() {
           </button>
         </div>
       ) : (
-        Object.entries(grouped).map(([target, group]) => (
-          <div key={target}>
-            <div className="section-header">
-              <div className="section-header__title">👤 {group.display}</div>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
-            </div>
-            {group.cases.map(c => {
-              const st = STATUS[c.status] || STATUS.error
-              return (
-                <div key={c.id} className="card" onClick={() => navigate(`/dossier/${c.id}`)}>
-                  <div className="card__header">
-                    <div className="card__avatar">{(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}</div>
-                    <div className="card__info">
-                      <div className="card__name">Дело №{c.id}</div>
-                      <div className="card__sub">
-                        <span className={`status-dot status-dot--${st.dot}`} />
-                        {st.label}
-                      </div>
-                    </div>
-                    {c.has_report && <span className="badge badge--success">📋 Отчёт</span>}
-                  </div>
+        Object.entries(grouped).map(([target, group]) => {
+          const isCollapsed = collapsed[target]
+          return (
+            <div key={target}>
+              <div
+                className="section-header section-header--clickable"
+                onClick={() => toggleGroup(target)}
+              >
+                <div className="section-header__title">
+                  <span className={`collapse-arrow ${isCollapsed ? 'collapsed' : ''}`}>▾</span>
+                  {' '}👤 {group.display}
                 </div>
-              )
-            })}
-          </div>
-        ))
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
+              </div>
+              {!isCollapsed && group.cases.map(c => {
+                const st = STATUS[c.status] || STATUS.error
+                return (
+                  <div key={c.id} className="card" onClick={() => navigate(`/dossier/${c.id}`)}>
+                    <div className="card__header">
+                      <div className="card__avatar">{(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}</div>
+                      <div className="card__info">
+                        <div className="card__name">Дело №{c.id}</div>
+                        <div className="card__sub">
+                          <span className={`status-dot status-dot--${st.dot}`} />
+                          {st.label}
+                        </div>
+                      </div>
+                      {c.has_report && <span className="badge badge--success">📋 Отчёт</span>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })
       )}
     </div>
   )

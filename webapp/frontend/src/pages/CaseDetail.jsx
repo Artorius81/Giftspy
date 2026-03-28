@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import CaseChatView from '../components/CaseChatView'
@@ -20,12 +20,24 @@ export default function CaseDetail() {
   const [caseData, setCaseData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState('summary')
+  const pollRef = useRef(null)
 
-  useEffect(() => {
+  const loadCase = () => {
     api.getCase(id)
-      .then(setCaseData)
+      .then(data => setCaseData(prev => {
+        // Only update if something changed to avoid flicker
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(data)) return data
+        return prev
+      }))
       .catch(console.error)
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadCase()
+    // Poll every 8 seconds for status updates
+    pollRef.current = setInterval(loadCase, 8000)
+    return () => clearInterval(pollRef.current)
   }, [id])
 
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
@@ -116,7 +128,7 @@ export default function CaseDetail() {
         />
       )}
 
-      {/* Floating Toggle - positioned above bottom nav */}
+      {/* Floating Toggle */}
       <div className="view-toggle">
         <button className={`view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
           ≡ Сводка

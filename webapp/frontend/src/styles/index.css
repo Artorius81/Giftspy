@@ -11,6 +11,17 @@
   padding: 0;
 }
 
+/* Remove blue focus outline and tap highlight */
+button, a, input, textarea, select, [role="button"] {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 :root {
   /* Telegram theme vars with fallbacks (Dark) */
   --bg: var(--tg-theme-bg-color, #0f0f1a);
@@ -1073,9 +1084,38 @@ textarea.input { min-height: 80px; resize: vertical; }
 }
 
 .case-detail-page .chat-input-area {
-  bottom: 16px;
+  bottom: 56px;
 }
 
 .case-detail-page .chat-view ~ .view-toggle {
-  bottom: 72px;
+  bottom: 16px;
+}
+
+/* ---- Intercept area (above view toggle) ---- */
+.chat-intercept-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+/* ---- Collapsible groups ---- */
+.section-header--clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.section-header--clickable:active {
+  opacity: 0.7;
+}
+
+.collapse-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 14px;
+}
+
+.collapse-arrow.collapsed {
+  transform: rotate(-90deg);
 }
