@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 
@@ -24,6 +24,12 @@ export default function NewCase() {
   const [personaIdx, setPersonaIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
+  // Touch tracking for carousel
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+  const carouselRef = useRef(null)
+  const isAnimating = useRef(false)
+
   const [form, setForm] = useState({
     target: searchParams.get('target') || '',
     holiday: '',
@@ -39,13 +45,8 @@ export default function NewCase() {
   }, [])
 
   const currentStepKey = STEPS[step]
-  const persona = personas[personaIdx]
 
-  const canProceed = () => {
-    if (currentStepKey === 'target') return !!form.target
-    if (currentStepKey === 'persona') return !!form.persona
-    return true
-  }
+  const hasCustomHoliday = form.holiday && !HOLIDAY_OPTIONS.includes(form.holiday) && form.holiday !== 'Без повода'
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -62,6 +63,31 @@ export default function NewCase() {
       alert(err.message)
     }
     setSubmitting(false)
+  }
+
+  // Carousel navigation with animation
+  const goToPersona = useCallback((newIdx) => {
+    if (isAnimating.current || newIdx < 0 || newIdx >= personas.length || newIdx === personaIdx) return
+    isAnimating.current = true
+    setPersonaIdx(newIdx)
+    setTimeout(() => { isAnimating.current = false }, 350)
+  }, [personaIdx, personas.length])
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX
+    const diff = touchStartX.current - touchEndX.current
+    const threshold = 50
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0 && personaIdx < personas.length - 1) {
+        goToPersona(personaIdx + 1)
+      } else if (diff < 0 && personaIdx > 0) {
+        goToPersona(personaIdx - 1)
+      }
+    }
   }
 
   return (
@@ -149,13 +175,19 @@ export default function NewCase() {
             <input
               className="input"
               placeholder="Или свой вариант..."
-              value={!HOLIDAY_OPTIONS.includes(form.holiday) ? form.holiday : ''}
+              value={hasCustomHoliday ? form.holiday : ''}
               onChange={e => setForm({ ...form, holiday: e.target.value })}
             />
           </div>
-          <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(2) }}>
-            ⏩ Пропустить
-          </button>
+          {hasCustomHoliday ? (
+            <button className="btn btn--primary" onClick={() => setStep(2)}>
+              Далее →
+            </button>
+          ) : (
+            <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(2) }}>
+              ⏩ Пропустить
+            </button>
+          )}
         </div>
       )}
 
@@ -183,30 +215,41 @@ export default function NewCase() {
       {currentStepKey === 'persona' && personas.length > 0 && (
         <div className="wizard-step">
           <div className="wizard-step__title">🕵️‍♂️ Выберите детектива</div>
-          <div 
-            className="persona-swipe-container" 
-            onScroll={(e) => {
-              const newIdx = Math.round(e.target.scrollLeft / e.target.offsetWidth);
-              if (newIdx !== personaIdx) setPersonaIdx(newIdx);
-            }}
+          <div
+            className="persona-touch-carousel"
+            ref={carouselRef}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
-            {personas.map((p, idx) => (
-              <div key={idx} className="persona-swipe-slide">
-                <img src={p.photo} alt={p.name} className="persona-carousel__img" />
-                <div className="persona-carousel__name">{p.name}</div>
-                <div className="persona-carousel__desc">{p.desc}</div>
-                <button
-                  className="btn btn--primary"
-                  onClick={() => { setForm({ ...form, persona: p.name }); setStep(4) }}
-                >
-                  ✅ Выбрать {p.name.split(' ').slice(-1)[0]}
-                </button>
-              </div>
-            ))}
+            <div
+              className="persona-track"
+              style={{
+                transform: `translateX(-${personaIdx * 100}%)`,
+                transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            >
+              {personas.map((p, idx) => (
+                <div key={idx} className="persona-slide">
+                  <img src={p.photo} alt={p.name} className="persona-carousel__img" />
+                  <div className="persona-carousel__name">{p.name}</div>
+                  <div className="persona-carousel__desc">{p.desc}</div>
+                  <button
+                    className="btn btn--primary"
+                    onClick={() => { setForm({ ...form, persona: p.name }); setStep(4) }}
+                  >
+                    ✅ Выбрать
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="persona-swipe-dots">
             {personas.map((_, idx) => (
-              <div key={idx} className={`swipe-dot ${idx === personaIdx ? 'active' : ''}`} />
+              <div
+                key={idx}
+                className={`swipe-dot ${idx === personaIdx ? 'active' : ''}`}
+                onClick={() => goToPersona(idx)}
+              />
             ))}
           </div>
         </div>

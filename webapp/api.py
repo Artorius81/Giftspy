@@ -274,6 +274,69 @@ async def list_personas():
     ]
 
 
+# ================= SETTINGS =================
+
+class ChatMessage(BaseModel):
+    message: str
+
+@app.post("/api/settings/spy-mode")
+async def toggle_spy_mode_endpoint(user_id: int = Depends(get_current_user)):
+    new_val = await db.toggle_spy_mode(user_id)
+    return {"spy_mode": bool(new_val)}
+
+@app.post("/api/cases/{case_id}/chat")
+async def send_chat_message(case_id: int, data: ChatMessage, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    status = case[7]
+    if status != 'manual_mode':
+        raise HTTPException(status_code=400, detail="Case not in manual mode")
+    
+    # Save the message
+    await db.save_chat_message(case_id, 'ai', data.message)
+    
+    # Send via Telethon client
+    target = case[2]
+    try:
+        from main import client
+        from services.scheduler import resolve_target
+        target_entity = await resolve_target(client, target)
+        if target_entity:
+            await client.send_message(target_entity, data.message)
+    except Exception as e:
+        logging.error(f"Failed to send message via Telethon: {e}")
+    
+    return {"ok": True}
+
+@app.post("/api/cases/{case_id}/intercept")
+async def intercept_case(case_id: int, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    status = case[7]
+    if status not in ('started', 'in_progress'):
+        raise HTTPException(status_code=400, detail="Cannot intercept in this status")
+    
+    await db.update_case_status(case_id, 'manual_mode')
+    return {"ok": True, "status": "manual_mode"}
+
+@app.post("/api/cases/{case_id}/return-detective")
+async def return_detective_case(case_id: int, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    status = case[7]
+    if status != 'manual_mode':
+        raise HTTPException(status_code=400, detail="Case not in manual mode")
+    
+    await db.update_case_status(case_id, 'in_progress')
+    return {"ok": True, "status": "in_progress"}
+
+
 # ================= BALANCE =================
 
 @app.get("/api/balance")

@@ -60,12 +60,24 @@ const api = {
   getCases: () => request('/api/cases'),
   getCase: (id) => request(`/api/cases/${id}`),
   getCaseChat: (id) => request(`/api/cases/${id}/chat`),
+  sendChatMessage: (id, message) => request(`/api/cases/${id}/chat`, {
+    method: 'POST', body: JSON.stringify({ message })
+  }),
+  interceptCase: (id) => request(`/api/cases/${id}/intercept`, {
+    method: 'POST'
+  }),
+  returnDetective: (id) => request(`/api/cases/${id}/return-detective`, {
+    method: 'POST'
+  }),
   createCase: (data) => request('/api/cases', {
     method: 'POST', body: JSON.stringify(data)
   }),
 
   // Personas
   getPersonas: () => request('/api/personas'),
+
+  // Settings
+  toggleSpyMode: () => request('/api/settings/spy-mode', { method: 'POST' }),
 
   // Balance
   getBalance: () => request('/api/balance'),

@@ -33,6 +33,10 @@ export default function CaseDetail() {
 
   const isActive = ['pending', 'started', 'in_progress', 'manual_mode'].includes(caseData.status)
 
+  const handleStatusChange = (newStatus) => {
+    setCaseData(prev => ({ ...prev, status: newStatus }))
+  }
+
   return (
     <div className="page case-detail-page">
       <div className="header">
@@ -93,31 +97,32 @@ export default function CaseDetail() {
           )}
 
           {/* Actions */}
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 60 }}>
             <button className="btn btn--secondary" onClick={() => navigate(`/new-case?target=${caseData.target}`)}>
               🔄 Новое расследование
             </button>
           </div>
         </div>
       ) : (
-        <CaseChatView 
-          caseId={caseData.id} 
-          spyMode={caseData.spy_mode} 
-          targetName={caseData.display_name} 
-          personaName={caseData.persona} 
+        <CaseChatView
+          caseId={caseData.id}
+          spyMode={caseData.spy_mode}
+          caseStatus={caseData.status}
+          targetName={caseData.display_name}
+          personaName={caseData.persona}
+          onStatusChange={handleStatusChange}
         />
       )}
 
-      {/* Floating Toggle */}
+      {/* Floating Toggle - positioned above bottom nav */}
       <div className="view-toggle">
         <button className={`view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
-          ≡ Summary
+          ≡ Сводка
         </button>
         <button className={`view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
-          🗨 Full chat
+          🗨 Переписка
         </button>
       </div>
     </div>
   )
 }
-

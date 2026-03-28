@@ -12,7 +12,7 @@
 }
 
 :root {
-  /* Telegram theme vars with fallbacks */
+  /* Telegram theme vars with fallbacks (Dark) */
   --bg: var(--tg-theme-bg-color, #0f0f1a);
   --bg-secondary: var(--tg-theme-secondary-bg-color, #1a1a2e);
   --text: var(--tg-theme-text-color, #ffffff);
@@ -28,6 +28,8 @@
   --gradient-card: linear-gradient(145deg, rgba(108, 92, 231, 0.08) 0%, rgba(167, 139, 250, 0.04) 100%);
   --card-bg: rgba(255, 255, 255, 0.04);
   --card-border: rgba(255, 255, 255, 0.08);
+  --nav-bg: rgba(30, 30, 40, 0.55);
+  --nav-active-bg: rgba(255, 255, 255, 0.12);
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -37,6 +39,25 @@
   --shadow-glow: 0 0 20px rgba(108, 92, 231, 0.3);
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ---- Light Theme ---- */
+[data-theme="light"] {
+  --bg: #f5f5fa;
+  --bg-secondary: #eeeef4;
+  --text: #1a1a2e;
+  --text-secondary: #6b6b80;
+  --accent: #6c5ce7;
+  --accent-text: #ffffff;
+  --link: #6c5ce7;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(0, 0, 0, 0.06);
+  --gradient-card: linear-gradient(145deg, rgba(108, 92, 231, 0.06) 0%, rgba(167, 139, 250, 0.03) 100%);
+  --nav-bg: rgba(255, 255, 255, 0.55);
+  --nav-active-bg: rgba(108, 92, 231, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(108, 92, 231, 0.15);
 }
 
 html, body {
@@ -70,7 +91,7 @@ a { color: var(--link); text-decoration: none; }
 
 .page {
   flex: 1;
-  padding: 16px 16px 90px 16px;
+  padding: 16px 16px 120px 16px;
   animation: fadeIn 0.25s ease;
 }
 
@@ -109,25 +130,34 @@ a { color: var(--link); text-decoration: none; }
   padding: 8px 0;
 }
 
-/* ---- Bottom Navigation ---- */
+/* ---- Bottom Navigation (Liquid Glass) ---- */
 .bottom-nav {
   position: fixed;
-  bottom: env(safe-area-inset-bottom, 24px);
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
-  max-width: 400px;
+  max-width: 420px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 6px 6px;
-  background: rgba(30, 30, 40, 0.65);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--nav-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
   z-index: 100;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .bottom-nav {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .nav-item {
@@ -135,27 +165,28 @@ a { color: var(--link); text-decoration: none; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   font-family: var(--font);
   cursor: pointer;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-full);
-  transition: var(--transition);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex: 1;
+  position: relative;
 }
 
-.nav-item span.icon { font-size: 22px; transition: var(--transition); }
-.nav-item.active { 
-  background: rgba(255, 255, 255, 0.12); 
-  color: var(--text); 
+.nav-item span.icon { font-size: 20px; transition: var(--transition); }
+.nav-item.active {
+  background: var(--nav-active-bg);
+  color: var(--accent);
 }
 .nav-item.active span.icon {
-  transform: translateY(-2px);
+  transform: translateY(-1px) scale(1.05);
 }
 .nav-item:active { transform: scale(0.92); }
 
@@ -260,6 +291,7 @@ a { color: var(--link); text-decoration: none; }
 }
 
 .btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn--primary {
   background: var(--gradient-primary);
@@ -361,6 +393,25 @@ a { color: var(--link); text-decoration: none; }
   margin-top: 6px;
 }
 
+/* ---- Settings Gear ---- */
+.settings-gear-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.settings-gear-btn:active {
+  transform: scale(0.9) rotate(45deg);
+}
+
 /* ---- Quick Actions ---- */
 .quick-actions {
   display: grid;
@@ -449,25 +500,20 @@ a { color: var(--link); text-decoration: none; }
   background: rgba(108, 92, 231, 0.12);
 }
 
-/* ---- Persona Swipe Carousel ---- */
-.persona-swipe-container {
+/* ---- Persona Touch Carousel ---- */
+.persona-touch-carousel {
+  overflow: hidden;
+  width: 100%;
+  touch-action: pan-y;
+}
+
+.persona-track {
   display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  gap: 16px;
-  padding-bottom: 8px;
-  scroll-behavior: smooth;
+  will-change: transform;
 }
 
-.persona-swipe-container::-webkit-scrollbar {
-  display: none;
-}
-
-.persona-swipe-slide {
+.persona-slide {
   flex: 0 0 100%;
-  scroll-snap-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -479,7 +525,7 @@ a { color: var(--link); text-decoration: none; }
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 16px;
   margin-bottom: 24px;
 }
 
@@ -489,6 +535,7 @@ a { color: var(--link); text-decoration: none; }
   border-radius: var(--radius-full);
   background: var(--card-border);
   transition: var(--transition);
+  cursor: pointer;
 }
 
 .swipe-dot.active {
@@ -657,18 +704,23 @@ textarea.input { min-height: 80px; resize: vertical; }
 /* ---- View Toggle (CaseDetail) ---- */
 .view-toggle {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 24px) + 60px); 
+  bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  background: rgba(30, 30, 40, 0.65);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--nav-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
   padding: 4px;
   z-index: 90;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .view-toggle {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .view-toggle-btn {
@@ -688,7 +740,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 }
 
 .view-toggle-btn.active {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--nav-active-bg);
   color: var(--text);
 }
 
@@ -696,7 +748,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 .chat-view {
   display: flex;
   flex-direction: column;
-  padding-bottom: 70px; /* Space for input area */
+  padding-bottom: 140px;
 }
 
 .chat-messages {
@@ -756,6 +808,10 @@ textarea.input { min-height: 80px; resize: vertical; }
   color: var(--text);
 }
 
+[data-theme="light"] .chat-bubble--target {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .chat-bubble--agent {
   background: rgba(108, 92, 231, 0.15);
   border: 1px solid rgba(108, 92, 231, 0.3);
@@ -765,12 +821,19 @@ textarea.input { min-height: 80px; resize: vertical; }
 
 .chat-input-area {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 24px) + 120px);
+  bottom: 80px;
   left: 16px;
   right: 16px;
+  max-width: calc(480px - 32px);
+  margin: 0 auto;
   background: var(--bg);
   padding: 8px 0;
   z-index: 80;
+}
+
+/* Hide view-toggle when chat view is active (it sits above chat-input-area) */
+.case-detail-page .chat-view ~ .view-toggle {
+  bottom: 136px;
 }
 
 .chat-input-hint {
@@ -802,9 +865,18 @@ textarea.input { min-height: 80px; resize: vertical; }
   transition: var(--transition);
 }
 
+[data-theme="light"] .chat-input-btn {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .chat-input-btn:active {
   transform: scale(0.95);
   background: rgba(255, 255, 255, 0.15);
+}
+
+.chat-input-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .chat-input-field {
@@ -820,6 +892,111 @@ textarea.input { min-height: 80px; resize: vertical; }
   outline: none;
 }
 
+[data-theme="light"] .chat-input-field {
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .chat-input-field::placeholder {
   color: var(--text-secondary);
+}
+
+/* ---- Settings Page ---- */
+.settings-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-row__label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.settings-row__desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: 15px;
+  border: none;
+  background: var(--card-border);
+  cursor: pointer;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggle.active {
+  background: var(--accent);
+}
+
+.toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle.active .toggle__knob {
+  transform: translateX(22px);
+}
+
+/* Theme switcher */
+.theme-switcher {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-option {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.theme-option.active {
+  border-color: var(--accent);
+  background: rgba(108, 92, 231, 0.12);
+  color: var(--accent);
+}
+
+.theme-option:active {
+  transform: scale(0.97);
 }

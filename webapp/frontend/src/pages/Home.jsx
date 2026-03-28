@@ -30,6 +30,17 @@ export default function Home() {
 
   return (
     <div className="page">
+      {/* Settings icon */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
+        <button
+          className="settings-gear-btn"
+          onClick={() => navigate('/settings')}
+          aria-label="Настройки"
+        >
+          ⚙️
+        </button>
+      </div>
+
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-header__avatar">

@@ -7,6 +7,7 @@ import NewCase from './pages/NewCase'
 import Dossier from './pages/Dossier'
 import CaseDetail from './pages/CaseDetail'
 import Store from './pages/Store'
+import Settings from './pages/Settings'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/dossier" element={<Dossier />} />
           <Route path="/dossier/:id" element={<CaseDetail />} />
           <Route path="/store" element={<Store />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
         <BottomNav />
       </div>

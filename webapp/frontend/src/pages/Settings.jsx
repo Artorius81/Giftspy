@@ -1,0 +1,122 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import api from '../api'
+
+export default function Settings() {
+  const navigate = useNavigate()
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [spyMode, setSpyMode] = useState(false)
+  const [toggling, setToggling] = useState(false)
+
+  // Theme
+  const [theme, setTheme] = useState(() => localStorage.getItem('giftspy-theme') || 'dark')
+
+  useEffect(() => {
+    api.getProfile()
+      .then(p => {
+        setProfile(p)
+        setSpyMode(p.spy_mode)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('giftspy-theme', theme)
+  }, [theme])
+
+  const handleToggleSpy = async () => {
+    setToggling(true)
+    try {
+      const result = await api.toggleSpyMode()
+      setSpyMode(result.spy_mode)
+    } catch (e) {
+      alert(e.message)
+    }
+    setToggling(false)
+  }
+
+  if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
+
+  const isPremium = !!profile?.premium_until
+
+  return (
+    <div className="page">
+      <div className="header">
+        <button className="header__back" onClick={() => navigate('/')}>← Главная</button>
+        <span className="header__title">⚙️ Настройки</span>
+      </div>
+
+      {/* Premium Functions */}
+      <div className="section-header">
+        <div className="section-header__title">👑 Премиум</div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-row">
+          <div className="settings-row__info">
+            <div className="settings-row__label">🕵️ Шпионский режим</div>
+            <div className="settings-row__desc">
+              {isPremium
+                ? 'Просматривайте переписку и перехватывайте контроль'
+                : 'Доступно с подпиской Premium'}
+            </div>
+          </div>
+          <button
+            className={`toggle ${spyMode ? 'active' : ''}`}
+            disabled={!isPremium || toggling}
+            onClick={handleToggleSpy}
+          >
+            <span className="toggle__knob" />
+          </button>
+        </div>
+
+        {!isPremium && (
+          <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={() => navigate('/store')}>
+            🛍 Купить Premium
+          </button>
+        )}
+      </div>
+
+      {/* Theme */}
+      <div className="section-header">
+        <div className="section-header__title">🎨 Оформление</div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-row__label" style={{ marginBottom: 12 }}>Тема приложения</div>
+        <div className="theme-switcher">
+          <button
+            className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
+            onClick={() => setTheme('dark')}
+          >
+            🌙 Тёмная
+          </button>
+          <button
+            className={`theme-option ${theme === 'light' ? 'active' : ''}`}
+            onClick={() => setTheme('light')}
+          >
+            ☀️ Светлая
+          </button>
+        </div>
+      </div>
+
+      {/* Language */}
+      <div className="section-header">
+        <div className="section-header__title">🌐 Язык</div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-row">
+          <div className="settings-row__info">
+            <div className="settings-row__label">Язык интерфейса</div>
+            <div className="settings-row__desc">Русский</div>
+          </div>
+          <span className="badge">🇷🇺 RU</span>
+        </div>
+      </div>
+    </div>
+  )
+}
