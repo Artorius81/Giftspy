@@ -10,6 +10,7 @@ USER_PHONE = '+79294279309'        # ТВОЙ НОМЕР ДЕТЕКТИВА (с 
 
 # ================= TELEGRAM BOT (Для Менеджера) =================
 BOT_TOKEN = '8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4'   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
+BOT_USERNAME = os.getenv("BOT_USERNAME", "detectiveaiapp_bot")  # Юзернейм бота без @
 
 # ================= OPENROUTER API (ИИ) =================
 OPENROUTER_API_KEY = 'sk-zK4Ex3JBdMQ8D5YJ3XS2FOC0fXVbXSv2'

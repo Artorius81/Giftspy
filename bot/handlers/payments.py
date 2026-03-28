@@ -60,7 +60,7 @@ def _create_yookassa_payment(product_key: str, user_id: int) -> str | None:
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": config.WEBAPP_URL or "https://t.me"
+                "return_url": f"https://t.me/{config.BOT_USERNAME}"
             },
             "capture": True,
             "description": product["title"],

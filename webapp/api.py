@@ -429,7 +429,7 @@ async def create_payment(data: PaymentCreate, user_id: int = Depends(get_current
             },
             "confirmation": {
                 "type": "redirect",
-                "return_url": (config.WEBAPP_URL or "https://t.me") + "/store"
+                "return_url": f"https://t.me/{config.BOT_USERNAME}?startapp=store"
             },
             "capture": True,
             "description": product["title"],
