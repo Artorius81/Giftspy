@@ -1,15 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { getTargetEmoji } from './TargetDetail'
+
+const STATUS = {
+  pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
+  started: { icon: '🔵', label: 'Начато', dot: 'active' },
+  in_progress: { icon: '🔵', label: 'Допрос', dot: 'active' },
+  manual_mode: { icon: '🛑', label: 'Перехват', dot: 'active' },
+  done: { icon: '✅', label: 'Готово', dot: 'done' },
+  delivered: { icon: '✅', label: 'Доставлено', dot: 'done' },
+  cancelled: { icon: '❌', label: 'Отменено', dot: 'cancelled' },
+  error: { icon: '⚠️', label: 'Ошибка', dot: 'cancelled' },
+}
 
 export default function Home() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
+  const [activeCases, setActiveCases] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.getProfile()
-      .then(setProfile)
+    Promise.all([
+      api.getProfile(),
+      api.getCases()
+    ])
+      .then(([p, allCases]) => {
+        setProfile(p)
+        const active = allCases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
+        setActiveCases(active)
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
@@ -77,28 +97,44 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Active Cases */}
       <div className="section-header">
-        <div className="section-header__title">Быстрые действия</div>
+        <div className="section-header__title">Текущие расследования</div>
       </div>
-      <div className="quick-actions">
-        <button className="quick-action" onClick={() => navigate('/new-case')}>
-          <span>🔍</span>
-          <span>Новое дело</span>
-        </button>
-        <button className="quick-action" onClick={() => navigate('/targets')}>
-          <span>👥</span>
-          <span>Мои цели</span>
-        </button>
-        <button className="quick-action" onClick={() => navigate('/dossier')}>
-          <span>📁</span>
-          <span>Картотека</span>
-        </button>
-        <button className="quick-action" onClick={() => navigate('/store')}>
-          <span>🛍</span>
-          <span>Магазин</span>
-        </button>
-      </div>
+
+      {activeCases.length > 0 ? (
+        activeCases.map(c => {
+          const st = STATUS[c.status] || STATUS.error
+          return (
+            <div key={c.id} className="card" onClick={() => navigate(`/dossier/${c.id}`)}>
+              <div className="card__header">
+                <div className="card__avatar">
+                  {c.target_photo ? <img src={c.target_photo} alt="" /> : getTargetEmoji(c.target_db_id || 0)}
+                </div>
+                <div className="card__info">
+                  <div className="card__name">{c.display_name}</div>
+                  <div className="card__sub">
+                    <span className={`status-dot status-dot--${st.dot}`} />
+                    {st.label} · Дело №{c.id}
+                  </div>
+                </div>
+                {c.has_report && <span className="badge badge--success">📋 Отчёт</span>}
+              </div>
+            </div>
+          )
+        })
+      ) : (
+        <div className="card" style={{ textAlign: 'center', padding: '24px 16px' }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🕵️‍♂️</div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Нет активных расследований</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Отправьте детектива на задание прямо сейчас!
+          </div>
+          <button className="btn btn--primary" onClick={() => navigate('/new-case')}>
+            🔍 Отправить детектива
+          </button>
+        </div>
+      )}
 
       {/* Bio */}
       {profile.description && (

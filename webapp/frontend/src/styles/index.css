@@ -533,6 +533,9 @@ a { color: var(--link); text-decoration: none; }
   font-family: var(--font);
   font-size: 14px;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .option-item:active, .option-item.selected {
@@ -884,7 +887,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 .chat-view {
   display: flex;
   flex-direction: column;
-  padding-bottom: 160px;
+  padding-bottom: 110px;
 }
 
 .chat-messages {
@@ -1278,4 +1281,18 @@ textarea.input { min-height: 80px; resize: vertical; }
 
 .collapse-arrow.collapsed {
   transform: rotate(-90deg);
+}
+
+.expandable-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expandable-content.expanded {
+  grid-template-rows: 1fr;
+}
+
+.expandable-inner {
+  overflow: hidden;
 }

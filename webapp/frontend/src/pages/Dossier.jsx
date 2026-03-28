@@ -60,7 +60,7 @@ export default function Dossier() {
     <div className="page">
       <div className="header">
         <div className="header__placeholder" />
-        <h1 className="header__title">📁 Картотека</h1>
+        <h1 className="header__title">📁 Досье</h1>
         <div className="header__placeholder" />
       </div>
       <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -70,7 +70,7 @@ export default function Dossier() {
       {cases.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__icon">🗄</div>
-          <div className="empty-state__title">Картотека пуста</div>
+          <div className="empty-state__title">Досье пусто</div>
           <div className="empty-state__desc">Начните расследование, чтобы дело появилось здесь</div>
           <button className="btn btn--primary" style={{ maxWidth: 240, margin: '0 auto' }} onClick={() => navigate('/new-case')}>
             🔍 Новое дело
@@ -104,27 +104,29 @@ export default function Dossier() {
               </div>
 
               {/* Cases List */}
-              <div style={{ display: isExpanded ? 'block' : 'none', paddingLeft: 12 }}>
-                {group.cases.map(c => {
-                  const st = STATUS[c.status] || STATUS.error
-                  return (
-                    <div key={c.id} className="card" style={{ padding: '12px 16px', marginBottom: 8, background: 'var(--bg-secondary)' }} onClick={() => navigate(`/dossier/${c.id}`)}>
-                      <div className="card__header" style={{ marginBottom: 0 }}>
-                        <div className="card__avatar" style={{ width: 36, height: 36, fontSize: 18 }}>
-                          {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
-                        </div>
-                        <div className="card__info">
-                          <div className="card__name" style={{ fontSize: 14 }}>Дело №{c.id}</div>
-                          <div className="card__sub" style={{ fontSize: 12 }}>
-                            <span className={`status-dot status-dot--${st.dot}`} />
-                            {st.label}
+              <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`}>
+                <div className="expandable-inner" style={{ paddingLeft: 12, paddingTop: isExpanded ? 4 : 0 }}>
+                  {group.cases.map(c => {
+                    const st = STATUS[c.status] || STATUS.error
+                    return (
+                      <div key={c.id} className="card" style={{ padding: '12px 16px', marginBottom: 8, background: 'var(--bg-secondary)' }} onClick={() => navigate(`/dossier/${c.id}`)}>
+                        <div className="card__header" style={{ marginBottom: 0 }}>
+                          <div className="card__avatar" style={{ width: 36, height: 36, fontSize: 18 }}>
+                            {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
                           </div>
+                          <div className="card__info">
+                            <div className="card__name" style={{ fontSize: 14 }}>Дело №{c.id}</div>
+                            <div className="card__sub" style={{ fontSize: 12 }}>
+                              <span className={`status-dot status-dot--${st.dot}`} />
+                              {st.label}
+                            </div>
+                          </div>
+                          {c.has_report && <span className="badge badge--success" style={{ padding: '2px 8px', fontSize: 10 }}>📋 Отчёт</span>}
                         </div>
-                        {c.has_report && <span className="badge badge--success" style={{ padding: '2px 8px', fontSize: 10 }}>📋 Отчёт</span>}
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )
