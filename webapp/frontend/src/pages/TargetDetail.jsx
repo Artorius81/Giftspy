@@ -110,12 +110,13 @@ export default function TargetDetail() {
           style={{ display: 'none' }}
           onChange={handlePhotoUpload}
         />
-        <div
-          className="profile-header__photo-hint"
+        <button
+          className="btn btn--secondary btn--small"
+          style={{ margin: '12px auto 16px', display: 'flex', width: 'auto' }}
           onClick={() => fileInputRef.current?.click()}
         >
           {target.photo ? '📷 Изменить фото' : '📷 Добавить фото'}
-        </div>
+        </button>
         <div className="profile-header__name">{target.name || target.identifier}</div>
         <div className="profile-header__id">{target.identifier}</div>
         {target.birthday && (

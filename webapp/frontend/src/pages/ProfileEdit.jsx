@@ -112,12 +112,14 @@ export default function ProfileEdit() {
           style={{ display: 'none' }}
           onChange={handlePhotoUpload}
         />
-        <div
-          className="profile-header__photo-hint"
+        <button
+          type="button"
+          className="btn btn--secondary btn--small"
+          style={{ margin: '12px auto 16px', display: 'flex', width: 'auto' }}
           onClick={() => fileInputRef.current?.click()}
         >
           {profile.photo && profile.photo !== 'None' ? '📷 Изменить фото' : '📷 Добавить фото'}
-        </div>
+        </button>
       </div>
 
       {/* Edit Form */}

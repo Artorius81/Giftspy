@@ -225,15 +225,20 @@ async def list_cases(user_id: int = Depends(get_current_user)):
     result = []
     for c in cases:
         case_id, target, status, report = c
-        # Try to resolve display name
+        # Try to resolve target info
         saved = await db.find_target_by_identifier(user_id, target)
         display_name = saved[2] if saved and saved[2] else target
+        target_photo = saved[5] if saved else None
+        target_db_id = saved[0] if saved else None
+        
         result.append({
             "id": case_id,
             "target": target,
             "display_name": display_name,
             "status": status,
-            "has_report": bool(report)
+            "has_report": bool(report),
+            "target_photo": target_photo,
+            "target_db_id": target_db_id
         })
     return result
 

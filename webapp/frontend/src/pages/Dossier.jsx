@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { getTargetEmoji } from './TargetDetail'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -44,7 +45,14 @@ export default function Dossier() {
   // Group by target
   const grouped = {}
   cases.forEach(c => {
-    if (!grouped[c.target]) grouped[c.target] = { display: c.display_name, cases: [] }
+    if (!grouped[c.target]) {
+      grouped[c.target] = { 
+        display: c.display_name, 
+        cases: [],
+        target_photo: c.target_photo,
+        target_db_id: c.target_db_id
+      }
+    }
     grouped[c.target].cases.push(c)
   })
 
@@ -70,37 +78,54 @@ export default function Dossier() {
         </div>
       ) : (
         Object.entries(grouped).map(([target, group]) => {
-          const isCollapsed = collapsed[target]
+          // Default to collapsed unless explicitly uncollapsed
+          const isExpanded = collapsed[target] === true
           return (
-            <div key={target}>
+            <div key={target} style={{ marginBottom: 16 }}>
+              {/* Target Card */}
               <div
-                className="section-header section-header--clickable"
+                className="card"
+                style={{ marginBottom: isExpanded ? 8 : 0, transition: 'var(--transition)' }}
                 onClick={() => toggleGroup(target)}
               >
-                <div className="section-header__title">
-                  <span className={`collapse-arrow ${isCollapsed ? 'collapsed' : ''}`}>▾</span>
-                  {' '}👤 {group.display}
-                </div>
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
-              </div>
-              {!isCollapsed && group.cases.map(c => {
-                const st = STATUS[c.status] || STATUS.error
-                return (
-                  <div key={c.id} className="card" onClick={() => navigate(`/dossier/${c.id}`)}>
-                    <div className="card__header">
-                      <div className="card__avatar">{(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}</div>
-                      <div className="card__info">
-                        <div className="card__name">Дело №{c.id}</div>
-                        <div className="card__sub">
-                          <span className={`status-dot status-dot--${st.dot}`} />
-                          {st.label}
-                        </div>
-                      </div>
-                      {c.has_report && <span className="badge badge--success">📋 Отчёт</span>}
-                    </div>
+                <div className="card__header" style={{ marginBottom: 0 }}>
+                  <div className="card__avatar">
+                    {group.target_photo ? <img src={group.target_photo} alt="" /> : getTargetEmoji(group.target_db_id || 0)}
                   </div>
-                )
-              })}
+                  <div className="card__info">
+                    <div className="card__name">{group.display}</div>
+                    <div className="card__sub">{target}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>{group.cases.length} дел</span>
+                    <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18 }}>▾</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cases List */}
+              <div style={{ display: isExpanded ? 'block' : 'none', paddingLeft: 12 }}>
+                {group.cases.map(c => {
+                  const st = STATUS[c.status] || STATUS.error
+                  return (
+                    <div key={c.id} className="card" style={{ padding: '12px 16px', marginBottom: 8, background: 'var(--bg-secondary)' }} onClick={() => navigate(`/dossier/${c.id}`)}>
+                      <div className="card__header" style={{ marginBottom: 0 }}>
+                        <div className="card__avatar" style={{ width: 36, height: 36, fontSize: 18 }}>
+                          {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
+                        </div>
+                        <div className="card__info">
+                          <div className="card__name" style={{ fontSize: 14 }}>Дело №{c.id}</div>
+                          <div className="card__sub" style={{ fontSize: 12 }}>
+                            <span className={`status-dot status-dot--${st.dot}`} />
+                            {st.label}
+                          </div>
+                        </div>
+                        {c.has_report && <span className="badge badge--success" style={{ padding: '2px 8px', fontSize: 10 }}>📋 Отчёт</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )
         })

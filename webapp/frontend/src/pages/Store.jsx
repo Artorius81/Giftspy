@@ -79,7 +79,9 @@ export default function Store() {
           style={{ opacity: buying === p.id ? 0.6 : 1 }}
         >
           <div className="card__header">
-            <div className="card__avatar" style={{ fontSize: 24 }}>{p.icon}</div>
+            <div className="card__avatar" style={{ fontSize: p.icon.length > 2 ? 18 : 24, padding: p.icon.length > 2 ? '0 4px' : 0 }}>
+              <span style={{ whiteSpace: 'nowrap' }}>{p.icon}</span>
+            </div>
             <div className="card__info">
               <div className="card__name">{p.title}</div>
               <div className="card__sub">{p.desc}</div>
