@@ -1046,6 +1046,7 @@ textarea.input { min-height: 80px; resize: vertical; }
   max-width: calc(480px - 32px);
   margin: 0 auto;
   z-index: 80;
+  transition: bottom 0.15s ease;
 }
 
 .chat-input-wrapper {
@@ -1135,6 +1136,13 @@ textarea.input { min-height: 80px; resize: vertical; }
   font-size: 14px;
   outline: none;
   min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.chat-input-field:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .chat-input-field::placeholder {

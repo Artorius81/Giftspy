@@ -23,6 +23,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   const [intercepting, setIntercepting] = useState(false)
   const messagesEndRef = useRef(null)
   const prevMsgCountRef = useRef(0)
+  const inputAreaRef = useRef(null)
   const navigate = useNavigate()
 
   const isManualMode = caseStatus === 'manual_mode'
@@ -64,6 +65,24 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     }
   }, [loading])
 
+  // Handle mobile keyboard: move input above keyboard
+  useEffect(() => {
+    if (!window.visualViewport) return
+    const vv = window.visualViewport
+    const handleResize = () => {
+      const el = inputAreaRef.current
+      if (!el) return
+      const keyboardHeight = window.innerHeight - vv.height
+      if (keyboardHeight > 100) {
+        el.style.bottom = `${keyboardHeight + 8}px`
+      } else {
+        el.style.bottom = ''
+      }
+    }
+    vv.addEventListener('resize', handleResize)
+    return () => vv.removeEventListener('resize', handleResize)
+  }, [])
+
   const handleSend = async () => {
     if (!inputText.trim() || !isManualMode || sending) return
     setSending(true)
@@ -91,7 +110,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       // Add system message locally
       setMessages(prev => [...prev, {
         sender: 'system',
-        message: '🛑 Заказчик перехватил управление',
+        message: '🛑 Вы перехватили управление',
         timestamp: new Date().toISOString()
       }])
       onStatusChange?.('manual_mode')
@@ -220,7 +239,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       </div>
 
       {/* Input Area */}
-      <div className="chat-input-area">
+      <div className="chat-input-area" ref={inputAreaRef}>
         {isManualMode ? (
           <div className="chat-input-wrapper chat-input-wrapper--manual">
             <button

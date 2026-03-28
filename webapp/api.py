@@ -410,7 +410,7 @@ async def intercept_case(case_id: int, user_id: int = Depends(get_current_user))
     
     await db.update_case_status(case_id, 'manual_mode')
     # Add system message
-    await db.save_chat_message(case_id, 'system', '🛑 Заказчик перехватил управление')
+    await db.save_chat_message(case_id, 'system', '🛑 Вы перехватили управление')
     return {"ok": True, "status": "manual_mode"}
 
 @app.post("/api/cases/{case_id}/return-detective")
@@ -426,7 +426,41 @@ async def return_detective_case(case_id: int, user_id: int = Depends(get_current
     await db.update_case_status(case_id, 'in_progress')
     # Add system message
     await db.save_chat_message(case_id, 'system', '🕵️ Управление возвращено детективу')
+    
+    # Generate comeback message (detective resumes conversation)
+    target = case[2]
+    asyncio.ensure_future(_send_comeback(case_id, case, target, user_id))
+    
     return {"ok": True, "status": "in_progress"}
+
+
+async def _send_comeback(case_id: int, case, target: str, customer_id: int):
+    """Background task: generate and send a comeback message from the detective."""
+    try:
+        from main import client, update_spy_message
+        from services.ai_detective import AIDetectiveService
+        from services.scheduler import resolve_target
+        from bot.keyboards.common import resolve_target_display_name
+        
+        ai = AIDetectiveService()
+        chat_session = await ai.restore_chat_from_db(
+            case_id, case[3], case[4], case[5], case[6]
+        )
+        comeback_msg = await ai.generate_comeback_message(chat_session)
+        
+        if comeback_msg:
+            target_entity = await resolve_target(client, target)
+            if target_entity:
+                await client.send_message(target_entity, comeback_msg)
+                await db.save_chat_message(case_id, 'ai', comeback_msg)
+                
+                # Update spy message if enabled
+                spy_mode = await db.get_user_spy_mode(customer_id)
+                if spy_mode:
+                    display_name = await resolve_target_display_name(customer_id, target)
+                    await update_spy_message(case_id, customer_id, display_name, case[5])
+    except Exception as e:
+        logging.error(f"Comeback message failed: {e}")
 
 
 @app.post("/api/cases/{case_id}/cancel")
