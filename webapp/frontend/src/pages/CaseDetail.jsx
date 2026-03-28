@@ -68,7 +68,7 @@ export default function CaseDetail() {
     try {
       await api.deleteCase(id)
       api.getCases().then(c => mutateData('cases', c)).catch(() => {})
-      navigate('/dossier')
+      navigate('/dossier', { replace: true })
     } catch (e) {
       await showAlert(e.message)
     }
@@ -78,7 +78,7 @@ export default function CaseDetail() {
   return (
     <div className="page case-detail-page">
       <div className="chat-header">
-        <button className="chat-header__btn" onClick={() => viewMode === 'chat' ? setViewMode('summary') : navigate('/dossier')}>
+        <button className="chat-header__btn" onClick={() => viewMode === 'chat' ? setViewMode('summary') : navigate(-1)}>
           <span className="icon">‹</span>
         </button>
         <div className="chat-header__title">

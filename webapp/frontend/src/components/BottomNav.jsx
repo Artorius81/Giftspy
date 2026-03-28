@@ -20,10 +20,8 @@ export default function BottomNav() {
           className={`nav-item ${location.pathname === tab.path ? 'active' : ''}`}
           onClick={() => {
             if (tab.path === location.pathname) return;
-            if (location.pathname === '/') {
-              navigate(tab.path);
-            } else if (tab.path === '/') {
-              navigate(-1);
+            if (tab.path === '/') {
+              navigate('/', { replace: true, state: { trapInitialized: true, isTrap: false } });
             } else {
               navigate(tab.path, { replace: true });
             }

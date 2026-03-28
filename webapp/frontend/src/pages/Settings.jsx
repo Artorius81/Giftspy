@@ -49,7 +49,7 @@ export default function Settings() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => navigate('/')}>
+        <button className="header__back" onClick={() => navigate(-1)}>
           <span className="icon">‹</span>
         </button>
         <span className="header__title">⚙️ Настройки</span>

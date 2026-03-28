@@ -75,7 +75,7 @@ export default function NewCase() {
         persona: form.persona,
         budget: form.budget || 'Не указан',
       })
-      navigate('/dossier')
+      navigate('/dossier', { replace: true })
     } catch (err) {
       await showAlert(err.message)
     }
@@ -110,7 +110,7 @@ export default function NewCase() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => step > 0 ? setStep(step - 1) : navigate('/')}>
+        <button className="header__back" onClick={() => step > 0 ? setStep(step - 1) : navigate(-1)}>
           <span className="icon">‹</span>
         </button>
         <span className="header__title">Новое дело</span>

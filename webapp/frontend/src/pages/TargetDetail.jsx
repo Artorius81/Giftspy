@@ -53,7 +53,7 @@ export default function TargetDetail() {
     if (!await showConfirm('Удалить цель?')) return
     try {
       await api.deleteTarget(id)
-      navigate('/targets')
+      navigate('/targets', { replace: true })
     } catch (err) { await showAlert(err.message) }
   }
 
@@ -86,7 +86,7 @@ export default function TargetDetail() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => navigate('/targets')}>
+        <button className="header__back" onClick={() => navigate(-1)}>
           <span className="icon">‹</span>
         </button>
         <span className="header__title">Профиль цели</span>

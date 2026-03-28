@@ -48,23 +48,24 @@ function AppContent() {
   useEffect(() => {
     if (location.pathname !== '/') return
 
-    if (!window.history.state?.isTrap) {
-      window.history.pushState({ isTrap: true }, '')
+    // Initialize trap via React Router state to avoid tracking issues
+    if (!location.state || !location.state.trapInitialized) {
+      navigate('/', { state: { trapInitialized: true, isTrap: true }, replace: true })
+      navigate('/', { state: { trapInitialized: true, isTrap: false } })
+      return
     }
 
-    const handlePopState = (e) => {
+    if (location.state.isTrap) {
       if (exitSnackbarVisible) {
         window.Telegram?.WebApp?.close()
       } else {
         setExitSnackbarVisible(true)
-        window.history.pushState({ isTrap: true }, '')
+        // Reset the trap so next back press hits it again
+        navigate('/', { state: { trapInitialized: true, isTrap: false } })
         setTimeout(() => setExitSnackbarVisible(false), 2000)
       }
     }
-
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [location.pathname, exitSnackbarVisible])
+  }, [location, exitSnackbarVisible, navigate])
 
   return (
     <div className="app">
