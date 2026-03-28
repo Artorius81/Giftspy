@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+.eggs/
+*.so
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# Session files
+*.session
+*.session-journal
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+webapp/frontend/dist/
+webapp/frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
