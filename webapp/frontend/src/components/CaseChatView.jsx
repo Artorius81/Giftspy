@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { getTargetEmoji } from '../pages/TargetDetail'
 import { useNavigate } from 'react-router-dom'
+import { showAlert } from '../utils/popup'
 
 const POLL_INTERVAL = 3000
 
@@ -98,7 +99,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setSending(false)
   }
@@ -115,7 +116,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       }])
       onStatusChange?.('manual_mode')
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setIntercepting(false)
   }
@@ -134,7 +135,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
         onStatusChange?.('in_progress')
       }
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setIntercepting(false)
   }

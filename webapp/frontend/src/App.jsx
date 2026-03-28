@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
 import Targets from './pages/Targets'
@@ -15,7 +16,30 @@ const MAIN_ROUTES = ['/', '/targets', '/new-case', '/dossier', '/store']
 
 function AppContent() {
   const location = useLocation()
+  const navigate = useNavigate()
   const showNav = MAIN_ROUTES.includes(location.pathname)
+
+  useEffect(() => {
+    const webApp = window.Telegram?.WebApp
+    if (!webApp) return
+
+    const handleBack = () => {
+      // If history is empty, maybe it'll do nothing, but for usual app flows it works identically to hardware back button
+      navigate(-1)
+    }
+
+    if (!showNav) {
+      webApp.BackButton.show()
+      webApp.BackButton.onClick(handleBack)
+    } else {
+      webApp.BackButton.hide()
+      webApp.BackButton.offClick(handleBack)
+    }
+
+    return () => {
+      webApp.BackButton.offClick(handleBack)
+    }
+  }, [showNav, navigate])
 
   return (
     <div className="app">

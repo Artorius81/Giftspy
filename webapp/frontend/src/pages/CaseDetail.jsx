@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import CaseChatView from '../components/CaseChatView'
 import { useData, mutateData } from '../hooks/useData'
+import { showAlert, showConfirm } from '../utils/popup'
 
 const STATUS_MAP = {
   pending: '🟡 Ожидание',
@@ -45,7 +46,7 @@ export default function CaseDetail() {
   }
 
   const handleCancel = async () => {
-    if (!confirm('Отменить расследование? Детектив прекратит допрос.')) return
+    if (!await showConfirm('Отменить расследование? Детектив прекратит допрос.')) return
     setCancelling(true)
     try {
       const result = await api.cancelCase(id)
@@ -53,23 +54,23 @@ export default function CaseDetail() {
       api.getProfile().then(p => mutateData('profile', p)).catch(() => {})
       api.getCases().then(c => mutateData('cases', c)).catch(() => {})
       if (result.refunded) {
-        alert('Расследование отменено. Монета возвращена на баланс.')
+        await showAlert('Расследование отменено. Монета возвращена на баланс.')
       }
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setCancelling(false)
   }
 
   const handleDelete = async () => {
-    if (!confirm('Удалить дело? Вся история переписки будет потеряна.')) return
+    if (!await showConfirm('Удалить дело? Вся история переписки будет потеряна.')) return
     setDeleting(true)
     try {
       await api.deleteCase(id)
       api.getCases().then(c => mutateData('cases', c)).catch(() => {})
       navigate('/dossier')
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setDeleting(false)
   }

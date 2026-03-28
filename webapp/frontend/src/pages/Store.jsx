@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { mutateData } from '../hooks/useData'
+import { showAlert } from '../utils/popup'
 
 const PRODUCTS = [
   {
@@ -58,11 +59,7 @@ export default function Store() {
       }
     } catch (err) {
       const msg = err.message || 'Ошибка создания платежа'
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.showAlert(msg)
-      } else {
-        alert(msg)
-      }
+      await showAlert(msg)
     }
     setBuying(null)
   }

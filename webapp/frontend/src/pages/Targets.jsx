@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
+import { showAlert } from '../utils/popup'
 
 export default function Targets() {
   const navigate = useNavigate()
@@ -33,7 +34,7 @@ export default function Targets() {
       setShowAdd(false)
       load()
     } catch (err) {
-      alert(err.message)
+      await showAlert(err.message)
     }
     setCreating(false)
   }

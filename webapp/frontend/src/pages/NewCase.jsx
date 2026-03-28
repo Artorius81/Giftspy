@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
+import { showAlert } from '../utils/popup'
 
 const HOLIDAY_OPTIONS = [
   '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
@@ -76,7 +77,7 @@ export default function NewCase() {
       })
       navigate('/dossier')
     } catch (err) {
-      alert(err.message)
+      await showAlert(err.message)
     }
     setSubmitting(false)
   }

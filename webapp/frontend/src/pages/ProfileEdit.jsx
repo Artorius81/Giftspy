@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
+import { showAlert } from '../utils/popup'
 
 export default function ProfileEdit() {
   const navigate = useNavigate()
@@ -39,13 +40,9 @@ export default function ProfileEdit() {
       // Reload profile
       const updated = await api.getProfile()
       setProfile(updated)
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.showAlert('✅ Профиль обновлён!')
-      } else {
-        alert('✅ Профиль обновлён!')
-      }
+      await showAlert('✅ Профиль обновлён!')
     } catch (err) {
-      alert(err.message)
+      await showAlert(err.message)
     }
     setSaving(false)
   }
@@ -56,11 +53,11 @@ export default function ProfileEdit() {
 
     // Validate file
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение')
+      await showAlert('Пожалуйста, выберите изображение')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('Файл слишком большой (макс. 10 МБ)')
+      await showAlert('Файл слишком большой (макс. 10 МБ)')
       return
     }
 
@@ -69,7 +66,7 @@ export default function ProfileEdit() {
       const result = await api.uploadProfilePhoto(file)
       mutate({ ...profile, photo: result.photo })
     } catch (err) {
-      alert(err.message)
+      await showAlert(err.message)
     }
     setUploading(false)
   }

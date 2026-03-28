@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
+import { showAlert } from '../utils/popup'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -31,7 +32,7 @@ export default function Settings() {
       setSpyMode(result.spy_mode)
       if (profile) mutate({ ...profile, spy_mode: result.spy_mode })
     } catch (e) {
-      alert(e.message)
+      await showAlert(e.message)
     }
     setToggling(false)
   }

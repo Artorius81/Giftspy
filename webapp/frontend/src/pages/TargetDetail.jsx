@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
+import { showAlert, showConfirm } from '../utils/popup'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -44,27 +45,27 @@ export default function TargetDetail() {
       })
       setEditing(false)
       load()
-    } catch (err) { alert(err.message) }
+    } catch (err) { await showAlert(err.message) }
     setSaving(false)
   }
 
   const handleDelete = async () => {
-    if (!confirm('Удалить цель?')) return
+    if (!await showConfirm('Удалить цель?')) return
     try {
       await api.deleteTarget(id)
       navigate('/targets')
-    } catch (err) { alert(err.message) }
+    } catch (err) { await showAlert(err.message) }
   }
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение')
+      await showAlert('Пожалуйста, выберите изображение')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('Файл слишком большой (макс. 10 МБ)')
+      await showAlert('Файл слишком большой (макс. 10 МБ)')
       return
     }
     setUploading(true)
@@ -72,7 +73,7 @@ export default function TargetDetail() {
       const result = await api.uploadTargetPhoto(id, file)
       mutate({ ...target, photo: result.photo })
     } catch (err) {
-      alert(err.message)
+      await showAlert(err.message)
     }
     setUploading(false)
   }
