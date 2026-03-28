@@ -111,7 +111,7 @@ async def send_invoice_callback(callback: CallbackQuery):
             prices=prices,
             start_parameter="test-payment",
             need_name=False,
-            need_phone_False=True,
+            need_phone_number=False,
             need_email=False,
             need_shipping_address=False,
             is_flexible=False
