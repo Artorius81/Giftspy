@@ -18,7 +18,16 @@ export default function BottomNav() {
         <button
           key={tab.path}
           className={`nav-item ${location.pathname === tab.path ? 'active' : ''}`}
-          onClick={() => navigate(tab.path)}
+          onClick={() => {
+            if (tab.path === location.pathname) return;
+            if (location.pathname === '/') {
+              navigate(tab.path);
+            } else if (tab.path === '/') {
+              navigate(-1);
+            } else {
+              navigate(tab.path, { replace: true });
+            }
+          }}
         >
           <span className="icon">{tab.icon}</span>
           <span>{tab.label}</span>

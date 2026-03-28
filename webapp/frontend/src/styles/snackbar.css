@@ -1,0 +1,30 @@
+.exit-snackbar {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  animation: snackbarFadeIn 0.2s ease, snackbarFadeOut 0.2s ease 1.8s forwards;
+  pointer-events: none;
+}
+
+@keyframes snackbarFadeIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes snackbarFadeOut {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, 10px); }
+}

@@ -1,0 +1,68 @@
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: popupOverlayFadeIn 0.2s ease;
+}
+
+.popup-modal {
+  background: var(--bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  animation: popupModalScaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+[data-theme="light"] .popup-modal {
+  background: var(--card-bg);
+}
+
+.popup-modal__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.popup-modal__message {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.popup-modal__actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.popup-modal__actions .btn {
+  flex: 1;
+}
+
+@keyframes popupOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popupModalScaleIn {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

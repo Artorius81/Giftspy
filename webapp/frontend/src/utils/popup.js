@@ -1,19 +1,23 @@
-export const showConfirm = (message) => {
+let popupCallback = null
+
+export const registerPopupCallback = (cb) => {
+  popupCallback = cb
+}
+
+export const showConfirm = (message, title = 'Подтверждение') => {
   return new Promise((resolve) => {
-    const webApp = window.Telegram?.WebApp
-    if (webApp && webApp.showConfirm) {
-      webApp.showConfirm(message, (isOk) => resolve(isOk))
+    if (popupCallback) {
+      popupCallback({ type: 'confirm', title, message, resolve })
     } else {
       resolve(window.confirm(message))
     }
   })
 }
 
-export const showAlert = (message) => {
+export const showAlert = (message, title = 'Внимание') => {
   return new Promise((resolve) => {
-    const webApp = window.Telegram?.WebApp
-    if (webApp && webApp.showAlert) {
-      webApp.showAlert(message, () => resolve())
+    if (popupCallback) {
+      popupCallback({ type: 'alert', title, message, resolve })
     } else {
       window.alert(message)
       resolve()
