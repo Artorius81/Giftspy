@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { getTargetEmoji } from './TargetDetail'
 
 export default function Targets() {
   const navigate = useNavigate()
@@ -111,7 +112,7 @@ export default function Targets() {
           <div key={t.id} className="card" onClick={() => navigate(`/targets/${t.id}`)}>
             <div className="card__header">
               <div className="card__avatar">
-                {t.photo ? <img src={t.photo} alt="" /> : '👤'}
+                {t.photo ? <img src={t.photo} alt="" /> : getTargetEmoji(t.id)}
               </div>
               <div className="card__info">
                 <div className="card__name">{t.name || t.identifier}</div>

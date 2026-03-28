@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
+import { getTargetEmoji } from './TargetDetail'
 
 const HOLIDAY_OPTIONS = [
   '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
@@ -30,6 +31,8 @@ export default function NewCase() {
   const carouselRef = useRef(null)
   const isAnimating = useRef(false)
 
+  const [targetDisplayName, setTargetDisplayName] = useState('')
+
   const [form, setForm] = useState({
     target: searchParams.get('target') || '',
     holiday: '',
@@ -39,7 +42,15 @@ export default function NewCase() {
   })
 
   useEffect(() => {
-    api.getTargets().then(setTargets).catch(console.error)
+    api.getTargets().then(list => {
+      setTargets(list)
+      // If target was pre-selected via URL, find its display name
+      const preselected = searchParams.get('target')
+      if (preselected) {
+        const found = list.find(t => t.identifier === preselected)
+        if (found && found.name) setTargetDisplayName(found.name)
+      }
+    }).catch(console.error)
     api.getPersonas().then(setPersonas).catch(console.error)
     if (searchParams.get('target')) setStep(1)
   }, [])
@@ -122,11 +133,11 @@ export default function NewCase() {
                   key={t.id}
                   className={`card ${form.target === t.identifier ? 'selected' : ''}`}
                   style={form.target === t.identifier ? { borderColor: 'var(--accent)' } : {}}
-                  onClick={() => { setForm({ ...form, target: t.identifier }); setStep(1) }}
+                  onClick={() => { setForm({ ...form, target: t.identifier }); setTargetDisplayName(t.name || ''); setStep(1) }}
                 >
                   <div className="card__header">
                     <div className="card__avatar">
-                      {t.photo ? <img src={t.photo} alt="" /> : '👤'}
+                      {t.photo ? <img src={t.photo} alt="" /> : getTargetEmoji(t.id)}
                     </div>
                     <div className="card__info">
                       <div className="card__name">{t.name || t.identifier}</div>
@@ -283,7 +294,7 @@ export default function NewCase() {
           <div className="wizard-step__title">✅ Подтверждение</div>
           <div className="card">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
-              <div><strong>🎯 Цель:</strong> {form.target}</div>
+              <div><strong>🎯 Цель:</strong> {targetDisplayName || form.target}</div>
               <div><strong>🎉 Повод:</strong> {form.holiday || 'Без повода'}</div>
               <div><strong>🧩 Зацепки:</strong> {form.context || 'Нет данных'}</div>
               <div><strong>🕵️ Детектив:</strong> {form.persona}</div>

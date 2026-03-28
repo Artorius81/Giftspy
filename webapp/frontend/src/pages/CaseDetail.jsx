@@ -110,6 +110,8 @@ export default function CaseDetail() {
           caseStatus={caseData.status}
           targetName={caseData.display_name}
           personaName={caseData.persona}
+          targetPhoto={caseData.target_photo}
+          targetDbId={caseData.target_db_id}
           onStatusChange={handleStatusChange}
         />
       )}

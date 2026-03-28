@@ -1000,3 +1000,82 @@ textarea.input { min-height: 80px; resize: vertical; }
 .theme-option:active {
   transform: scale(0.97);
 }
+
+/* ---- Profile Edit ---- */
+.profile-header__avatar--editable {
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition);
+}
+
+.profile-header__avatar--editable:active {
+  transform: scale(0.95);
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-header__avatar--editable:hover .avatar-overlay,
+.profile-header__avatar--editable:active .avatar-overlay {
+  opacity: 1;
+}
+
+.profile-header__photo-hint {
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  transition: var(--transition);
+}
+
+.profile-header__photo-hint:active {
+  opacity: 0.7;
+}
+
+.profile-edit-btn {
+  margin-top: 12px;
+  padding: 10px 20px !important;
+  font-size: 13px !important;
+  width: auto !important;
+  display: inline-flex !important;
+}
+
+.input-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* ---- Chat Avatar Image ---- */
+.chat-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+/* ---- View Toggle position when no bottom nav ---- */
+.case-detail-page .view-toggle {
+  bottom: 16px;
+}
+
+.case-detail-page .chat-input-area {
+  bottom: 16px;
+}
+
+.case-detail-page .chat-view ~ .view-toggle {
+  bottom: 72px;
+}

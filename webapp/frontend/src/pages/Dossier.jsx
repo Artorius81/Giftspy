@@ -64,7 +64,7 @@ export default function Dossier() {
               return (
                 <div key={c.id} className="card" onClick={() => navigate(`/dossier/${c.id}`)}>
                   <div className="card__header">
-                    <div className="card__avatar">{st.icon}</div>
+                    <div className="card__avatar">{(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}</div>
                     <div className="card__info">
                       <div className="card__name">Дело №{c.id}</div>
                       <div className="card__sub">

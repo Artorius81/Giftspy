@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
+
+// Emoji pool for target avatars (deterministic based on target ID)
+const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
+
+export function getTargetEmoji(targetId) {
+  return AVATAR_EMOJIS[targetId % AVATAR_EMOJIS.length]
+}
 
 export default function TargetDetail() {
   const { id } = useParams()
@@ -10,6 +17,8 @@ export default function TargetDetail() {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   const load = () => {
     api.getTarget(id)
@@ -43,8 +52,31 @@ export default function TargetDetail() {
     } catch (err) { alert(err.message) }
   }
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выберите изображение')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Файл слишком большой (макс. 10 МБ)')
+      return
+    }
+    setUploading(true)
+    try {
+      const result = await api.uploadTargetPhoto(id, file)
+      setTarget(prev => ({ ...prev, photo: result.photo }))
+    } catch (err) {
+      alert(err.message)
+    }
+    setUploading(false)
+  }
+
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
   if (!target) return <div className="page"><div className="empty-state"><div className="empty-state__title">Цель не найдена</div></div></div>
+
+  const avatarEmoji = getTargetEmoji(target.id)
 
   return (
     <div className="page">
@@ -56,8 +88,31 @@ export default function TargetDetail() {
 
       {/* Profile */}
       <div className="profile-header">
-        <div className="profile-header__avatar">
-          {target.photo ? <img src={target.photo} alt="" /> : '👤'}
+        <div
+          className="profile-header__avatar profile-header__avatar--editable"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <div className="spinner" style={{ width: 32, height: 32 }} />
+          ) : target.photo ? (
+            <img src={target.photo} alt="" />
+          ) : (
+            avatarEmoji
+          )}
+          <div className="avatar-overlay">📷</div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handlePhotoUpload}
+        />
+        <div
+          className="profile-header__photo-hint"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {target.photo ? '📷 Изменить фото' : '📷 Добавить фото'}
         </div>
         <div className="profile-header__name">{target.name || target.identifier}</div>
         <div className="profile-header__id">{target.identifier}</div>

@@ -56,6 +56,12 @@ export default function Home() {
             <span className="badge badge--success">👑 Premium</span>
           </div>
         )}
+        <button
+          className="btn btn--secondary profile-edit-btn"
+          onClick={() => navigate('/profile/edit')}
+        >
+          ✏️ Редактировать профиль
+        </button>
       </div>
 
       {/* Stats */}

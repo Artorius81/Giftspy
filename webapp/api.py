@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -59,6 +59,12 @@ class TargetUpdate(BaseModel):
     birthday: Optional[str] = None
 
 
+class ProfileUpdate(BaseModel):
+    nickname: Optional[str] = None
+    birthday: Optional[str] = None
+    description: Optional[str] = None
+
+
 class CaseCreate(BaseModel):
     target: str
     holiday: str = "Без повода"
@@ -84,6 +90,30 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "description": description,
         "photo": photo
     }
+
+
+@app.put("/api/profile")
+async def update_profile(data: ProfileUpdate, user_id: int = Depends(get_current_user)):
+    if data.nickname is not None:
+        nick = data.nickname.strip()[:32]
+        if nick:
+            await db.update_user_nickname(user_id, nick)
+    if data.birthday is not None:
+        await db.update_user_field(user_id, 'birthday', data.birthday.strip() or None)
+    if data.description is not None:
+        desc = data.description.strip()[:200]
+        await db.update_user_field(user_id, 'description', desc or None)
+    return {"ok": True}
+
+
+@app.post("/api/profile/photo")
+async def upload_profile_photo_endpoint(file: UploadFile = File(...), user_id: int = Depends(get_current_user)):
+    file_bytes = await file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(status_code=400, detail="File too large")
+    photo_url = await db.upload_profile_photo(user_id, file_bytes)
+    await db.update_user_field(user_id, 'photo_file_id', photo_url)
+    return {"photo": photo_url}
 
 
 # ================= TARGETS =================
@@ -173,6 +203,20 @@ async def delete_target(target_id: int, user_id: int = Depends(get_current_user)
     return {"ok": True}
 
 
+@app.post("/api/targets/{target_id}/photo")
+async def upload_target_photo_endpoint(target_id: int, file: UploadFile = File(...), user_id: int = Depends(get_current_user)):
+    target = await db.get_target_by_id(target_id)
+    if not target or target[1] != user_id:
+        raise HTTPException(status_code=404, detail="Target not found")
+    file_bytes = await file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(status_code=400, detail="File too large")
+    identifier = target[2]
+    photo_url = await db.upload_target_photo(identifier, file_bytes)
+    await db.update_target(target_id, photo_file_id=photo_url)
+    return {"photo": photo_url}
+
+
 # ================= CASES (DOSSIER) =================
 
 @app.get("/api/cases")
@@ -203,6 +247,8 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
     _, _, target, holiday, context, persona, budget, status, report = case
     saved = await db.find_target_by_identifier(user_id, target)
     display_name = saved[2] if saved and saved[2] else target
+    target_photo = saved[5] if saved else None
+    target_db_id = saved[0] if saved else None
     
     # Check if spy mode is enabled
     spy_mode = await db.get_user_spy_mode(user_id)
@@ -217,7 +263,9 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
         "budget": budget,
         "status": status,
         "report": report,
-        "spy_mode": spy_mode
+        "spy_mode": spy_mode,
+        "target_photo": target_photo,
+        "target_db_id": target_db_id
     }
 
 @app.get("/api/cases/{case_id}/chat")

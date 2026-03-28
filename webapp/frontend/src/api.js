@@ -41,9 +41,43 @@ async function request(path, options = {}) {
   return res.json()
 }
 
+async function requestFile(path, file) {
+  const headers = {}
+
+  const initData = getInitData()
+  if (initData) {
+    headers['X-Telegram-Init-Data'] = initData
+  } else {
+    const devId = getDevUserId()
+    if (devId) {
+      headers['X-Dev-User-Id'] = devId
+    }
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(path, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Network error' }))
+    throw new Error(err.detail || `HTTP ${res.status}`)
+  }
+
+  return res.json()
+}
+
 const api = {
   // Profile
   getProfile: () => request('/api/profile'),
+  updateProfile: (data) => request('/api/profile', {
+    method: 'PUT', body: JSON.stringify(data)
+  }),
+  uploadProfilePhoto: (file) => requestFile('/api/profile/photo', file),
 
   // Targets
   getTargets: () => request('/api/targets'),
@@ -55,6 +89,7 @@ const api = {
     method: 'PUT', body: JSON.stringify(data)
   }),
   deleteTarget: (id) => request(`/api/targets/${id}`, { method: 'DELETE' }),
+  uploadTargetPhoto: (id, file) => requestFile(`/api/targets/${id}/photo`, file),
 
   // Cases
   getCases: () => request('/api/cases'),
@@ -84,3 +119,4 @@ const api = {
 }
 
 export default api
+

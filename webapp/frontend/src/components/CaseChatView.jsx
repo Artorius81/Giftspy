@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api'
+import { getTargetEmoji } from '../pages/TargetDetail'
 
-export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, personaName, onStatusChange }) {
+export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [inputText, setInputText] = useState('')
@@ -11,6 +12,11 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
 
   const isManualMode = caseStatus === 'manual_mode'
   const canIntercept = ['started', 'in_progress'].includes(caseStatus)
+
+  // Target avatar: photo or deterministic emoji
+  const targetAvatar = targetPhoto
+    ? <img src={targetPhoto} alt="" className="chat-avatar-img" />
+    : <span>{targetDbId ? getTargetEmoji(targetDbId) : '👤'}</span>
 
   const loadChat = () => {
     api.getCaseChat(caseId)
@@ -99,7 +105,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
               <div key={idx} className={`chat-bubble-container ${isDetective ? 'right' : 'left'}`}>
                 {!isDetective && (
                   <div className="chat-avatar">
-                    {'👤'}
+                    {targetAvatar}
                   </div>
                 )}
                 <div className={`chat-bubble ${isDetective ? 'chat-bubble--agent' : 'chat-bubble--target'}`}>
@@ -107,7 +113,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
                 </div>
                 {isDetective && (
                   <div className="chat-avatar">
-                    {'🕵️'}
+                    {'🕵️‍♂️'}
                   </div>
                 )}
               </div>
