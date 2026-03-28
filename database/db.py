@@ -199,12 +199,12 @@ async def save_chat_message(case_id, sender, message):
 async def get_chat_history(case_id):
     result = await asyncio.to_thread(
         lambda: _client.table('chat_history')
-            .select('sender, message')
+            .select('sender, message, timestamp')
             .eq('case_id', case_id)
             .order('timestamp')
             .execute()
     )
-    return [(r['sender'], r['message']) for r in result.data]
+    return [(r['sender'], r['message'], r['timestamp']) for r in result.data]
 
 
 async def get_chat_history_count(case_id):

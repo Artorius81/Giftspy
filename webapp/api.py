@@ -309,8 +309,8 @@ async def get_case_chat(case_id: int, user_id: int = Depends(get_current_user)):
 
     history = await db.get_chat_history(case_id)
     return [
-        {"sender": sender, "message": message}
-        for sender, message in history
+        {"sender": sender, "message": message, "timestamp": timestamp}
+        for sender, message, timestamp in history
     ]
 
 
@@ -409,6 +409,8 @@ async def intercept_case(case_id: int, user_id: int = Depends(get_current_user))
         raise HTTPException(status_code=400, detail="Cannot intercept in this status")
     
     await db.update_case_status(case_id, 'manual_mode')
+    # Add system message
+    await db.save_chat_message(case_id, 'system', '🛑 Заказчик перехватил управление')
     return {"ok": True, "status": "manual_mode"}
 
 @app.post("/api/cases/{case_id}/return-detective")
@@ -422,7 +424,45 @@ async def return_detective_case(case_id: int, user_id: int = Depends(get_current
         raise HTTPException(status_code=400, detail="Case not in manual mode")
     
     await db.update_case_status(case_id, 'in_progress')
+    # Add system message
+    await db.save_chat_message(case_id, 'system', '🕵️ Управление возвращено детективу')
     return {"ok": True, "status": "in_progress"}
+
+
+@app.post("/api/cases/{case_id}/cancel")
+async def cancel_case_endpoint(case_id: int, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    status = case[7]
+    if status not in ('pending', 'started', 'in_progress', 'manual_mode'):
+        raise HTTPException(status_code=400, detail="Нельзя отменить завершённое дело")
+    
+    await db.cancel_case(case_id)
+    
+    # Refund only for non-premium users
+    has_premium = await db.is_premium(user_id)
+    refunded = False
+    if not has_premium:
+        await db.refund_balance(user_id)
+        refunded = True
+    
+    return {"ok": True, "refunded": refunded}
+
+
+@app.delete("/api/cases/{case_id}")
+async def delete_case_endpoint(case_id: int, user_id: int = Depends(get_current_user)):
+    case = await db.get_case_by_id(case_id)
+    if not case or case[1] != user_id:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    status = case[7]
+    if status in ('pending', 'started', 'in_progress', 'manual_mode'):
+        raise HTTPException(status_code=400, detail="Нельзя удалить активное дело. Сначала отмените его.")
+    
+    await db.delete_case(case_id)
+    return {"ok": True}
 
 
 # ================= BALANCE =================

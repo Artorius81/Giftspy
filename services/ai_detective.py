@@ -109,7 +109,9 @@ class AIDetectiveService:
          history = await db.get_chat_history(case_id)
          
          if history:
-             for sender, message_text in history:
+             for sender, message_text, _ts in history:
+                 if sender == 'system':
+                     continue  # skip system messages for AI context
                  role = "user" if sender == "user" else "model"
                  messages.append(types.Content(role=role, parts=[types.Part.from_text(text=message_text)]))
                  

@@ -107,6 +107,8 @@ const api = {
   createCase: (data) => request('/api/cases', {
     method: 'POST', body: JSON.stringify(data)
   }),
+  cancelCase: (id) => request(`/api/cases/${id}/cancel`, { method: 'POST' }),
+  deleteCase: (id) => request(`/api/cases/${id}`, { method: 'DELETE' }),
 
   // Personas
   getPersonas: () => request('/api/personas'),

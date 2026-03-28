@@ -1,10 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { getTargetEmoji } from '../pages/TargetDetail'
-
 import { useNavigate } from 'react-router-dom'
 
-const POLL_INTERVAL = 3000 // 3 seconds for chat-like feel
+const POLL_INTERVAL = 3000
+
+function formatTime(timestamp) {
+  if (!timestamp) return ''
+  try {
+    const d = new Date(timestamp)
+    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
 
 export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
   const [messages, setMessages] = useState([])
@@ -14,11 +23,12 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   const [intercepting, setIntercepting] = useState(false)
   const messagesEndRef = useRef(null)
   const prevMsgCountRef = useRef(0)
+  const navigate = useNavigate()
 
   const isManualMode = caseStatus === 'manual_mode'
   const canIntercept = ['started', 'in_progress'].includes(caseStatus)
+  const isDone = ['done', 'delivered', 'cancelled', 'error'].includes(caseStatus)
 
-  // Target avatar: photo or deterministic emoji
   const targetAvatar = targetPhoto
     ? <img src={targetPhoto} alt="" className="chat-avatar-img" />
     : <span>{targetDbId ? getTargetEmoji(targetDbId) : '👤'}</span>
@@ -27,7 +37,6 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     api.getCaseChat(caseId)
       .then(newMessages => {
         setMessages(newMessages)
-        // Scroll only if new messages arrived
         if (newMessages.length > prevMsgCountRef.current) {
           setTimeout(() => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -40,15 +49,14 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   }
 
   useEffect(() => {
-    if (spyMode) {
+    if (spyMode && isPremium) {
       loadChat()
-      // Poll for new messages like a real chat
       const interval = setInterval(loadChat, POLL_INTERVAL)
       return () => clearInterval(interval)
     } else {
       setLoading(false)
     }
-  }, [caseId, spyMode])
+  }, [caseId, spyMode, isPremium])
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -61,7 +69,11 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     setSending(true)
     try {
       await api.sendChatMessage(caseId, inputText.trim())
-      setMessages(prev => [...prev, { sender: 'ai', message: inputText.trim() }])
+      setMessages(prev => [...prev, {
+        sender: 'ai',
+        message: inputText.trim(),
+        timestamp: new Date().toISOString()
+      }])
       setInputText('')
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -76,6 +88,12 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     setIntercepting(true)
     try {
       await api.interceptCase(caseId)
+      // Add system message locally
+      setMessages(prev => [...prev, {
+        sender: 'system',
+        message: '🛑 Заказчик перехватил управление',
+        timestamp: new Date().toISOString()
+      }])
       onStatusChange?.('manual_mode')
     } catch (e) {
       alert(e.message)
@@ -84,11 +102,16 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   }
 
   const handleReturnDetective = async () => {
-    if (!confirm('Вернуть управление детективу?')) return
     setIntercepting(true)
     try {
       const result = await api.returnDetective(caseId)
       if (result.ok) {
+        // Add system message locally
+        setMessages(prev => [...prev, {
+          sender: 'system',
+          message: '🕵️ Управление возвращено детективу',
+          timestamp: new Date().toISOString()
+        }])
         onStatusChange?.('in_progress')
       }
     } catch (e) {
@@ -104,8 +127,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     }
   }
 
-  const navigate = useNavigate()
-
+  // === Premium/Spy mode gates ===
   if (!isPremium) {
     return (
       <div className="chat-view">
@@ -135,15 +157,47 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
 
   return (
     <div className="chat-view">
+      {/* Status Banner */}
+      {isManualMode && (
+        <div className="chat-status-banner chat-status-banner--manual">
+          <span className="chat-status-banner__icon">🕹️</span>
+          <span className="chat-status-banner__text">Вы управляете перепиской</span>
+        </div>
+      )}
+      {canIntercept && (
+        <div className="chat-status-banner chat-status-banner--active">
+          <span className="chat-status-banner__icon">📡</span>
+          <span className="chat-status-banner__text">Прямой эфир · {personaName?.split(' ').pop()}</span>
+        </div>
+      )}
+      {isDone && (
+        <div className="chat-status-banner chat-status-banner--done">
+          <span className="chat-status-banner__icon">✅</span>
+          <span className="chat-status-banner__text">Расследование завершено</span>
+        </div>
+      )}
+
+      {/* Messages */}
       <div className="chat-messages">
         {loading ? (
           <div className="loading"><div className="spinner" /></div>
         ) : messages.length === 0 ? (
-          <div className="chat-empty">Сообщений пока нет</div>
+          <div className="chat-empty">
+            <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
+            Сообщений пока нет. Детектив скоро начнёт допрос.
+          </div>
         ) : (
           messages.map((msg, idx) => {
+            if (msg.sender === 'system') {
+              return (
+                <div key={idx} className="chat-system-msg">
+                  <span>{msg.message}</span>
+                </div>
+              )
+            }
+
             const isDetective = msg.sender === 'ai'
-            const msgTime = "14:03" // Mock time for design
+            const msgTime = formatTime(msg.timestamp)
             return (
               <div key={idx} className={`chat-bubble-container ${isDetective ? 'right' : 'left'}`}>
                 {!isDetective && (
@@ -165,63 +219,67 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Area */}
       <div className="chat-input-area">
         {isManualMode ? (
-          <div className="custom-msg-wrapper">
-            <div className="custom-msg-title active">Вы управляете перепиской (детектив на паузе)</div>
-            <div className="chat-input-row">
-              <button
-                className="chat-input-btn pause-btn active"
-                onClick={handleReturnDetective}
-                disabled={intercepting}
-                title="Вернуть детективу"
-              >
-                🕵️
-              </button>
+          <div className="chat-input-wrapper chat-input-wrapper--manual">
+            <button
+              className="chat-intercept-btn chat-intercept-btn--return"
+              onClick={handleReturnDetective}
+              disabled={intercepting}
+            >
+              <span>🕵️</span>
+              <span className="chat-intercept-btn__label">Вернуть</span>
+            </button>
+            <div className="chat-input-main">
               <input
                 className="chat-input-field"
-                placeholder="Написать сообщение..."
+                placeholder="Написать от лица детектива..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
               <button
-                className="chat-input-btn send-btn"
+                className="chat-send-btn"
                 onClick={handleSend}
                 disabled={!inputText.trim() || sending}
               >
-                {sending ? '...' : '→'}
+                {sending ? (
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                  </svg>
+                )}
               </button>
             </div>
           </div>
         ) : canIntercept ? (
-          <div className="custom-msg-wrapper">
-            <div className="custom-msg-title clickable" onClick={handleIntercept}>
-              Приостановить детектива, чтобы написать от себя
-            </div>
-            <div className="chat-input-row">
-              <button
-                className="chat-input-btn pause-btn"
-                onClick={handleIntercept}
-                disabled={intercepting}
-              >
-                {intercepting ? '⏳' : '||'}
-              </button>
+          <div className="chat-input-wrapper">
+            <button
+              className="chat-intercept-btn"
+              onClick={handleIntercept}
+              disabled={intercepting}
+            >
+              {intercepting ? (
+                <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+              ) : (
+                <>
+                  <span>🕹️</span>
+                  <span className="chat-intercept-btn__label">Перехватить</span>
+                </>
+              )}
+            </button>
+            <div className="chat-input-main">
               <input
                 className="chat-input-field"
-                placeholder="Детектив ведет допрос..."
+                placeholder="Детектив ведёт допрос..."
                 disabled
               />
-              <button
-                className="chat-input-btn send-btn"
-                disabled
-              >
-                →
-              </button>
             </div>
           </div>
         ) : (
-          <div className="chat-input-hint" style={{ textAlign: 'center', padding: '8px 0' }}>
+          <div className="chat-input-hint">
             Расследование завершено
           </div>
         )}
