@@ -19,6 +19,7 @@ export default function CaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: caseData, loading, mutate } = useData(`case_${id}`, () => api.getCase(id))
+  const { data: profile } = useData('profile', api.getProfile)
   const [viewMode, setViewMode] = useState('summary')
   const pollRef = useRef(null)
 
@@ -116,6 +117,7 @@ export default function CaseDetail() {
         <CaseChatView
           caseId={caseData.id}
           spyMode={caseData.spy_mode}
+          isPremium={!!profile?.is_premium}
           caseStatus={caseData.status}
           targetName={caseData.display_name}
           personaName={caseData.persona}

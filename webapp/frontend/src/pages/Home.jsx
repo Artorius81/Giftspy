@@ -58,9 +58,14 @@ export default function Home() {
         </div>
         <div className="profile-header__name">{profile.nickname || 'Агент'}</div>
         <div className="profile-header__id">ID: {profile.user_id}</div>
-        {profile.premium_until && (
+        {profile.is_premium && (
           <div className="profile-header__premium">
             <span className="badge badge--success">👑 Premium</span>
+            {profile.premium_until && (
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>
+                до {new Date(profile.premium_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
           </div>
         )}
         <button

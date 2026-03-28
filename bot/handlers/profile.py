@@ -202,6 +202,12 @@ async def open_settings(callback: CallbackQuery):
 
 @router.callback_query(F.data == "toggle_spy_mode")
 async def toggle_spy(callback: CallbackQuery):
+    # Premium check
+    has_premium = await db.is_premium(callback.from_user.id)
+    if not has_premium:
+        await callback.answer("👑 Требуется Premium подписка!", show_alert=True)
+        return
+    
     new_value = await db.toggle_spy_mode(callback.from_user.id)
     spy_status = "включен ✅" if new_value else "выключен ❌"
     

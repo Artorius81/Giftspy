@@ -416,6 +416,18 @@ async def set_premium(user_id, days):
     )
 
 
+async def is_premium(user_id) -> bool:
+    """Checks if user has active premium subscription."""
+    await _ensure_user(user_id)
+    result = await asyncio.to_thread(
+        lambda: _client.table('users').select('premium_until').eq('id', user_id).execute()
+    )
+    if result.data and result.data[0]['premium_until']:
+        if datetime.fromisoformat(result.data[0]['premium_until']) > datetime.utcnow():
+            return True
+    return False
+
+
 async def update_user_nickname(user_id, nickname):
     await _ensure_user(user_id)
     await asyncio.to_thread(

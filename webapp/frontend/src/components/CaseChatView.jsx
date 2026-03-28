@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { getTargetEmoji } from '../pages/TargetDetail'
 
+import { useNavigate } from 'react-router-dom'
+
 const POLL_INTERVAL = 3000 // 3 seconds for chat-like feel
 
-export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
+export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [inputText, setInputText] = useState('')
@@ -100,6 +102,23 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
       e.preventDefault()
       handleSend()
     }
+  }
+
+  const navigate = useNavigate()
+
+  if (!isPremium) {
+    return (
+      <div className="chat-view">
+        <div className="empty-state">
+          <div className="empty-state__icon">👑</div>
+          <div className="empty-state__title">Премиум-функция</div>
+          <div className="empty-state__desc">Шпионский режим и перехват управления доступны только с подпиской Premium</div>
+          <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={() => navigate('/store')}>
+            🛍 Купить Premium
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (!spyMode) {

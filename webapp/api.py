@@ -3,6 +3,7 @@ FastAPI backend for Giftspy Telegram Mini App.
 Imports existing database functions from database/db.py — no modifications needed.
 """
 import asyncio
+from datetime import datetime
 import logging
 from typing import Optional
 
@@ -78,10 +79,20 @@ class CaseCreate(BaseModel):
 @app.get("/api/profile")
 async def get_profile(user_id: int = Depends(get_current_user)):
     balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    
+    # Compute is_premium based on date check
+    is_premium = False
+    if premium_until:
+        try:
+            is_premium = datetime.fromisoformat(premium_until) > datetime.utcnow()
+        except (ValueError, TypeError):
+            pass
+    
     return {
         "user_id": user_id,
         "balance": balance,
         "premium_until": premium_until,
+        "is_premium": is_premium,
         "successful_cases": successful,
         "active_cases": active,
         "nickname": nickname,
@@ -279,6 +290,10 @@ async def get_case_chat(case_id: int, user_id: int = Depends(get_current_user)):
     if not case or case[1] != user_id:
         raise HTTPException(status_code=404, detail="Case not found")
     
+    # Premium check
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Premium подписка")
+    
     spy_mode = await db.get_user_spy_mode(user_id)
     if not spy_mode:
          raise HTTPException(status_code=403, detail="Spy mode required")
@@ -334,6 +349,9 @@ class ChatMessage(BaseModel):
 
 @app.post("/api/settings/spy-mode")
 async def toggle_spy_mode_endpoint(user_id: int = Depends(get_current_user)):
+    # Premium check
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Premium подписка для шпионского режима")
     new_val = await db.toggle_spy_mode(user_id)
     return {"spy_mode": bool(new_val)}
 
@@ -368,6 +386,10 @@ async def intercept_case(case_id: int, user_id: int = Depends(get_current_user))
     case = await db.get_case_by_id(case_id)
     if not case or case[1] != user_id:
         raise HTTPException(status_code=404, detail="Case not found")
+    
+    # Premium check
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Premium подписка для перехвата")
     
     status = case[7]
     if status not in ('started', 'in_progress'):

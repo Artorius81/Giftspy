@@ -38,7 +38,12 @@ export default function Settings() {
 
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
 
-  const isPremium = !!profile?.premium_until
+  const isPremium = !!profile?.is_premium
+
+  // Format premium expiration date
+  const premiumExpiry = isPremium && profile?.premium_until
+    ? new Date(profile.premium_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
 
   return (
     <div className="page">
@@ -73,6 +78,12 @@ export default function Settings() {
             <span className="toggle__knob" />
           </button>
         </div>
+
+        {isPremium && premiumExpiry && (
+          <div className="settings-row__desc" style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+            ✅ Подписка активна до {premiumExpiry}
+          </div>
+        )}
 
         {!isPremium && (
           <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={() => navigate('/store')}>
