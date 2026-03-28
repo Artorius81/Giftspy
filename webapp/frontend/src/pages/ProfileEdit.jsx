@@ -83,8 +83,11 @@ export default function ProfileEdit() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => navigate('/')}>← Главная</button>
+        <button className="header__back" onClick={() => navigate('/')}>
+          <span className="icon">‹</span>
+        </button>
         <span className="header__title">✏️ Редактировать профиль</span>
+        <div className="header__placeholder" />
       </div>
 
       {/* Photo */}

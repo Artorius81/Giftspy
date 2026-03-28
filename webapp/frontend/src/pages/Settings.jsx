@@ -45,8 +45,11 @@ export default function Settings() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => navigate('/')}>← Главная</button>
+        <button className="header__back" onClick={() => navigate('/')}>
+          <span className="icon">‹</span>
+        </button>
         <span className="header__title">⚙️ Настройки</span>
+        <div className="header__placeholder" />
       </div>
 
       {/* Premium Functions */}

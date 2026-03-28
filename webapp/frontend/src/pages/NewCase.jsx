@@ -105,9 +105,12 @@ export default function NewCase() {
     <div className="page">
       <div className="header">
         <button className="header__back" onClick={() => step > 0 ? setStep(step - 1) : navigate('/')}>
-          ← {step > 0 ? 'Назад' : 'Главная'}
+          <span className="icon">‹</span>
         </button>
-        <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{step + 1}/{STEPS.length}</span>
+        <span className="header__title">Новое дело</span>
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
+          {step + 1}/{STEPS.length}
+        </div>
       </div>
 
       {/* Progress */}

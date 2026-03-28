@@ -51,11 +51,13 @@ export default function Dossier() {
   return (
     <div className="page">
       <div className="header">
+        <div className="header__placeholder" />
         <h1 className="header__title">📁 Картотека</h1>
-        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-          {cases.length} дел
-        </span>
+        <div className="header__placeholder" />
       </div>
+      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+        {cases.length} дел
+      </span>
 
       {cases.length === 0 ? (
         <div className="empty-state">

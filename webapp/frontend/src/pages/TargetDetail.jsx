@@ -82,8 +82,10 @@ export default function TargetDetail() {
     <div className="page">
       <div className="header">
         <button className="header__back" onClick={() => navigate('/targets')}>
-          ← Назад
+          <span className="icon">‹</span>
         </button>
+        <span className="header__title">Профиль цели</span>
+        <div className="header__placeholder" />
       </div>
 
       {/* Profile */}

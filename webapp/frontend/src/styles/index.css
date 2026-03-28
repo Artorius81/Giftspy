@@ -122,23 +122,51 @@ a { color: var(--link); text-decoration: none; }
   z-index: 10;
   background: var(--bg);
   backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="light"] .header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .header__title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  text-align: center;
+  flex: 1;
 }
 
-.header__back {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 16px;
-  cursor: pointer;
+.header__btn, .header__back {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 0;
+  justify-content: center;
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+[data-theme="light"] .header__btn, [data-theme="light"] .header__back {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.header__btn:active, .header__back:active {
+  transform: scale(0.92);
+}
+
+.header__placeholder {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 /* ---- Bottom Navigation (Liquid Glass) ---- */

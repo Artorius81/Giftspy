@@ -45,7 +45,9 @@ export default function Targets() {
   return (
     <div className="page">
       <div className="header">
+        <div className="header__placeholder" />
         <h1 className="header__title">👥 Мои цели</h1>
+        <div className="header__placeholder" />
       </div>
 
       {/* Add Button */}

@@ -57,7 +57,9 @@ export default function Store() {
   return (
     <div className="page">
       <div className="header">
+        <div className="header__placeholder" />
         <h1 className="header__title">🛍 Магазин</h1>
+        <div className="header__placeholder" />
       </div>
 
       <div style={{ marginBottom: 16, padding: '16px', background: 'var(--gradient-card)', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-md)' }}>

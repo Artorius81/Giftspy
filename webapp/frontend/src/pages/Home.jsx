@@ -30,14 +30,11 @@ export default function Home() {
 
   return (
     <div className="page">
-      {/* Settings icon */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
-        <button
-          className="settings-gear-btn"
-          onClick={() => navigate('/settings')}
-          aria-label="Настройки"
-        >
-          ⚙️
+      <div className="header">
+        <div className="header__placeholder" />
+        <span className="header__title">Профиль</span>
+        <button className="header__btn" onClick={() => navigate('/settings')} aria-label="Настройки">
+          <span className="icon">⚙️</span>
         </button>
       </div>
 
