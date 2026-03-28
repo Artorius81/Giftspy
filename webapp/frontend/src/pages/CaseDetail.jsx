@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import CaseChatView from '../components/CaseChatView'
+import { useData } from '../hooks/useData'
 
 const STATUS_MAP = {
   pending: '🟡 Ожидание',
@@ -17,26 +18,14 @@ const STATUS_MAP = {
 export default function CaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [caseData, setCaseData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data: caseData, loading, mutate } = useData(`case_${id}`, () => api.getCase(id))
   const [viewMode, setViewMode] = useState('summary')
   const pollRef = useRef(null)
 
-  const loadCase = () => {
-    api.getCase(id)
-      .then(data => setCaseData(prev => {
-        // Only update if something changed to avoid flicker
-        if (!prev || JSON.stringify(prev) !== JSON.stringify(data)) return data
-        return prev
-      }))
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }
-
   useEffect(() => {
-    loadCase()
-    // Poll every 8 seconds for status updates
-    pollRef.current = setInterval(loadCase, 8000)
+    pollRef.current = setInterval(() => {
+      api.getCase(id).then(mutate).catch(console.error)
+    }, 5000)
     return () => clearInterval(pollRef.current)
   }, [id])
 
@@ -46,7 +35,9 @@ export default function CaseDetail() {
   const isActive = ['pending', 'started', 'in_progress', 'manual_mode'].includes(caseData.status)
 
   const handleStatusChange = (newStatus) => {
-    setCaseData(prev => ({ ...prev, status: newStatus }))
+    if (caseData) {
+      mutate({ ...caseData, status: newStatus })
+    }
   }
 
   return (

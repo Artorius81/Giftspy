@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
+import { useData } from '../hooks/useData'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -16,25 +17,17 @@ const STATUS = {
 
 export default function Dossier() {
   const navigate = useNavigate()
-  const [cases, setCases] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data, loading, mutate } = useData('cases', api.getCases)
+  const cases = data || []
   const [collapsed, setCollapsed] = useState({})
 
-  const loadCases = () => {
-    api.getCases()
-      .then(setCases)
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }
-
   useEffect(() => {
-    loadCases()
     // Poll every 10 seconds for status updates
     const interval = setInterval(() => {
-      api.getCases().then(setCases).catch(console.error)
+      api.getCases().then(mutate).catch(console.error)
     }, 10000)
     return () => clearInterval(interval)
-  }, [])
+  }, [mutate])
 
   const toggleGroup = (target) => {
     setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))

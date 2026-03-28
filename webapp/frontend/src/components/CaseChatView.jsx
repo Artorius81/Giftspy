@@ -149,7 +149,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
       <div className="chat-input-area">
         {isManualMode ? (
           <div className="custom-msg-wrapper">
-            <div className="custom-msg-title active">Вы управляете перепиской (сыщик на паузе)</div>
+            <div className="custom-msg-title active">Вы управляете перепиской (детектив на паузе)</div>
             <div className="chat-input-row">
               <button
                 className="chat-input-btn pause-btn active"
@@ -178,7 +178,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
         ) : canIntercept ? (
           <div className="custom-msg-wrapper">
             <div className="custom-msg-title clickable" onClick={handleIntercept}>
-              Приостановить сыщика, чтобы написать от себя
+              Приостановить детектива, чтобы написать от себя
             </div>
             <div className="chat-input-row">
               <button
@@ -190,7 +190,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
               </button>
               <input
                 className="chat-input-field"
-                placeholder="Сыщик ведет допрос..."
+                placeholder="Детектив ведет допрос..."
                 disabled
               />
               <button

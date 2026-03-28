@@ -2,23 +2,21 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
+import { useData } from '../hooks/useData'
 
 export default function Targets() {
   const navigate = useNavigate()
-  const [targets, setTargets] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: targets, loading, mutate } = useData('targets', api.getTargets)
+  
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ identifier: '', name: '', habits: '', birthday: '' })
   const [creating, setCreating] = useState(false)
 
   const load = () => {
     api.getTargets()
-      .then(setTargets)
+      .then(mutate)
       .catch(console.error)
-      .finally(() => setLoading(false))
   }
-
-  useEffect(() => { load() }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()

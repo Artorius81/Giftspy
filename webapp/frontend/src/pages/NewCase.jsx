@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
+import { useData } from '../hooks/useData'
 
 const HOLIDAY_OPTIONS = [
   '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
@@ -20,8 +21,12 @@ export default function NewCase() {
   const [searchParams] = useSearchParams()
 
   const [step, setStep] = useState(0)
-  const [targets, setTargets] = useState([])
-  const [personas, setPersonas] = useState([])
+  
+  const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
+  const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
+  
+  const targets = targetsData || []
+  const personas = personasData || []
   const [personaIdx, setPersonaIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
@@ -42,18 +47,18 @@ export default function NewCase() {
   })
 
   useEffect(() => {
-    api.getTargets().then(list => {
-      setTargets(list)
-      // If target was pre-selected via URL, find its display name
+    if (targetsData) {
       const preselected = searchParams.get('target')
       if (preselected) {
-        const found = list.find(t => t.identifier === preselected)
+        const found = targetsData.find(t => t.identifier === preselected)
         if (found && found.name) setTargetDisplayName(found.name)
       }
-    }).catch(console.error)
-    api.getPersonas().then(setPersonas).catch(console.error)
+    }
+  }, [targetsData, searchParams])
+
+  useEffect(() => {
     if (searchParams.get('target')) setStep(1)
-  }, [])
+  }, [searchParams])
 
   const currentStepKey = STEPS[step]
 

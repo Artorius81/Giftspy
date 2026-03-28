@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
+import { useData } from '../hooks/useData'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -12,22 +13,25 @@ export function getTargetEmoji(targetId) {
 export default function TargetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [target, setTarget] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data: target, loading, mutate } = useData(`target_${id}`, () => api.getTarget(id))
+  
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
 
+  useEffect(() => {
+    if (target) {
+      setForm({ name: target.name || '', habits: target.habits || '', birthday: target.birthday || '' })
+    }
+  }, [target])
+
   const load = () => {
     api.getTarget(id)
-      .then(data => { setTarget(data); setForm({ name: data.name || '', habits: data.habits || '', birthday: data.birthday || '' }) })
+      .then(mutate)
       .catch(console.error)
-      .finally(() => setLoading(false))
   }
-
-  useEffect(() => { load() }, [id])
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -66,7 +70,7 @@ export default function TargetDetail() {
     setUploading(true)
     try {
       const result = await api.uploadTargetPhoto(id, file)
-      setTarget(prev => ({ ...prev, photo: result.photo }))
+      mutate({ ...target, photo: result.photo })
     } catch (err) {
       alert(err.message)
     }

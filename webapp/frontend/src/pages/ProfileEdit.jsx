@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { useData } from '../hooks/useData'
 
 export default function ProfileEdit() {
   const navigate = useNavigate()
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data: profile, loading, mutate } = useData('profile', api.getProfile)
+
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef(null)
@@ -17,18 +18,14 @@ export default function ProfileEdit() {
   })
 
   useEffect(() => {
-    api.getProfile()
-      .then(p => {
-        setProfile(p)
-        setForm({
-          nickname: p.nickname || '',
-          birthday: p.birthday || '',
-          description: p.description || '',
-        })
+    if (profile) {
+      setForm({
+        nickname: profile.nickname || '',
+        birthday: profile.birthday || '',
+        description: profile.description || '',
       })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+    }
+  }, [profile])
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -70,7 +67,7 @@ export default function ProfileEdit() {
     setUploading(true)
     try {
       const result = await api.uploadProfilePhoto(file)
-      setProfile(prev => ({ ...prev, photo: result.photo }))
+      mutate({ ...profile, photo: result.photo })
     } catch (err) {
       alert(err.message)
     }

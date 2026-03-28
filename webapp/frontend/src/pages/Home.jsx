@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
+import { useData } from '../hooks/useData'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -16,23 +17,12 @@ const STATUS = {
 
 export default function Home() {
   const navigate = useNavigate()
-  const [profile, setProfile] = useState(null)
-  const [activeCases, setActiveCases] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([
-      api.getProfile(),
-      api.getCases()
-    ])
-      .then(([p, allCases]) => {
-        setProfile(p)
-        const active = allCases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
-        setActiveCases(active)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+  
+  const { data: profile, loading: pLoading } = useData('profile', api.getProfile)
+  const { data: cases, loading: cLoading } = useData('cases', api.getCases)
+  
+  const loading = pLoading || cLoading
+  const activeCases = cases ? cases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status)) : []
 
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
 

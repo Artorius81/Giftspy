@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { useData } from '../hooks/useData'
 
 export default function Settings() {
   const navigate = useNavigate()
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { data: profile, loading, mutate } = useData('profile', api.getProfile)
+  
   const [spyMode, setSpyMode] = useState(false)
   const [toggling, setToggling] = useState(false)
 
@@ -13,14 +14,10 @@ export default function Settings() {
   const [theme, setTheme] = useState(() => localStorage.getItem('giftspy-theme') || 'dark')
 
   useEffect(() => {
-    api.getProfile()
-      .then(p => {
-        setProfile(p)
-        setSpyMode(p.spy_mode)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+    if (profile) {
+      setSpyMode(profile.spy_mode)
+    }
+  }, [profile])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -32,6 +29,7 @@ export default function Settings() {
     try {
       const result = await api.toggleSpyMode()
       setSpyMode(result.spy_mode)
+      if (profile) mutate({ ...profile, spy_mode: result.spy_mode })
     } catch (e) {
       alert(e.message)
     }
