@@ -51,8 +51,14 @@ export default function CaseDetail() {
 
   return (
     <div className="page case-detail-page">
-      <div className="header">
-        <button className="header__back" onClick={() => navigate('/dossier')}>← Картотека</button>
+      <div className="chat-header">
+        <button className="chat-header__btn" onClick={() => navigate('/dossier')}>
+          <span className="icon">‹</span>
+        </button>
+        <div className="chat-header__title">Детали расследования</div>
+        <button className="chat-header__btn">
+          <span className="icon">🎁</span>
+        </button>
       </div>
 
       {viewMode === 'summary' ? (
@@ -129,11 +135,11 @@ export default function CaseDetail() {
       )}
 
       {/* Floating Toggle */}
-      <div className="view-toggle">
-        <button className={`view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
+      <div className="chat-view-toggle">
+        <button className={`chat-view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
           ≡ Сводка
         </button>
-        <button className={`view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
+        <button className={`chat-view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
           🗨 Переписка
         </button>
       </div>

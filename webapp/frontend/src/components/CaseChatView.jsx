@@ -124,6 +124,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
         ) : (
           messages.map((msg, idx) => {
             const isDetective = msg.sender === 'ai'
+            const msgTime = "14:03" // Mock time for design
             return (
               <div key={idx} className={`chat-bubble-container ${isDetective ? 'right' : 'left'}`}>
                 {!isDetective && (
@@ -133,12 +134,11 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
                 )}
                 <div className={`chat-bubble ${isDetective ? 'chat-bubble--agent' : 'chat-bubble--target'}`}>
                   <div className="chat-bubble__text">{msg.message}</div>
-                </div>
-                {isDetective && (
-                  <div className="chat-avatar">
-                    {'🕵️‍♂️'}
+                  <div className="chat-bubble__meta">
+                    <span className="chat-bubble__time">{msgTime}</span>
+                    {isDetective && <span className="chat-bubble__icon">🕵️‍♂️</span>}
                   </div>
-                )}
+                </div>
               </div>
             )
           })
@@ -148,11 +148,11 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
 
       <div className="chat-input-area">
         {isManualMode ? (
-          <>
-            <div className="chat-input-hint">Вы управляете перепиской</div>
+          <div className="custom-msg-wrapper">
+            <div className="custom-msg-title active">Вы управляете перепиской (сыщик на паузе)</div>
             <div className="chat-input-row">
               <button
-                className="chat-input-btn"
+                className="chat-input-btn pause-btn active"
                 onClick={handleReturnDetective}
                 disabled={intercepting}
                 title="Вернуть детективу"
@@ -161,7 +161,7 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
               </button>
               <input
                 className="chat-input-field"
-                placeholder="Написать от имени детектива..."
+                placeholder="Написать сообщение..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -171,20 +171,35 @@ export default function CaseChatView({ caseId, spyMode, caseStatus, targetName, 
                 onClick={handleSend}
                 disabled={!inputText.trim() || sending}
               >
-                {sending ? '⏳' : '→'}
+                {sending ? '...' : '→'}
               </button>
             </div>
-          </>
+          </div>
         ) : canIntercept ? (
-          <div className="chat-intercept-area">
-            <div className="chat-input-hint">Перехватите управление, чтобы писать от имени детектива</div>
-            <button
-              className="btn btn--primary"
-              onClick={handleIntercept}
-              disabled={intercepting}
-            >
-              {intercepting ? '⏳ Перехват...' : '🕹 Перехватить управление'}
-            </button>
+          <div className="custom-msg-wrapper">
+            <div className="custom-msg-title clickable" onClick={handleIntercept}>
+              Приостановить сыщика, чтобы написать от себя
+            </div>
+            <div className="chat-input-row">
+              <button
+                className="chat-input-btn pause-btn"
+                onClick={handleIntercept}
+                disabled={intercepting}
+              >
+                {intercepting ? '⏳' : '||'}
+              </button>
+              <input
+                className="chat-input-field"
+                placeholder="Сыщик ведет допрос..."
+                disabled
+              />
+              <button
+                className="chat-input-btn send-btn"
+                disabled
+              >
+                →
+              </button>
+            </div>
           </div>
         ) : (
           <div className="chat-input-hint" style={{ textAlign: 'center', padding: '8px 0' }}>
