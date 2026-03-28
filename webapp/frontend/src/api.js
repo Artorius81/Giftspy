@@ -116,7 +116,11 @@ const api = {
 
   // Balance
   getBalance: () => request('/api/balance'),
-}
 
+  // Payments
+  createPayment: (productId) => request('/api/payments/create', {
+    method: 'POST', body: JSON.stringify({ product_id: productId })
+  }),
+}
 export default api
 

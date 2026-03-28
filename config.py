@@ -22,7 +22,8 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 # ================= YOOKASSA =================
-YOOKASSA_TOKEN = os.getenv("YOOKASSA_TOKEN")
+YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
+YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
 
 # ================= WEBAPP =================
 WEBAPP_URL = os.getenv("WEBAPP_URL", "")  # URL for Telegram Mini App

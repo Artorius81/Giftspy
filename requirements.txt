@@ -10,3 +10,4 @@ google-genai
 fastapi
 uvicorn
 python-multipart
+yookassa

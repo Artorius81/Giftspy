@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import api from '../api'
 
 const PRODUCTS = [
   {
@@ -6,7 +7,7 @@ const PRODUCTS = [
     icon: '🔍',
     title: '1 Расследование',
     desc: 'Пополнение баланса на 1 расследование',
-    price: '99 ₽',
+    price: '1 ₽',
   },
   {
     id: 'inv_3',
@@ -27,17 +28,30 @@ const PRODUCTS = [
 ]
 
 export default function Store() {
-  const navigate = useNavigate()
+  const [buying, setBuying] = useState(null)
 
-  const handleBuy = (productId) => {
-    // Payments are handled through the bot for now
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.showAlert(
-        'Для оплаты используйте бота.\nОткройте чат и нажмите "🏠 Мой профиль" → "🛍 Магазин"'
-      )
-    } else {
-      alert('Оплата доступна через Telegram-бота')
+  const handleBuy = async (productId) => {
+    if (buying) return
+    setBuying(productId)
+    try {
+      const result = await api.createPayment(productId)
+      if (result.payment_url) {
+        // Open payment page
+        if (window.Telegram?.WebApp) {
+          window.Telegram.WebApp.openLink(result.payment_url)
+        } else {
+          window.open(result.payment_url, '_blank')
+        }
+      }
+    } catch (err) {
+      const msg = err.message || 'Ошибка создания платежа'
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.showAlert(msg)
+      } else {
+        alert(msg)
+      }
     }
+    setBuying(null)
   }
 
   return (
@@ -56,7 +70,12 @@ export default function Store() {
       </div>
 
       {PRODUCTS.map(p => (
-        <div key={p.id} className="card" onClick={() => handleBuy(p.id)}>
+        <div
+          key={p.id}
+          className="card"
+          onClick={() => handleBuy(p.id)}
+          style={{ opacity: buying === p.id ? 0.6 : 1 }}
+        >
           <div className="card__header">
             <div className="card__avatar" style={{ fontSize: 24 }}>{p.icon}</div>
             <div className="card__info">
@@ -72,7 +91,7 @@ export default function Store() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
-              {p.price}
+              {buying === p.id ? '⏳...' : p.price}
             </div>
             {p.badge && <span className="badge badge--success">{p.badge}</span>}
           </div>

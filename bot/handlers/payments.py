@@ -1,14 +1,82 @@
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, LabeledPrice, PreCheckoutQuery
-from aiogram.exceptions import TelegramAPIError
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from bot.keyboards.common import store_kb, get_buy_confirm_kb
 from database import db
 import config
 import logging
+import uuid
 
 router = Router()
 
-PROVIDER_TOKEN = config.YOOKASSA_TOKEN
+# ================= PRODUCT CATALOG =================
+
+PRODUCTS = {
+    "buy_inv_1": {
+        "title": "1 Расследование",
+        "desc": "Пополнение баланса на 1 расследование.",
+        "amount": "1.00",       # 1 RUB for testing
+        "display_price": "1",
+        "payload": "inv_1",
+    },
+    "buy_inv_3": {
+        "title": "3 Расследования",
+        "desc": "Пополнение баланса на 3 расследования со скидкой.",
+        "amount": "249.00",
+        "display_price": "249",
+        "payload": "inv_3",
+    },
+    "buy_prem_1": {
+        "title": "Premium Подписка (1 Месяц)",
+        "desc": "Безлимитные расследования на 30 дней и шпионский режим.",
+        "amount": "299.00",
+        "display_price": "299",
+        "payload": "prem_1",
+    },
+}
+
+
+def _create_yookassa_payment(product_key: str, user_id: int) -> str | None:
+    """Creates a YooKassa payment and returns the confirmation URL."""
+    from yookassa import Configuration, Payment
+
+    if not config.YOOKASSA_SHOP_ID or not config.YOOKASSA_SECRET_KEY:
+        logging.error("YooKassa credentials not configured")
+        return None
+
+    Configuration.account_id = config.YOOKASSA_SHOP_ID
+    Configuration.secret_key = config.YOOKASSA_SECRET_KEY
+
+    product = PRODUCTS.get(product_key)
+    if not product:
+        return None
+
+    idempotence_key = str(uuid.uuid4())
+
+    try:
+        payment = Payment.create({
+            "amount": {
+                "value": product["amount"],
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": config.WEBAPP_URL or "https://t.me"
+            },
+            "capture": True,
+            "description": product["title"],
+            "metadata": {
+                "user_id": str(user_id),
+                "payload": product["payload"]
+            }
+        }, idempotence_key)
+
+        return payment.confirmation.confirmation_url
+    except Exception as e:
+        logging.error(f"YooKassa payment creation error: {e}")
+        return None
+
+
+# ================= BOT HANDLERS =================
 
 @router.callback_query(F.data == "open_store")
 async def open_store(callback: CallbackQuery):
@@ -30,116 +98,73 @@ async def open_store(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("buy_"))
 async def process_buy_callback(callback: CallbackQuery):
     action = callback.data
-    
-    if action == "buy_inv_1":
-        title = "1 Расследование"
-        desc = "Вы собираетесь приобрести 1 дополнительное расследование."
-        price = "99"
-        payload = "buy_inv_1"
-    elif action == "buy_inv_3":
-        title = "3 Расследования"
-        desc = "Вы собираетесь приобрести набор из 3 расследований."
-        price = "249"
-        payload = "buy_inv_3"
-    elif action == "buy_prem_1":
-        title = "Premium Подписка (1 Месяц)"
-        desc = "👑 Безлимитные расследования на 30 дней и شпионский режим. Читайте переписку сыщика в реальном времени!"
-        price = "299"
-        payload = "buy_prem_1"
-    else:
+    product = PRODUCTS.get(action)
+
+    if not product:
         await callback.answer("Неизвестный товар!")
         return
 
     text = (
         f"🛒 **Подтверждение покупки**\n━━━━━━━━━━━━━\n\n"
-        f"**Товар:** {title}\n"
-        f"**Описание:** {desc}\n\n"
-        f"**К оплате:** {price} ₽"
+        f"**Товар:** {product['title']}\n"
+        f"**Описание:** {product['desc']}\n\n"
+        f"**К оплате:** {product['display_price']} ₽"
     )
-    
+
     try:
-        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=get_buy_confirm_kb(payload, price))
+        await callback.message.edit_text(
+            text, parse_mode="Markdown",
+            reply_markup=get_buy_confirm_kb(action, product['display_price'])
+        )
     except Exception:
         await callback.message.delete()
-        await callback.message.answer(text, parse_mode="Markdown", reply_markup=get_buy_confirm_kb(payload, price))
-    
+        await callback.message.answer(
+            text, parse_mode="Markdown",
+            reply_markup=get_buy_confirm_kb(action, product['display_price'])
+        )
+
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("confirm_buy_"))
-async def send_invoice_callback(callback: CallbackQuery):
-    action = callback.data.replace("confirm_", "")
-    
-    if not PROVIDER_TOKEN:
-        await callback.answer("Тестовый режим оплаты. Токен провайдера не настроен.", show_alert=True)
+async def send_payment_link(callback: CallbackQuery):
+    product_key = callback.data.replace("confirm_", "")
+    user_id = callback.from_user.id
+
+    await callback.answer("⏳ Создаём ссылку на оплату...")
+
+    payment_url = _create_yookassa_payment(product_key, user_id)
+
+    if not payment_url:
+        try:
+            await callback.message.edit_text(
+                "❌ Не удалось создать платёж. Попробуйте позже.",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="⬅️ Назад в магазин", callback_data="open_store")]
+                ])
+            )
+        except Exception:
+            await callback.message.answer("❌ Не удалось создать платёж. Попробуйте позже.")
         return
 
-    title = ""
-    description = ""
-    payload = ""
-    price_amount = 0
-    
-    if action == "buy_inv_1":
-        title = "1 Расследование"
-        description = "Пополнение баланса на 1 дело."
-        payload = "inv_1"
-        price_amount = 9900
-    elif action == "buy_inv_3":
-        title = "3 Расследования"
-        description = "Пополнение баланса на 3 дела со скидкой."
-        payload = "inv_3"
-        price_amount = 24900
-    elif action == "buy_prem_1":
-        title = "Premium Подписка (1 Месяц)"
-        description = "Безлимитные расследования на 30 дней и шпионский режим."
-        payload = "prem_1"
-        price_amount = 29900
-    else:
-        await callback.answer("Неизвестный товар!")
-        return
-        
-    prices = [LabeledPrice(label=title, amount=price_amount)]
+    product = PRODUCTS.get(product_key, {})
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"💳 Оплатить {product.get('display_price', '')} ₽", url=payment_url)],
+        [InlineKeyboardButton(text="⬅️ Назад в магазин", callback_data="open_store")]
+    ])
 
     try:
-        await callback.message.bot.send_invoice(
-            chat_id=callback.message.chat.id,
-            title=title,
-            description=description,
-            payload=payload,
-            provider_token=PROVIDER_TOKEN,
-            currency="RUB",
-            prices=prices,
-            start_parameter="test-payment",
-            need_name=False,
-            need_phone_number=False,
-            need_email=False,
-            need_shipping_address=False,
-            is_flexible=False
+        await callback.message.edit_text(
+            f"🔗 **Ссылка на оплату готова!**\n\n"
+            f"Нажмите кнопку ниже, чтобы перейти к оплате.\n"
+            f"После успешной оплаты баланс будет пополнен автоматически.",
+            reply_markup=kb, parse_mode="Markdown"
         )
-        await callback.answer()
-    except TelegramAPIError as e:
-        logging.error(f"Error sending invoice: {e}")
-        await callback.answer("Проблема на стороне платежной системы. Попробуйте позже.", show_alert=True)
-
-@router.pre_checkout_query()
-async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery):
-    await pre_checkout_query.bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
-
-@router.message(F.successful_payment)
-async def process_successful_payment(message: Message):
-    payload = message.successful_payment.invoice_payload
-    user_id = message.from_user.id
-    
-    if payload == "inv_1":
-        await db.add_balance(user_id, 1)
-        await message.answer("🎉 Оплата успешна! +1 расследование добавлено на ваш баланс.")
-    elif payload == "inv_3":
-        await db.add_balance(user_id, 3)
-        await message.answer("🎉 Оплата успешна! +3 расследования добавлены на ваш баланс.")
-    elif payload == "prem_1":
-        await db.set_premium(user_id, 30)
-        await message.answer("👑 Оплата успешна! Статус Premium активирован на 1 месяц.")
-    else:
-        await message.answer("Оплата прошла, но товар не распознан. Обратитесь в поддержку.")
-        
-    logging.info(f"User {user_id} successfully bought {payload}")
+    except Exception:
+        await callback.message.delete()
+        await callback.message.answer(
+            f"🔗 **Ссылка на оплату готова!**\n\n"
+            f"Нажмите кнопку ниже, чтобы перейти к оплате.\n"
+            f"После успешной оплаты баланс будет пополнен автоматически.",
+            reply_markup=kb, parse_mode="Markdown"
+        )

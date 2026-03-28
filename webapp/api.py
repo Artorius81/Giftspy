@@ -393,9 +393,115 @@ async def get_balance(user_id: int = Depends(get_current_user)):
     return {"balance": balance}
 
 
+# ================= PAYMENTS (YooKassa Direct) =================
+
+PRODUCTS = {
+    "inv_1": {"title": "1 Расследование", "amount": "1.00", "display_price": "1"},
+    "inv_3": {"title": "3 Расследования", "amount": "249.00", "display_price": "249"},
+    "prem_1": {"title": "Premium (1 Месяц)", "amount": "299.00", "display_price": "299"},
+}
+
+class PaymentCreate(BaseModel):
+    product_id: str  # "inv_1", "inv_3", "prem_1"
+
+@app.post("/api/payments/create")
+async def create_payment(data: PaymentCreate, user_id: int = Depends(get_current_user)):
+    """Creates a YooKassa payment and returns the confirmation URL."""
+    import uuid
+    from yookassa import Configuration, Payment
+    import config
+
+    product = PRODUCTS.get(data.product_id)
+    if not product:
+        raise HTTPException(status_code=400, detail="Unknown product")
+
+    if not config.YOOKASSA_SHOP_ID or not config.YOOKASSA_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Payment system not configured")
+
+    Configuration.account_id = config.YOOKASSA_SHOP_ID
+    Configuration.secret_key = config.YOOKASSA_SECRET_KEY
+
+    try:
+        payment = Payment.create({
+            "amount": {
+                "value": product["amount"],
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": (config.WEBAPP_URL or "https://t.me") + "/store"
+            },
+            "capture": True,
+            "description": product["title"],
+            "metadata": {
+                "user_id": str(user_id),
+                "payload": data.product_id
+            }
+        }, str(uuid.uuid4()))
+
+        return {"payment_url": payment.confirmation.confirmation_url}
+    except Exception as e:
+        logging.error(f"YooKassa payment creation error: {e}")
+        raise HTTPException(status_code=500, detail="Payment creation failed")
+
+
+@app.post("/api/payments/webhook")
+async def yookassa_webhook(request: Request):
+    """Handles YooKassa payment notifications (no auth required — called by YooKassa)."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    event_type = body.get("event")
+    if event_type != "payment.succeeded":
+        return {"ok": True}  # Ignore other events
+
+    payment_obj = body.get("object", {})
+    metadata = payment_obj.get("metadata", {})
+    user_id_str = metadata.get("user_id")
+    payload = metadata.get("payload")
+
+    if not user_id_str or not payload:
+        logging.warning(f"YooKassa webhook: missing metadata: {metadata}")
+        return {"ok": True}
+
+    user_id = int(user_id_str)
+    logging.info(f"YooKassa payment succeeded: user={user_id}, payload={payload}")
+
+    if payload == "inv_1":
+        await db.add_balance(user_id, 1)
+        logging.info(f"User {user_id}: +1 investigation")
+    elif payload == "inv_3":
+        await db.add_balance(user_id, 3)
+        logging.info(f"User {user_id}: +3 investigations")
+    elif payload == "prem_1":
+        await db.set_premium(user_id, 30)
+        logging.info(f"User {user_id}: Premium activated for 30 days")
+    else:
+        logging.warning(f"Unknown payload: {payload}")
+
+    # Notify user via bot (best effort)
+    try:
+        import config as cfg
+        from aiogram import Bot
+        bot = Bot(token=cfg.BOT_TOKEN)
+        if payload == "prem_1":
+            await bot.send_message(user_id, "👑 Оплата успешна! Premium активирован на 1 месяц.")
+        else:
+            count = 1 if payload == "inv_1" else 3
+            await bot.send_message(user_id, f"🎉 Оплата успешна! +{count} расследований добавлено на баланс.")
+        await bot.session.close()
+    except Exception as e:
+        logging.error(f"Failed to notify user {user_id}: {e}")
+
+    return {"ok": True}
+
+
 # ================= STARTUP =================
 
 @app.on_event("startup")
 async def startup():
     await db.init_db()
     logging.info("Mini App API started")
+
