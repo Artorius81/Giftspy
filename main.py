@@ -169,7 +169,7 @@ async def _process_target_input(case, user_message, event):
                 report_text = await ai_service.generate_final_report(chat_session)
 
                 if report_text:
-                    gifts = AIDetectiveService.extract_gifts_from_report(report_text)
+                    gifts = await ai_service.extract_gifts_with_ai(report_text)
                     if gifts:
                         saved_target = await db.find_target_by_identifier(customer_id, target)
                         if not saved_target:
@@ -181,9 +181,7 @@ async def _process_target_input(case, user_message, event):
                             await db.add_to_wishlist(target_id, description, category=category, added_by='ai', case_id=case_id)
                         logging.info(f"🎁 Добавлено {len(gifts)} подарков в вишлист")
                     
-                    import re
-                    clean_report = re.sub(r'\[GIFT:[^\]]+\]', '', report_text).strip()
-                    await db.update_case_status(case_id, 'done', clean_report)
+                    await db.update_case_status(case_id, 'done', report_text)
                 else:
                     await db.update_case_status(case_id, 'done', report_text or '')
                 
