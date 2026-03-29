@@ -769,3 +769,26 @@ async def refund_balance(user_id, amount=1):
             'p_amount': amount
         }).execute()
     )
+
+
+# ================= DETECTIVES (PERSONAS) =================
+
+_cached_personas = None
+
+async def get_personas(force_refresh=False):
+    """Возвращает кэшированный список детективов из БД."""
+    global _cached_personas
+    if _cached_personas is None or force_refresh:
+        result = await asyncio.to_thread(
+            lambda: _client.table('detectives').select('id, name, description, photo_url, emojis').order('id').execute()
+        )
+        _cached_personas = []
+        for r in result.data:
+            _cached_personas.append({
+                "id": r['id'],
+                "name": r['name'],
+                "desc": r['description'],
+                "photo": r['photo_url'],
+                "emojis": r['emojis']
+            })
+    return _cached_personas

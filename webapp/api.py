@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 from database import db
 from webapp.auth import get_user_id_from_init_data
-from bot.keyboards.common import PERSONAS
 
 app = FastAPI(title="Giftspy Mini App API")
 
@@ -344,6 +343,7 @@ async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)
 
 @app.get("/api/personas")
 async def list_personas():
+    personas = await db.get_personas()
     return [
         {
             "index": i,
@@ -351,7 +351,7 @@ async def list_personas():
             "desc": p["desc"],
             "photo": p["photo"]
         }
-        for i, p in enumerate(PERSONAS)
+        for i, p in enumerate(personas)
     ]
 
 

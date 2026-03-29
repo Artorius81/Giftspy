@@ -2,64 +2,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database import db
 
-# ================= БАЗА ДЕТЕКТИВОВ (КАРУСЕЛЬ) =================
-PERSONAS = [
-    {
-        "name": "🕵️‍♂️ Детектив Виктор Блэк",
-        "desc": "Проницательный профессионал в плаще. Идеален для коллег и старших родственников. Задаст вопросы строго по делу, не выходя из образа сыщика.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image.png"
-    },
-    {
-        "name": "🐶 Детектив Коржик",
-        "desc": "Самый пушистый детектив в нашем штате! Гавкает, радуется жизни и вынюхивает след подарка. Идеально для друзей, девушек и любителей животных.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(2).png"
-    },
-    {
-        "name": "👽 Детектив Зорп из Туманности Андромеды",
-        "desc": "Межгалактический следователь. Прилетел на Землю изучать странные 'человеческие ритуалы дарения'. Смешно удивляется обычным вещам. Отличный выбор для гиков и людей с чувством юмора.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(1).png"
-    },
-    {
-        "name": "🎩 Сэр Реджинальд Фезерстон",
-        "desc": "Детектив голубых кровей. Общается исключительно на 'Вы', любит чай и светские беседы. Максимально галантен и обходителен в ведении расследования.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/image%20(3).png"
-    },
-    {
-        "name": "💀 Детектив Гробовщик",
-        "desc": "Мрачный, но справедливый. Говорит короткими рублеными фразами, как в вестерне. Идеально для тех, кто ценит чёрный юмор и брутальный стиль.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_wy9n4uwy9n4uwy9n.png"
-    },
-    {
-        "name": "🤖 Агент Глитч",
-        "desc": "Заикающийся робот-детектив. Пе-пе-периодически сбоит. Добавляет '01001' в речь. Забавный выбор для технарей и любителей мемов.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_r9kl8ir9kl8ir9kl.png"
-    },
-    {
-        "name": "🧙‍♂️ Гэндальф Подаркович",
-        "desc": "Мудрый волшебник, который знает всё о желаниях смертных. Говорит загадками и цитатами. Идеально для фанатов фэнтези и Толкина.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_j8tk6jj8tk6jj8tk.png"
-    },
-    {
-        "name": "🏴‍☠️ Капитан Джек Подарроу",
-        "desc": "Пиратский детектив! Говорит как настоящий пират, ищет 'сокровища желаний'. Всегда немного пьян и невероятно обаятелен. Для любителей приключений.",
-        "photo": "https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/Gemini_Generated_Image_qmehf6qmehf6qmeh.png"
-    }
-]
+# ================= БАЗА ДЕТЕКТИВОВ (ПЕРЕНЕСЕНО В БД) =================
 
-def get_persona_keyboard(index: int) -> InlineKeyboardMarkup:
-    """Генерирует инлайн-кнопки для карусели (Влево - Выбрать - Вправо)"""
-    builder = InlineKeyboardBuilder()
-
-    prev_index = index - 1 if index > 0 else len(PERSONAS) - 1
-    builder.button(text="⬅️", callback_data=f"persona_page_{prev_index}")
-
-    builder.button(text="✅ Выбрать", callback_data=f"persona_select_{index}")
-
-    next_index = index + 1 if index < len(PERSONAS) - 1 else 0
-    builder.button(text="➡️", callback_data=f"persona_page_{next_index}")
-
-    builder.adjust(3)
-    return builder.as_markup()
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[

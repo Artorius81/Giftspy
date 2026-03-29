@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto, ReplyKeyboard
 from aiogram.filters import StateFilter
 
 from bot.states.order import OrderGift
-from bot.keyboards.common import PERSONAS, main_menu, resolve_target_display_name
+from bot.keyboards.common import main_menu, resolve_target_display_name
 from database import db
 
 router = Router()
@@ -86,9 +86,9 @@ def _get_wizard_context_kb(has_saved: bool = False, editing: bool = False) -> In
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def _get_wizard_persona_kb(persona_index: int, editing: bool = False) -> InlineKeyboardMarkup:
-    prev_idx = persona_index - 1 if persona_index > 0 else len(PERSONAS) - 1
-    next_idx = persona_index + 1 if persona_index < len(PERSONAS) - 1 else 0
+def _get_wizard_persona_kb(persona_index: int, total_personas: int, editing: bool = False) -> InlineKeyboardMarkup:
+    prev_idx = persona_index - 1 if persona_index > 0 else total_personas - 1
+    next_idx = persona_index + 1 if persona_index < total_personas - 1 else 0
     rows = [
         [InlineKeyboardButton(text="⬅️", callback_data=f"wz_persona_page_{prev_idx}"),
          InlineKeyboardButton(text="✅ Выбрать", callback_data=f"wz_persona_select_{persona_index}"),
@@ -203,7 +203,8 @@ async def _render_wizard_step(step: str, data: dict, customer_id: int,
         kb = _get_wizard_context_kb(has_saved, editing)
         
     elif step == 'persona':
-        persona = PERSONAS[persona_index]
+        personas = await db.get_personas()
+        persona = personas[persona_index]
         caption = (
             f"📋 **НОВОЕ РАССЛЕДОВАНИЕ**\n{progress}\n"
             f"{summary}\n"
@@ -211,7 +212,7 @@ async def _render_wizard_step(step: str, data: dict, customer_id: int,
             f"🕵️‍♂️ **Шаг 4: Выберите детектива**\n\n"
             f"**{persona['name']}**\n{persona['desc']}"
         )
-        kb = _get_wizard_persona_kb(persona_index, editing)
+        kb = _get_wizard_persona_kb(persona_index, len(personas), editing)
         
         if wizard_msg_id and wizard_msg_type == 'photo':
             # Edit existing photo message in place
@@ -536,7 +537,8 @@ async def wz_persona_page(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith("wz_persona_select_"))
 async def wz_persona_select(callback: CallbackQuery, state: FSMContext):
     index = int(callback.data.split("_")[3])
-    selected = PERSONAS[index]['name']
+    personas = await db.get_personas()
+    selected = personas[index]['name']
     await state.update_data(persona=selected)
     data = await state.get_data()
     await _next_step_or_confirm(state, data, callback.from_user.id,
