@@ -14,7 +14,7 @@ import PopupProvider from './components/PopupProvider'
 import './styles/snackbar.css'
 
 // Main tab routes where BottomNav should be visible
-const MAIN_ROUTES = ['/', '/targets', '/new-case', '/dossier', '/store']
+const MAIN_ROUTES = ['/', '/targets', '/new-case', '/profile/edit']
 
 function AppContent() {
   const location = useLocation()
@@ -66,6 +66,21 @@ function AppContent() {
       }
     }
   }, [location, exitSnackbarVisible, navigate])
+
+  // Global keyboard fix: scroll focused input into view
+  useEffect(() => {
+    const handleFocusIn = (e) => {
+      const el = e.target
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        // Delay to let keyboard open first
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 300)
+      }
+    }
+    document.addEventListener('focusin', handleFocusIn)
+    return () => document.removeEventListener('focusin', handleFocusIn)
+  }, [])
 
   return (
     <div className="app">

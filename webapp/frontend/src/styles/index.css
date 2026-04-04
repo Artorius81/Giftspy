@@ -1604,3 +1604,29 @@ html {
 .chat-view-toggle {
   transition: bottom 0.15s ease;
 }
+
+/* ---- Nav Avatar ---- */
+.nav-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  overflow: hidden;
+  border: 1.5px solid rgba(108, 92, 231, 0.4);
+}
+
+.nav-item.active .nav-avatar {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(108, 92, 231, 0.3);
+}
+
+.nav-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}

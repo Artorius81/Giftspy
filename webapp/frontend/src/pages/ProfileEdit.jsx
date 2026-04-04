@@ -80,7 +80,7 @@ export default function ProfileEdit() {
         <button className="header__back" onClick={() => navigate(-1)}>
           <span className="icon">‹</span>
         </button>
-        <span className="header__title">✏️ Редактировать профиль</span>
+        <span className="header__title">Профиль</span>
         <div className="header__placeholder" />
       </div>
 
@@ -115,6 +115,33 @@ export default function ProfileEdit() {
           {profile.photo && profile.photo !== 'None' ? '📷 Изменить фото' : '📷 Добавить фото'}
         </button>
       </div>
+
+      {/* Stats */}
+      <div className="stats-row" style={{ marginBottom: 4 }}>
+        <div className="stat-card">
+          <div className="stat-card__value">{profile.is_premium ? '∞' : profile.balance}</div>
+          <div className="stat-card__label">Расследований</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__value">{profile.successful_cases || 0}</div>
+          <div className="stat-card__label">Закрыто</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__value">{profile.active_cases || 0}</div>
+          <div className="stat-card__label">В работе</div>
+        </div>
+      </div>
+
+      {profile.is_premium && (
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <span className="badge badge--success">👑 Премиум</span>
+          {profile.premium_until && (
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>
+              до {new Date(profile.premium_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Edit Form */}
       <form onSubmit={handleSave}>
@@ -159,6 +186,22 @@ export default function ProfileEdit() {
           </button>
         </div>
       </form>
+
+      {/* Quick Links */}
+      <div className="section-header" style={{ marginTop: 20 }}>
+        <div className="section-header__title">🔗 Быстрый доступ</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
+        <button className="btn btn--secondary" onClick={() => navigate('/store')}>
+          🛍 Магазин
+        </button>
+        <button className="btn btn--secondary" onClick={() => navigate('/dossier')}>
+          📁 Досье
+        </button>
+        <button className="btn btn--secondary" onClick={() => navigate('/settings')}>
+          ⚙️ Настройки
+        </button>
+      </div>
     </div>
   )
 }

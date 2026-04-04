@@ -62,7 +62,7 @@ export function formatDuration(startStr, endStr) {
     const diffHours = Math.floor(diffMin / 60)
     const diffDays = Math.floor(diffHours / 24)
     
-    if (diffMin < 1) return 'мгновенно'
+    if (diffMin < 1) return ''
     if (diffMin < 60) return `${diffMin} мин.`
     if (diffHours < 24) {
       if (diffHours === 1) return '1 час'

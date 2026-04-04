@@ -1,16 +1,17 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import api from '../api'
+import { useData } from '../hooks/useData'
 
 const tabs = [
   { path: '/', icon: '🏠', label: 'Главная' },
+  { path: '/new-case', icon: '🕵️', label: 'Детектив' },
   { path: '/targets', icon: '👥', label: 'Цели' },
-  { path: '/new-case', icon: '🔍', label: 'Новое дело' },
-  { path: '/dossier', icon: '📁', label: 'Досье' },
-  { path: '/store', icon: '🛍', label: 'Магазин' },
 ]
 
 export default function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { data: profile } = useData('profile', api.getProfile)
 
   return (
     <nav className="bottom-nav">
@@ -31,6 +32,24 @@ export default function BottomNav() {
           <span>{tab.label}</span>
         </button>
       ))}
+      {/* Profile Avatar */}
+      <button
+        className={`nav-item ${location.pathname === '/profile/edit' ? 'active' : ''}`}
+        onClick={() => {
+          if (location.pathname === '/profile/edit') return;
+          navigate('/profile/edit', { replace: true });
+        }}
+      >
+        <span className="icon">
+          <span className="nav-avatar">
+            {profile?.photo && profile.photo !== 'None'
+              ? <img src={profile.photo} alt="" className="nav-avatar__img" />
+              : '👤'
+            }
+          </span>
+        </span>
+        <span>Профиль</span>
+      </button>
     </nav>
   )
 }
