@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
+import { timeAgo } from '../utils/timeAgo'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -185,19 +186,38 @@ export default function TargetDetail() {
       </div>
 
       {target.wishlist && target.wishlist.length > 0 ? (
-        <div className="card">
-          {target.wishlist.map(w => (
-            <div key={w.id} className="wishlist-item">
-              <div className="wishlist-item__icon">{w.added_by === 'ai' ? '🤖' : '✍️'}</div>
-              <div>
-                <div className="wishlist-item__text">{w.description}</div>
-                <div className="wishlist-item__source">
-                  {w.holiday || 'Без повода'} {w.category ? `· ${w.category}` : ''}
-                </div>
+        (() => {
+          // Group by holiday + case_date
+          const groups = {}
+          target.wishlist.forEach(w => {
+            const key = `${w.holiday || 'Без повода'}__${w.case_date || ''}`
+            if (!groups[key]) {
+              groups[key] = { holiday: w.holiday || 'Без повода', date: w.case_date, items: [] }
+            }
+            groups[key].items.push(w)
+          })
+          return Object.values(groups).map((group, gi) => (
+            <div key={gi} style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📂 {group.holiday}</span>
+                {group.date && <span style={{ fontWeight: 400 }}>· {timeAgo(group.date)}</span>}
+              </div>
+              <div className="card">
+                {group.items.map(w => (
+                  <div key={w.id} className="wishlist-item">
+                    <div className="wishlist-item__icon">{w.added_by === 'ai' ? '🤖' : '✍️'}</div>
+                    <div>
+                      <div className="wishlist-item__text">{w.description}</div>
+                      {w.category && (
+                        <div className="wishlist-item__source">{w.category}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        })()
       ) : (
         <div className="empty-state" style={{ padding: '24px 0' }}>
           <div className="empty-state__desc">Вишлист пока пуст. Отправьте детектива!</div>

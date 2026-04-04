@@ -4,6 +4,7 @@ import api from '../api'
 import CaseChatView from '../components/CaseChatView'
 import { useData, mutateData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
+import { timeAgo, formatDuration } from '../utils/timeAgo'
 
 const STATUS_MAP = {
   pending: '🟡 Ожидание',
@@ -100,6 +101,18 @@ export default function CaseDetail() {
               <div>🎉 <strong>Повод:</strong> {caseData.holiday}</div>
               <div>🕵️ <strong>Детектив:</strong> {caseData.persona}</div>
               <div>💵 <strong>Бюджет:</strong> {caseData.budget}</div>
+              {caseData.created_at && (
+                <div>📅 <strong>Начато:</strong> {timeAgo(caseData.created_at)}</div>
+              )}
+              {caseData.completed_at && (
+                <div>✅ <strong>Завершено:</strong> {timeAgo(caseData.completed_at)}
+                  {caseData.created_at && (
+                    <span style={{ color: 'var(--text-secondary)', marginLeft: 6, fontSize: 12 }}>
+                      (за {formatDuration(caseData.created_at, caseData.completed_at)})
+                    </span>
+                  )}
+                </div>
+              )}
               <div style={{ marginTop: 4 }}>
                 <span className={`badge ${isActive ? 'badge--active' : caseData.status === 'done' || caseData.status === 'delivered' ? 'badge--success' : 'badge--danger'}`}>
                   {STATUS_MAP[caseData.status] || caseData.status}

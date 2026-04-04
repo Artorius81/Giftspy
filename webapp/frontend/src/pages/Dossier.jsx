@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
+import { timeAgo } from '../utils/timeAgo'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -108,13 +109,17 @@ export default function Dossier() {
                             {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
                           </div>
                           <div className="card__info">
-                            <div className="card__name" style={{ fontSize: 14 }}>Дело №{c.id}</div>
+                            <div className="card__name" style={{ fontSize: 14 }}>
+                              Дело №{c.id}
+                              {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
+                            </div>
                             <div className="card__sub" style={{ fontSize: 12 }}>
                               <span className={`status-dot status-dot--${st.dot}`} />
                               {st.label}
+                              {c.created_at && <span style={{ marginLeft: 4 }}>· {timeAgo(c.created_at)}</span>}
                             </div>
                           </div>
-                          {c.has_report && <span className="badge badge--success" style={{ padding: '2px 8px', fontSize: 10 }}>📋 Отчёт</span>}
+                          {c.has_report && <span className="badge badge--success" style={{ padding: '2px 8px', fontSize: 10 }}>📋</span>}
                         </div>
                       </div>
                     )

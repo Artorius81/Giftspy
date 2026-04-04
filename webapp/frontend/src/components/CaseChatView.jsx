@@ -66,7 +66,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     }
   }, [loading])
 
-  // Handle mobile keyboard: move input above keyboard
+  // Handle mobile keyboard: move input above keyboard + scroll
   useEffect(() => {
     if (!window.visualViewport) return
     const vv = window.visualViewport
@@ -76,6 +76,10 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       const keyboardHeight = window.innerHeight - vv.height
       if (keyboardHeight > 100) {
         el.style.bottom = `${keyboardHeight + 8}px`
+        // Also scroll messages into view
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        }, 50)
       } else {
         el.style.bottom = ''
       }
@@ -218,6 +222,12 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
 
             const isDetective = msg.sender === 'ai'
             const msgTime = formatTime(msg.timestamp)
+            // Show sender name only once per consecutive group
+            const prevMsg = idx > 0 ? messages[idx - 1] : null
+            const showSenderName = !prevMsg || prevMsg.sender !== msg.sender || prevMsg.sender === 'system'
+            const senderDisplayName = isDetective
+              ? (personaName || 'Детектив')
+              : (targetName || 'Цель')
             return (
               <div key={idx} className={`chat-bubble-container ${isDetective ? 'right' : 'left'}`}>
                 {!isDetective && (
@@ -225,11 +235,18 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                     {targetAvatar}
                   </div>
                 )}
-                <div className={`chat-bubble ${isDetective ? 'chat-bubble--agent' : 'chat-bubble--target'}`}>
-                  <div className="chat-bubble__text">{msg.message}</div>
-                  <div className="chat-bubble__meta">
-                    <span className="chat-bubble__time">{msgTime}</span>
-                    {isDetective && <span className="chat-bubble__icon">🕵️‍♂️</span>}
+                <div>
+                  {showSenderName && (
+                    <div className={`chat-bubble__sender ${isDetective ? 'chat-bubble__sender--right' : ''}`}>
+                      {senderDisplayName}
+                    </div>
+                  )}
+                  <div className={`chat-bubble ${isDetective ? 'chat-bubble--agent' : 'chat-bubble--target'}`}>
+                    <div className="chat-bubble__text">{msg.message}</div>
+                    <div className="chat-bubble__meta">
+                      <span className="chat-bubble__time">{msgTime}</span>
+                      {isDetective && <span className="chat-bubble__icon">🕵️‍♂️</span>}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -299,9 +316,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
             </div>
           </div>
         ) : (
-          <div className="chat-input-hint">
-            Расследование завершено
-          </div>
+          null /* No hint for completed cases - status banner is enough */
         )}
       </div>
     </div>

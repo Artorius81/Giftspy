@@ -97,7 +97,7 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
             try:
                 pending_cases = await db.get_pending_cases()
                 for case in pending_cases:
-                    case_id, customer_id, target, holiday, context, persona, budget, status, report = case
+                    case_id, customer_id, target, holiday, context, persona, budget, status, report, *_rest = case
 
                     logging.info(f"🕵️‍♂️ Беру в работу Дело №{case_id} на цель {target} (Стиль: {persona})")
 
@@ -111,14 +111,22 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                         # GenAI session context logic will be handled inside Telethon message handler
                         await db.update_case_status(case_id, 'started')
 
-                        # Генерируем первое сообщение "холодного старта"
+                        # Генерируем два сообщения "холодного старта"
                         chat_session = await ai_service.create_new_chat(holiday, context, persona, budget)
-                        first_msg = await ai_service.generate_first_message(chat_session)
+                        first_msgs = await ai_service.generate_first_messages(chat_session)
 
-                        if first_msg:
-                            await client.send_message(target_entity, first_msg, parse_mode="Markdown")
-                            await db.save_chat_message(case_id, 'ai', first_msg)
-                            logging.info(f"✅ Первое сообщение отправлено цели {target}")
+                        if first_msgs and len(first_msgs) > 0:
+                            # Message 1: Greeting
+                            await client.send_message(target_entity, first_msgs[0], parse_mode="Markdown")
+                            await db.save_chat_message(case_id, 'ai', first_msgs[0])
+                            logging.info(f"✅ Приветствие отправлено цели {target}")
+                            
+                            # Message 2: Question (with delay)
+                            if len(first_msgs) > 1:
+                                await asyncio.sleep(3)  # Natural pause
+                                await client.send_message(target_entity, first_msgs[1], parse_mode="Markdown")
+                                await db.save_chat_message(case_id, 'ai', first_msgs[1])
+                                logging.info(f"✅ Вопрос о сотрудничестве отправлен цели {target}")
                             
                             # Spy mode: показываем первое сообщение заказчику
                             spy_mode = await db.get_user_spy_mode(customer_id)

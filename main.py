@@ -124,7 +124,7 @@ async def update_spy_message(case_id: int, customer_id: int, display_name: str, 
 
 async def _process_target_input(case, user_message, event):
     """Общая логика обработки входящего сообщения от цели."""
-    case_id, customer_id, target, holiday, context, persona, budget, status, report = case
+    case_id, customer_id, target, holiday, context, persona, budget, status, report, *_rest = case
 
     if status not in ['started', 'in_progress', 'manual_mode']:
         return

@@ -23,7 +23,7 @@ async def show_dossier_list(message: Message):
 
     contacts = {}
     for case in cases:
-        case_id, target, status, report = case
+        case_id, target, status, report, *_extra = case
         if target not in contacts:
             contacts[target] = {"count": 1, "has_active": status in ["pending", "started", "in_progress", "manual_mode"]}
         else:
@@ -66,7 +66,7 @@ async def show_target_dossier(callback: CallbackQuery):
     
     keyboard_builder = []
     for case in target_cases:
-        case_id, t, status, report = case
+        case_id, t, status, report, *_extra = case
         icons = {'pending': '🟡', 'started': '🔵', 'in_progress': '🔵', 'manual_mode': '🛑', 'done': '✅', 'delivered': '✅', 'cancelled': '❌', 'error': '⚠️'}
         names = {'pending': 'Ожид.', 'started': 'Начато', 'in_progress': 'Допрос', 'manual_mode': 'Перехват', 'done': 'Готово', 'delivered': 'Готово', 'cancelled': 'Отмена', 'error': 'Ошибка'}
         icon = icons.get(status, '⚪')
@@ -106,7 +106,7 @@ async def back_to_dossier_list(callback: CallbackQuery):
 
     contacts = {}
     for case in cases:
-        case_id, target, status, report = case
+        case_id, target, status, report, *_extra = case
         if target not in contacts:
             contacts[target] = {"count": 1, "has_active": status in ["pending", "started", "in_progress", "manual_mode"]}
         else:
@@ -141,7 +141,7 @@ async def show_case_detail(callback: CallbackQuery):
         await callback.answer("Дело не найдено")
         return
     
-    _, _, target, holiday, context, persona, budget, status, report = case
+    _, _, target, holiday, context, persona, budget, status, report, *_rest = case
     display_name = await resolve_target_display_name(customer_id, target)
     
     status_names = {'pending': '🟡 Ожидание', 'started': '🔵 Начато', 'in_progress': '🔵 Допрос', 'manual_mode': '🛑 Перехват', 'done': '✅ Готово', 'delivered': '✅ Доставлено', 'cancelled': '❌ Отменено'}

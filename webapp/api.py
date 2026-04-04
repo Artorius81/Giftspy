@@ -243,7 +243,7 @@ async def list_cases(user_id: int = Depends(get_current_user)):
     cases = await db.get_all_user_cases(user_id)
     result = []
     for c in cases:
-        case_id, target, status, report = c
+        case_id, target, status, report, holiday, persona, budget, created_at, completed_at = c
         # Try to resolve target info
         saved = await db.find_target_by_identifier(user_id, target)
         display_name = saved[2] if saved and saved[2] else target
@@ -257,7 +257,12 @@ async def list_cases(user_id: int = Depends(get_current_user)):
             "status": status,
             "has_report": bool(report),
             "target_photo": target_photo,
-            "target_db_id": target_db_id
+            "target_db_id": target_db_id,
+            "holiday": holiday,
+            "persona": persona,
+            "budget": budget,
+            "created_at": created_at,
+            "completed_at": completed_at,
         })
     return result
 
@@ -268,7 +273,7 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
     if not case or case[1] != user_id:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    _, _, target, holiday, context, persona, budget, status, report = case
+    _, _, target, holiday, context, persona, budget, status, report, created_at, completed_at = case
     saved = await db.find_target_by_identifier(user_id, target)
     display_name = saved[2] if saved and saved[2] else target
     target_photo = saved[5] if saved else None
@@ -289,7 +294,9 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
         "report": report,
         "spy_mode": spy_mode,
         "target_photo": target_photo,
-        "target_db_id": target_db_id
+        "target_db_id": target_db_id,
+        "created_at": created_at,
+        "completed_at": completed_at,
     }
 
 @app.get("/api/cases/{case_id}/chat")
