@@ -65,7 +65,10 @@ async def update_case_status(case_id, status, report=""):
     update_data = {'status': status, 'report': report}
     # Auto-set completed_at for terminal statuses
     if status in ('done', 'delivered', 'cancelled', 'error'):
-        update_data['completed_at'] = datetime.utcnow().isoformat()
+        try:
+            update_data['completed_at'] = datetime.utcnow().isoformat()
+        except Exception:
+            pass
     await asyncio.to_thread(
         lambda: _client.table('cases')
             .update(update_data)
@@ -152,12 +155,21 @@ async def get_active_case_by_target(target):
 
 
 async def get_case_by_id(case_id):
-    result = await asyncio.to_thread(
-        lambda: _client.table('cases')
-            .select('id, customer_id, target, holiday, context, persona, budget, status, report, created_at, completed_at')
-            .eq('id', case_id)
-            .execute()
-    )
+    try:
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, customer_id, target, holiday, context, persona, budget, status, report, created_at, completed_at')
+                .eq('id', case_id)
+                .execute()
+        )
+    except Exception:
+        # Fallback if completed_at column doesn't exist yet
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, customer_id, target, holiday, context, persona, budget, status, report, created_at')
+                .eq('id', case_id)
+                .execute()
+        )
     if result.data:
         r = result.data[0]
         return (r['id'], r['customer_id'], r['target'], r['holiday'], r['context'],
@@ -509,13 +521,23 @@ async def get_user_spy_mode(user_id):
 
 
 async def get_all_user_cases(customer_id):
-    result = await asyncio.to_thread(
-        lambda: _client.table('cases')
-            .select('id, target, status, report, holiday, persona, budget, created_at, completed_at')
-            .eq('customer_id', customer_id)
-            .order('id', desc=True)
-            .execute()
-    )
+    try:
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, target, status, report, holiday, persona, budget, created_at, completed_at')
+                .eq('customer_id', customer_id)
+                .order('id', desc=True)
+                .execute()
+        )
+    except Exception:
+        # Fallback if completed_at column doesn't exist yet
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, target, status, report, holiday, persona, budget, created_at')
+                .eq('customer_id', customer_id)
+                .order('id', desc=True)
+                .execute()
+        )
     return [(r['id'], r['target'], r['status'], r['report'], r.get('holiday'), r.get('persona'),
              r.get('budget'), r.get('created_at'), r.get('completed_at')) for r in result.data]
 
