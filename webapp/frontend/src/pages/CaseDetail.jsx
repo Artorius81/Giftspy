@@ -155,7 +155,7 @@ export default function CaseDetail() {
           )}
 
           {/* Actions */}
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 60 }}>
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 100 }}>
             <button className="btn btn--secondary" onClick={() => navigate(`/new-case?target=${caseData.target}`)}>
               🔄 Новое расследование
             </button>

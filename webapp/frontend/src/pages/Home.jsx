@@ -84,10 +84,8 @@ export default function Home() {
     <div className="page">
       <div className="header">
         <div className="header__placeholder" />
-        <span className="header__title">Расследования</span>
-        <button className="header__btn" onClick={() => navigate('/settings')} aria-label="Настройки">
-          <span className="icon">⚙️</span>
-        </button>
+        <span className="header__title">Главная</span>
+        <div className="header__placeholder" />
       </div>
 
       {/* Quick Stats */}

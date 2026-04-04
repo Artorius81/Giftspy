@@ -1605,14 +1605,7 @@ html {
   --keyboard-height: 0px;
 }
 
-.page {
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--keyboard-height, 0px));
-}
-
-/* ---- Chat View Toggle responsive to keyboard ---- */
-.chat-view-toggle {
-  transition: bottom 0.15s ease;
-}
+/* chat-view-toggle transition handled in main rule above */
 
 /* ---- Nav Avatar ---- */
 .nav-avatar {

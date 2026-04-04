@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { mutateData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
@@ -30,6 +31,7 @@ const PRODUCTS = [
 ]
 
 export default function Store() {
+  const navigate = useNavigate()
   const [buying, setBuying] = useState(null)
 
   // Refresh profile when user returns from payment page
@@ -67,7 +69,9 @@ export default function Store() {
   return (
     <div className="page">
       <div className="header">
-        <div className="header__placeholder" />
+        <button className="header__back" onClick={() => navigate(-1)}>
+          <span className="icon">‹</span>
+        </button>
         <h1 className="header__title">🛍 Магазин</h1>
         <div className="header__placeholder" />
       </div>
