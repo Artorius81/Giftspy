@@ -75,7 +75,7 @@ export default function NewCase() {
         persona: form.persona,
         budget: form.budget || 'Не указан',
       })
-      navigate('/dossier', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       await showAlert(err.message)
     }

@@ -198,19 +198,22 @@ export default function ProfileEdit() {
       </form>
 
       {/* Quick Links */}
-      <div className="section-header" style={{ marginTop: 20 }}>
+      <div className="section-header" style={{ marginTop: 24 }}>
         <div className="section-header__title">🔗 Быстрый доступ</div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
-        <button className="btn btn--secondary" onClick={() => navigate('/store')}>
-          🛍 Магазин
-        </button>
-        <button className="btn btn--secondary" onClick={() => navigate('/dossier')}>
-          📁 Досье
-        </button>
-        <button className="btn btn--secondary" onClick={() => navigate('/settings')}>
-          ⚙️ Настройки
-        </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 80 }}>
+        <div className="card" onClick={() => navigate('/store')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '16px' }}>
+          <span style={{ fontSize: '16px', fontWeight: 500 }}>🛍 Магазин</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '20px', lineHeight: 1 }}>›</span>
+        </div>
+        <div className="card" onClick={() => navigate('/dossier')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '16px' }}>
+          <span style={{ fontSize: '16px', fontWeight: 500 }}>📁 Досье</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '20px', lineHeight: 1 }}>›</span>
+        </div>
+        <div className="card" onClick={() => navigate('/settings')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '16px' }}>
+          <span style={{ fontSize: '16px', fontWeight: 500 }}>⚙️ Настройки</span>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '20px', lineHeight: 1 }}>›</span>
+        </div>
       </div>
     </div>
   )
