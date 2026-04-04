@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
@@ -21,12 +21,12 @@ function AppContent() {
   const navigate = useNavigate()
   const showNav = MAIN_ROUTES.includes(location.pathname)
 
+  // Telegram BackButton — show only on sub-pages (not main tabs)
   useEffect(() => {
     const webApp = window.Telegram?.WebApp
     if (!webApp) return
 
     const handleBack = () => {
-      // If history is empty, maybe it'll do nothing, but for usual app flows it works identically to hardware back button
       navigate(-1)
     }
 
@@ -43,43 +43,36 @@ function AppContent() {
     }
   }, [showNav, navigate])
 
-  const [exitSnackbarVisible, setExitSnackbarVisible] = useState(false)
-
-  useEffect(() => {
-    if (location.pathname !== '/') return
-
-    // Initialize trap via React Router state to avoid tracking issues
-    if (!location.state || !location.state.trapInitialized) {
-      navigate('/', { state: { trapInitialized: true, isTrap: true }, replace: true })
-      navigate('/', { state: { trapInitialized: true, isTrap: false } })
-      return
-    }
-
-    if (location.state.isTrap) {
-      if (exitSnackbarVisible) {
-        window.Telegram?.WebApp?.close()
-      } else {
-        setExitSnackbarVisible(true)
-        // Reset the trap so next back press hits it again
-        navigate('/', { state: { trapInitialized: true, isTrap: false } })
-        setTimeout(() => setExitSnackbarVisible(false), 2000)
-      }
-    }
-  }, [location, exitSnackbarVisible, navigate])
-
-  // Global keyboard fix: scroll focused input into view
+  // Global keyboard fix: works in both MiniApp and browser
   useEffect(() => {
     const handleFocusIn = (e) => {
       const el = e.target
       if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        // Delay to let keyboard open first
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 300)
+        // Multiple delays to handle various keyboard open timings
+        const scroll = () => el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(scroll, 100)
+        setTimeout(scroll, 300)
+        setTimeout(scroll, 600)
       }
     }
+
+    // visualViewport resize for Telegram MiniApp keyboard
+    const handleViewportResize = () => {
+      if (!window.visualViewport) return
+      const keyboardHeight = window.innerHeight - window.visualViewport.height
+      document.documentElement.style.setProperty('--keyboard-height', `${Math.max(0, keyboardHeight)}px`)
+      if (keyboardHeight > 100) {
+        document.activeElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+
     document.addEventListener('focusin', handleFocusIn)
-    return () => document.removeEventListener('focusin', handleFocusIn)
+    window.visualViewport?.addEventListener('resize', handleViewportResize)
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn)
+      window.visualViewport?.removeEventListener('resize', handleViewportResize)
+    }
   }, [])
 
   return (
@@ -97,9 +90,6 @@ function AppContent() {
       </Routes>
       {showNav && <BottomNav />}
       <PopupProvider />
-      {exitSnackbarVisible && (
-        <div className="exit-snackbar">Нажмите ещё раз, чтобы выйти</div>
-      )}
     </div>
   )
 }

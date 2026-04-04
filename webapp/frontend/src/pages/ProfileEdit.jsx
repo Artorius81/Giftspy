@@ -39,7 +39,7 @@ export default function ProfileEdit() {
       })
       // Reload profile
       const updated = await api.getProfile()
-      setProfile(updated)
+      mutate(updated)
       await showAlert('✅ Профиль обновлён!')
     } catch (err) {
       await showAlert(err.message)
@@ -77,11 +77,11 @@ export default function ProfileEdit() {
   return (
     <div className="page">
       <div className="header">
-        <button className="header__back" onClick={() => navigate(-1)}>
-          <span className="icon">‹</span>
-        </button>
-        <span className="header__title">Профиль</span>
         <div className="header__placeholder" />
+        <span className="header__title">Профиль</span>
+        <button className="header__btn" onClick={() => navigate('/settings')} aria-label="Настройки">
+          <span className="icon">⚙️</span>
+        </button>
       </div>
 
       {/* Photo */}
@@ -163,8 +163,18 @@ export default function ProfileEdit() {
             <input
               className="input"
               placeholder="ДД.ММ.ГГГГ"
+              inputMode="numeric"
+              maxLength={10}
               value={form.birthday}
-              onChange={e => setForm({ ...form, birthday: e.target.value })}
+              onChange={e => {
+                let v = e.target.value.replace(/[^\d.]/g, '')
+                // Auto-insert dots
+                const digits = v.replace(/\./g, '')
+                if (digits.length >= 4) v = digits.slice(0,2) + '.' + digits.slice(2,4) + '.' + digits.slice(4,8)
+                else if (digits.length >= 2) v = digits.slice(0,2) + '.' + digits.slice(2)
+                else v = digits
+                setForm({ ...form, birthday: v })
+              }}
             />
           </div>
 

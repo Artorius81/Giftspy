@@ -640,7 +640,7 @@ a { color: var(--link); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 20px 0 12px;
+  margin: 24px 0 12px;
 }
 
 .section-header__title {
@@ -1598,6 +1598,15 @@ html {
 
 .input:focus, textarea.input:focus {
   scroll-margin-bottom: 120px;
+}
+
+/* ---- Keyboard Height Adjustment for MiniApp ---- */
+:root {
+  --keyboard-height: 0px;
+}
+
+.page {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--keyboard-height, 0px));
 }
 
 /* ---- Chat View Toggle responsive to keyboard ---- */

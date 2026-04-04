@@ -156,7 +156,14 @@ export default function TargetDetail() {
             </div>
             <div className="input-group">
               <label>День рождения</label>
-              <input className="input" placeholder="ДД.ММ.ГГГГ" value={form.birthday} onChange={e => setForm({ ...form, birthday: e.target.value })} />
+              <input className="input" placeholder="ДД.ММ.ГГГГ" inputMode="numeric" maxLength={10} value={form.birthday} onChange={e => {
+                let v = e.target.value.replace(/[^\d.]/g, '')
+                const digits = v.replace(/\./g, '')
+                if (digits.length >= 4) v = digits.slice(0,2) + '.' + digits.slice(2,4) + '.' + digits.slice(4,8)
+                else if (digits.length >= 2) v = digits.slice(0,2) + '.' + digits.slice(2)
+                else v = digits
+                setForm({ ...form, birthday: v })
+              }} />
             </div>
             <button className="btn btn--primary" type="submit" disabled={saving}>
               {saving ? '⏳' : '✅ Сохранить'}
