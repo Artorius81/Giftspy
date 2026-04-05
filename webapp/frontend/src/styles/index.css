@@ -84,28 +84,7 @@ html, body {
 }
 
 
-/* ---- Splash Screen ---- */
-.splash-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background-color: #1e1e28;
-  background-image: url('/dark.jpeg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-}
 
-[data-theme="light"] .splash-screen {
-  background-color: #f7f7f9;
-  background-image: url('/light.jpeg');
-}
-
-.splash-screen.fade-out {
-  opacity: 0;
-}
 
 #root {
   min-height: 100vh;

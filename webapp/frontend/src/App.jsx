@@ -16,28 +16,10 @@ import './styles/snackbar.css'
 // Main tab routes where BottomNav should be visible
 const MAIN_ROUTES = ['/', '/targets', '/new-case', '/profile/edit']
 
-function SplashScreen({ onFinish }) {
-  const [fading, setFading] = useState(false)
-
-  useEffect(() => {
-    const holdTimer = setTimeout(() => setFading(true), 2000) // Show for 2s
-    const removeTimer = setTimeout(() => onFinish(), 2400) // 400ms fade transition
-    return () => {
-      clearTimeout(holdTimer)
-      clearTimeout(removeTimer)
-    }
-  }, [onFinish])
-
-  return (
-    <div className={`splash-screen ${fading ? 'fade-out' : ''}`} />
-  )
-}
-
 function AppContent() {
   const location = useLocation()
   const navigate = useNavigate()
   const showNav = MAIN_ROUTES.includes(location.pathname)
-  const [showSplash, setShowSplash] = useState(true)
 
   // Telegram BackButton — show only on sub-pages (not main tabs)
   useEffect(() => {
@@ -92,24 +74,21 @@ function AppContent() {
   }, [])
 
   return (
-    <>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      <div className="app">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/targets" element={<Targets />} />
-          <Route path="/targets/:id" element={<TargetDetail />} />
-          <Route path="/new-case" element={<NewCase />} />
-          <Route path="/dossier" element={<Dossier />} />
-          <Route path="/dossier/:id" element={<CaseDetail />} />
-          <Route path="/store" element={<Store />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile/edit" element={<ProfileEdit />} />
-        </Routes>
-        {showNav && <BottomNav />}
-        <PopupProvider />
-      </div>
-    </>
+    <div className="app">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/targets" element={<Targets />} />
+        <Route path="/targets/:id" element={<TargetDetail />} />
+        <Route path="/new-case" element={<NewCase />} />
+        <Route path="/dossier" element={<Dossier />} />
+        <Route path="/dossier/:id" element={<CaseDetail />} />
+        <Route path="/store" element={<Store />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/profile/edit" element={<ProfileEdit />} />
+      </Routes>
+      {showNav && <BottomNav />}
+      <PopupProvider />
+    </div>
   )
 }
 
