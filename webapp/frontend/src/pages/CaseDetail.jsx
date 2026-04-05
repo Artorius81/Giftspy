@@ -184,6 +184,7 @@ export default function CaseDetail() {
           targetPhoto={caseData.target_photo}
           targetDbId={caseData.target_db_id}
           onStatusChange={handleStatusChange}
+          isActiveTab={tabIndex === 1}
         />
       </TabView>
 
@@ -197,7 +198,7 @@ export default function CaseDetail() {
           <span className="chat-view-toggle-btn__icon">≡</span> Сводка
         </button>
         <button className={`chat-view-toggle-btn ${tabIndex === 1 ? 'active' : ''}`} onClick={() => setTabIndex(1)}>
-          <span className="chat-view-toggle-btn__icon">🔒</span> Переписка
+          <span className="chat-view-toggle-btn__icon">{caseData.spy_mode && !!profile?.is_premium ? '💬' : '🔒'}</span> Переписка
         </button>
       </div>
     </div>

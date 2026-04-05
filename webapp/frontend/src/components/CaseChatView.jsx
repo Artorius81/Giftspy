@@ -16,7 +16,7 @@ function formatTime(timestamp) {
   }
 }
 
-export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange }) {
+export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, targetName, personaName, targetPhoto, targetDbId, onStatusChange, isActiveTab }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [inputText, setInputText] = useState('')
@@ -39,9 +39,9 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     api.getCaseChat(caseId)
       .then(newMessages => {
         setMessages(newMessages)
-        if (newMessages.length > prevMsgCountRef.current) {
+        if (newMessages.length > prevMsgCountRef.current && isActiveTab) {
           setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
           }, 100)
         }
         prevMsgCountRef.current = newMessages.length
@@ -61,10 +61,10 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   }, [caseId, spyMode, isPremium])
 
   useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > 0 && isActiveTab) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
     }
-  }, [loading])
+  }, [loading, isActiveTab])
 
   // Handle mobile keyboard: move input above keyboard + scroll
   useEffect(() => {
@@ -76,9 +76,8 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       const keyboardHeight = window.innerHeight - vv.height
       if (keyboardHeight > 100) {
         el.style.bottom = `${keyboardHeight + 8}px`
-        // Also scroll messages into view
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
         }, 50)
       } else {
         el.style.bottom = ''
@@ -100,7 +99,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       }])
       setInputText('')
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
       }, 100)
     } catch (e) {
       await showAlert(e.message)
