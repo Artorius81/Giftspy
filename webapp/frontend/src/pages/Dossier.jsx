@@ -53,7 +53,9 @@ export default function Dossier() {
   return (
     <div className="page">
       <div className="header">
-        <div className="header__placeholder" />
+        <button className="header__back" onClick={() => navigate(-1)}>
+          <span className="icon">‹</span>
+        </button>
         <h1 className="header__title">📁 Досье</h1>
         <div className="header__placeholder" />
       </div>

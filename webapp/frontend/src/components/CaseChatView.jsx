@@ -259,19 +259,24 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
       {/* Input Area */}
       <div className="chat-input-area" ref={inputAreaRef}>
         {isManualMode ? (
-          <div className="chat-input-wrapper chat-input-wrapper--manual">
-            <button
-              className="chat-intercept-btn chat-intercept-btn--return"
-              onClick={handleReturnDetective}
-              disabled={intercepting}
-            >
-              <span>🕵️</span>
-              <span className="chat-intercept-btn__label">Вернуть</span>
-            </button>
-            <div className="chat-input-main">
+          <>
+            <div className="chat-input-hint">Вы управляете перепиской</div>
+            <div className="chat-input-wrapper chat-input-wrapper--manual">
+              <button
+                className="chat-input-action-btn chat-input-action-btn--return"
+                onClick={handleReturnDetective}
+                disabled={intercepting}
+                title="Вернуть детектива"
+              >
+                {intercepting ? (
+                  <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                ) : (
+                  <span>▶</span>
+                )}
+              </button>
               <input
                 className="chat-input-field"
-                placeholder="Написать от лица детектива..."
+                placeholder="Написать сообщение..."
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -284,39 +289,39 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                 {sending ? (
                   <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
-                  </svg>
+                  <span className="chat-send-btn__arrow">→</span>
                 )}
               </button>
             </div>
-          </div>
+          </>
         ) : canIntercept ? (
-          <div className="chat-input-wrapper">
-            <button
-              className="chat-intercept-btn"
-              onClick={handleIntercept}
-              disabled={intercepting}
-            >
-              {intercepting ? (
-                <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
-              ) : (
-                <>
-                  <span>🕹️</span>
-                  <span className="chat-intercept-btn__label">Перехватить</span>
-                </>
-              )}
-            </button>
-            <div className="chat-input-main">
+          <>
+            <div className="chat-input-hint">Поставьте детектива на паузу, чтобы написать</div>
+            <div className="chat-input-wrapper">
+              <button
+                className="chat-input-action-btn"
+                onClick={handleIntercept}
+                disabled={intercepting}
+                title="Поставить на паузу"
+              >
+                {intercepting ? (
+                  <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                ) : (
+                  <span>⏸</span>
+                )}
+              </button>
               <input
                 className="chat-input-field"
-                placeholder="Детектив ведёт допрос..."
+                placeholder="Написать сообщение..."
                 disabled
               />
+              <div className="chat-send-btn chat-send-btn--disabled">
+                <span className="chat-send-btn__arrow">→</span>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
-          null /* No hint for completed cases - status banner is enough */
+          null
         )}
       </div>
     </div>

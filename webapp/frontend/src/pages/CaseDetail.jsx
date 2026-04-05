@@ -191,10 +191,10 @@ export default function CaseDetail() {
       {/* Floating Toggle */}
       <div className="chat-view-toggle">
         <button className={`chat-view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
-          ≡ Сводка
+          <span className="chat-view-toggle-btn__icon">≡</span> Сводка
         </button>
         <button className={`chat-view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
-          🗨 Переписка
+          <span className="chat-view-toggle-btn__icon">🔒</span> Переписка
         </button>
       </div>
     </div>

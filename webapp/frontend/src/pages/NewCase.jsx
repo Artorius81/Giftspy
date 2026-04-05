@@ -5,6 +5,111 @@ import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
 
+/* ── Slide-to-confirm component ── */
+function SlideToConfirm({ onConfirm, submitting }) {
+  const trackRef = useRef(null)
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const startX = useRef(0)
+  const thumbSize = 56
+  const padding = 4
+
+  const getMaxX = () => {
+    if (!trackRef.current) return 200
+    return trackRef.current.offsetWidth - thumbSize - padding * 2
+  }
+
+  const progress = Math.min(dragX / (getMaxX() || 1), 1)
+
+  const handleStart = (clientX) => {
+    if (submitting || confirmed) return
+    startX.current = clientX - dragX
+    setIsDragging(true)
+  }
+
+  const handleMove = useCallback((clientX) => {
+    if (!isDragging || confirmed) return
+    const maxX = getMaxX()
+    const x = Math.max(0, Math.min(clientX - startX.current, maxX))
+    setDragX(x)
+  }, [isDragging, confirmed])
+
+  const handleEnd = useCallback(() => {
+    if (!isDragging) return
+    setIsDragging(false)
+    const maxX = getMaxX()
+    if (dragX >= maxX * 0.85) {
+      setDragX(maxX)
+      setConfirmed(true)
+      // haptic if available
+      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch {}
+      onConfirm()
+    } else {
+      setDragX(0)
+    }
+  }, [isDragging, dragX, onConfirm])
+
+  // Mouse events
+  useEffect(() => {
+    if (!isDragging) return
+    const onMouseMove = (e) => handleMove(e.clientX)
+    const onMouseUp = () => handleEnd()
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [isDragging, handleMove, handleEnd])
+
+  // Reset when submitting ends with error
+  useEffect(() => {
+    if (!submitting && confirmed) {
+      // keep confirmed if navigating away, otherwise reset after a delay
+      const t = setTimeout(() => { setConfirmed(false); setDragX(0) }, 2000)
+      return () => clearTimeout(t)
+    }
+  }, [submitting, confirmed])
+
+  return (
+    <div
+      ref={trackRef}
+      className={`slide-confirm ${isDragging ? 'dragging' : ''} ${confirmed ? 'confirmed' : ''}`}
+    >
+      {/* progress fill */}
+      <div className="slide-confirm__fill" style={{ width: `${(dragX + thumbSize + padding * 2)}px` }} />
+
+      {/* label */}
+      <span className="slide-confirm__label" style={{ opacity: 1 - progress * 1.8 }}>
+        {submitting ? '⏳ Отправка...' : '🚀 Начать расследование'}
+      </span>
+
+      {/* confirmed label */}
+      {confirmed && (
+        <span className="slide-confirm__label slide-confirm__label--done">
+          ✅ Отправлено!
+        </span>
+      )}
+
+      {/* thumb */}
+      <div
+        className="slide-confirm__thumb"
+        style={{
+          transform: `translateX(${dragX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+        onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+        onTouchEnd={handleEnd}
+        onMouseDown={(e) => handleStart(e.clientX)}
+      >
+        <span className="slide-confirm__arrow">›</span>
+      </div>
+    </div>
+  )
+}
+
 const HOLIDAY_OPTIONS = [
   '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
   '🎄 Новый Год', '💍 Годовщина', '🎁 Просто так'
@@ -314,9 +419,7 @@ export default function NewCase() {
               <div><strong>💵 Бюджет:</strong> {form.budget || 'Не указан'}</div>
             </div>
           </div>
-          <button className="btn btn--primary" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? '⏳ Отправка...' : '🚀 Начать расследование'}
-          </button>
+          <SlideToConfirm onConfirm={handleSubmit} submitting={submitting} />
         </div>
       )}
     </div>
