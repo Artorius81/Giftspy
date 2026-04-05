@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
@@ -16,10 +16,28 @@ import './styles/snackbar.css'
 // Main tab routes where BottomNav should be visible
 const MAIN_ROUTES = ['/', '/targets', '/new-case', '/profile/edit']
 
+function SplashScreen({ onFinish }) {
+  const [fading, setFading] = useState(false)
+
+  useEffect(() => {
+    const holdTimer = setTimeout(() => setFading(true), 2000) // Show for 2s
+    const removeTimer = setTimeout(() => onFinish(), 2400) // 400ms fade transition
+    return () => {
+      clearTimeout(holdTimer)
+      clearTimeout(removeTimer)
+    }
+  }, [onFinish])
+
+  return (
+    <div className={`splash-screen ${fading ? 'fade-out' : ''}`} />
+  )
+}
+
 function AppContent() {
   const location = useLocation()
   const navigate = useNavigate()
   const showNav = MAIN_ROUTES.includes(location.pathname)
+  const [showSplash, setShowSplash] = useState(true)
 
   // Telegram BackButton — show only on sub-pages (not main tabs)
   useEffect(() => {
@@ -48,7 +66,6 @@ function AppContent() {
     const handleFocusIn = (e) => {
       const el = e.target
       if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        // Multiple delays to handle various keyboard open timings
         const scroll = () => el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         setTimeout(scroll, 100)
         setTimeout(scroll, 300)
@@ -56,7 +73,6 @@ function AppContent() {
       }
     }
 
-    // visualViewport resize for Telegram MiniApp keyboard
     const handleViewportResize = () => {
       if (!window.visualViewport) return
       const keyboardHeight = window.innerHeight - window.visualViewport.height
@@ -76,21 +92,24 @@ function AppContent() {
   }, [])
 
   return (
-    <div className="app">
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/targets" element={<Targets />} />
-        <Route path="/targets/:id" element={<TargetDetail />} />
-        <Route path="/new-case" element={<NewCase />} />
-        <Route path="/dossier" element={<Dossier />} />
-        <Route path="/dossier/:id" element={<CaseDetail />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile/edit" element={<ProfileEdit />} />
-      </Routes>
-      {showNav && <BottomNav />}
-      <PopupProvider />
-    </div>
+    <>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      <div className="app">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/targets" element={<Targets />} />
+          <Route path="/targets/:id" element={<TargetDetail />} />
+          <Route path="/new-case" element={<NewCase />} />
+          <Route path="/dossier" element={<Dossier />} />
+          <Route path="/dossier/:id" element={<CaseDetail />} />
+          <Route path="/store" element={<Store />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile/edit" element={<ProfileEdit />} />
+        </Routes>
+        {showNav && <BottomNav />}
+        <PopupProvider />
+      </div>
+    </>
   )
 }
 

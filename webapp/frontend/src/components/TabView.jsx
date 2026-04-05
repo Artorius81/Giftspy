@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 /**
- * TabView — swipeable horizontal tab container.
+ * TabView — swipeable horizontal tab container using percentages for scaling.
  *
  * Props:
  *   activeIndex   — controlled active tab index (0-based)
@@ -11,9 +11,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
  */
 export default function TabView({ activeIndex, onChangeIndex, children, className = '' }) {
   const containerRef = useRef(null)
-  const [dragOffset, setDragOffset] = useState(0)
+  const [dragOffset, setDragOffset] = useState(0) // offset in px for dragging
   const [dragging, setDragging] = useState(false)
-  const [containerWidth, setContainerWidth] = useState(0)
 
   const startX = useRef(0)
   const startY = useRef(0)
@@ -23,18 +22,6 @@ export default function TabView({ activeIndex, onChangeIndex, children, classNam
 
   const tabs = Array.isArray(children) ? children : [children]
   const count = tabs.length
-
-  // Measure container on mount and resize
-  useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth)
-      }
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
 
   const onTouchStart = useCallback((e) => {
     startX.current = e.touches[0].clientX
@@ -72,8 +59,8 @@ export default function TabView({ activeIndex, onChangeIndex, children, classNam
   const onTouchEnd = useCallback(() => {
     if (!horizontal.current) return
 
-    const w = containerWidth || window.innerWidth
-    const threshold = w * 0.2
+    const containerWidth = containerRef.current?.offsetWidth || window.innerWidth
+    const threshold = containerWidth * 0.2
     const offset = currentOffset.current
 
     if (offset < -threshold && activeIndex < count - 1) {
@@ -85,11 +72,15 @@ export default function TabView({ activeIndex, onChangeIndex, children, classNam
     setDragOffset(0)
     setDragging(false)
     currentOffset.current = 0
-  }, [activeIndex, count, onChangeIndex, containerWidth])
+  }, [activeIndex, count, onChangeIndex])
 
-  // Compute transform using measured width
-  const w = containerWidth || 0
-  const translateX = -(activeIndex * w) + dragOffset
+  // Percent-based base translation. 
+  // Track is `count * 100%` wide. 
+  // To show tab N, we shift by N * (100 / count) %
+  const baseTranslatePercent = -(activeIndex * (100 / count))
+  
+  // We apply drag offset in pixels on top of the percentage translation
+  const transform = `translateX(calc(${baseTranslatePercent}% + ${dragOffset}px))`
 
   return (
     <div
@@ -102,16 +93,13 @@ export default function TabView({ activeIndex, onChangeIndex, children, classNam
       <div
         className="tabview__track"
         style={{
-          transform: `translateX(${translateX}px)`,
+          width: `${count * 100}%`,
+          transform,
           transition: dragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         }}
       >
         {tabs.map((child, i) => (
-          <div
-            className="tabview__panel"
-            key={i}
-            style={{ width: w || '100%' }}
-          >
+          <div className="tabview__panel" key={i}>
             {child}
           </div>
         ))}
