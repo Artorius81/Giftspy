@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import CaseChatView from '../components/CaseChatView'
-import TabView from '../components/TabView'
 import { useData, mutateData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo, formatDuration } from '../utils/timeAgo'
@@ -89,7 +88,7 @@ export default function CaseDetail() {
         <div style={{ width: 40 }} />
       </div>
 
-      <TabView activeIndex={tabIndex} onChangeIndex={setTabIndex}>
+      <div style={{ display: tabIndex === 0 ? 'block' : 'none' }}>
         {/* Tab 0: Summary */}
         <div className="case-content">
           {/* Case Header Card */}
@@ -173,6 +172,9 @@ export default function CaseDetail() {
           </div>
         </div>
 
+      </div>
+
+      <div style={{ display: tabIndex === 1 ? 'block' : 'none' }}>
         {/* Tab 1: Chat */}
         <CaseChatView
           caseId={caseData.id}
@@ -186,7 +188,7 @@ export default function CaseDetail() {
           onStatusChange={handleStatusChange}
           isActiveTab={tabIndex === 1}
         />
-      </TabView>
+      </div>
 
       {/* Floating Toggle */}
       <div className="chat-view-toggle">
