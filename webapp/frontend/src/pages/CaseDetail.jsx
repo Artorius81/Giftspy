@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import CaseChatView from '../components/CaseChatView'
+import TabView from '../components/TabView'
 import { useData, mutateData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo, formatDuration } from '../utils/timeAgo'
@@ -22,68 +23,10 @@ export default function CaseDetail() {
   const navigate = useNavigate()
   const { data: caseData, loading, mutate } = useData(`case_${id}`, () => api.getCase(id))
   const { data: profile } = useData('profile', api.getProfile)
-  const [viewMode, setViewMode] = useState('summary')
+  const [tabIndex, setTabIndex] = useState(0)
   const [cancelling, setCancelling] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const pollRef = useRef(null)
-
-  // Swipe state
-  const [swipeOffset, setSwipeOffset] = useState(0)
-  const [isSwiping, setIsSwiping] = useState(false)
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
-  const directionDecided = useRef(false)
-  const isHorizontal = useRef(false)
-
-  const handleSwipeStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    directionDecided.current = false
-    isHorizontal.current = false
-    setIsSwiping(false)
-    setSwipeOffset(0)
-  }, [])
-
-  const handleSwipeMove = useCallback((e) => {
-    const dx = e.touches[0].clientX - touchStartX.current
-    const dy = e.touches[0].clientY - touchStartY.current
-
-    // Decide direction on first significant movement
-    if (!directionDecided.current) {
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-        directionDecided.current = true
-        isHorizontal.current = Math.abs(dx) > Math.abs(dy)
-        if (isHorizontal.current) {
-          setIsSwiping(true)
-        }
-      }
-      return
-    }
-
-    if (!isHorizontal.current) return
-
-    // Clamp: don't swipe past boundaries
-    if (viewMode === 'summary' && dx > 0) return
-    if (viewMode === 'chat' && dx < 0) return
-
-    setSwipeOffset(dx)
-  }, [viewMode])
-
-  const handleSwipeEnd = useCallback(() => {
-    if (!isHorizontal.current) {
-      setSwipeOffset(0)
-      setIsSwiping(false)
-      return
-    }
-    const threshold = 50
-    if (swipeOffset < -threshold && viewMode === 'summary') {
-      setViewMode('chat')
-    } else if (swipeOffset > threshold && viewMode === 'chat') {
-      setViewMode('summary')
-    }
-    setSwipeOffset(0)
-    setIsSwiping(false)
-  }, [swipeOffset, viewMode])
 
   useEffect(() => {
     pollRef.current = setInterval(() => {
@@ -134,15 +77,10 @@ export default function CaseDetail() {
     setDeleting(false)
   }
 
-  // Calculate track position
-  const baseTranslate = viewMode === 'chat' ? -50 : 0
-  const dragPercent = (swipeOffset / window.innerWidth) * 100
-  const trackTranslate = baseTranslate + dragPercent
-
   return (
     <div className="page case-detail-page">
       <div className="chat-header">
-        <button className="chat-header__btn" onClick={() => viewMode === 'chat' ? setViewMode('summary') : navigate(-1)}>
+        <button className="chat-header__btn" onClick={() => tabIndex === 1 ? setTabIndex(0) : navigate(-1)}>
           <span className="icon">‹</span>
         </button>
         <div className="chat-header__title">
@@ -151,128 +89,110 @@ export default function CaseDetail() {
         <div style={{ width: 40 }} />
       </div>
 
-      {/* Swipeable panels */}
-      <div
-        className="case-swipe-container"
-        onTouchStart={handleSwipeStart}
-        onTouchMove={handleSwipeMove}
-        onTouchEnd={handleSwipeEnd}
-      >
-        <div
-          className="case-swipe-track"
-          style={{
-            transform: `translateX(${trackTranslate}%)`,
-            transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          {/* Summary panel */}
-          <div className="case-swipe-panel">
-            <div className="case-content">
-              {/* Case Header Card */}
-              <div className="card" style={{ background: 'var(--gradient-card)' }}>
-                <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
-                  📁 Дело №{caseData.id}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
-                  <div>🎯 <strong>Цель:</strong> {caseData.display_name}</div>
-                  <div>🎉 <strong>Повод:</strong> {caseData.holiday}</div>
-                  <div>🕵️ <strong>Детектив:</strong> {caseData.persona}</div>
-                  <div>💵 <strong>Бюджет:</strong> {caseData.budget}</div>
+      <TabView activeIndex={tabIndex} onChangeIndex={setTabIndex}>
+        {/* Tab 0: Summary */}
+        <div className="case-content">
+          {/* Case Header Card */}
+          <div className="card" style={{ background: 'var(--gradient-card)' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
+              📁 Дело №{caseData.id}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
+              <div>🎯 <strong>Цель:</strong> {caseData.display_name}</div>
+              <div>🎉 <strong>Повод:</strong> {caseData.holiday}</div>
+              <div>🕵️ <strong>Детектив:</strong> {caseData.persona}</div>
+              <div>💵 <strong>Бюджет:</strong> {caseData.budget}</div>
+              {caseData.created_at && (
+                <div>📅 <strong>Начато:</strong> {timeAgo(caseData.created_at)}</div>
+              )}
+              {caseData.completed_at && (
+                <div>✅ <strong>Завершено:</strong> {timeAgo(caseData.completed_at)}
                   {caseData.created_at && (
-                    <div>📅 <strong>Начато:</strong> {timeAgo(caseData.created_at)}</div>
-                  )}
-                  {caseData.completed_at && (
-                    <div>✅ <strong>Завершено:</strong> {timeAgo(caseData.completed_at)}
-                      {caseData.created_at && (
-                        <span style={{ color: 'var(--text-secondary)', marginLeft: 6, fontSize: 12 }}>
-                          (за {formatDuration(caseData.created_at, caseData.completed_at)})
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div style={{ marginTop: 4 }}>
-                    <span className={`badge ${isActive ? 'badge--active' : caseData.status === 'done' || caseData.status === 'delivered' ? 'badge--success' : 'badge--danger'}`}>
-                      {STATUS_MAP[caseData.status] || caseData.status}
+                    <span style={{ color: 'var(--text-secondary)', marginLeft: 6, fontSize: 12 }}>
+                      (за {formatDuration(caseData.created_at, caseData.completed_at)})
                     </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Context */}
-              {caseData.context && caseData.context !== 'Нет данных' && (
-                <>
-                  <div className="section-header">
-                    <div className="section-header__title">🧩 Зацепки</div>
-                  </div>
-                  <div className="card">
-                    <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{caseData.context}</p>
-                  </div>
-                </>
-              )}
-
-              {/* Report */}
-              {caseData.report && (
-                <>
-                  <div className="section-header">
-                    <div className="section-header__title">🎁 Отчёт детектива</div>
-                  </div>
-                  <div className="report-block">{caseData.report}</div>
-                </>
-              )}
-
-              {/* Active case indicator */}
-              {isActive && !caseData.report && (
-                <div className="card" style={{ textAlign: 'center', marginTop: 16 }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>🕵️‍♂️</div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>Расследование в процессе</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-                    Детектив работает над делом. Вы получите уведомление, когда отчёт будет готов.
-                  </div>
+                  )}
                 </div>
               )}
-
-              {/* Actions */}
-              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 100 }}>
-                <button className="btn btn--secondary" onClick={() => navigate(`/new-case?target=${caseData.target}`)}>
-                  🔄 Новое расследование
-                </button>
-                {isActive && (
-                  <button className="btn btn--danger" onClick={handleCancel} disabled={cancelling}>
-                    {cancelling ? '⏳ Отмена...' : '❌ Отменить расследование'}
-                  </button>
-                )}
-                {isClosed && (
-                  <button className="btn btn--danger" onClick={handleDelete} disabled={deleting}>
-                    {deleting ? '⏳ Удаление...' : '🗑 Удалить дело'}
-                  </button>
-                )}
+              <div style={{ marginTop: 4 }}>
+                <span className={`badge ${isActive ? 'badge--active' : caseData.status === 'done' || caseData.status === 'delivered' ? 'badge--success' : 'badge--danger'}`}>
+                  {STATUS_MAP[caseData.status] || caseData.status}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Chat panel */}
-          <div className="case-swipe-panel">
-            <CaseChatView
-              caseId={caseData.id}
-              spyMode={caseData.spy_mode}
-              isPremium={!!profile?.is_premium}
-              caseStatus={caseData.status}
-              targetName={caseData.display_name}
-              personaName={caseData.persona}
-              targetPhoto={caseData.target_photo}
-              targetDbId={caseData.target_db_id}
-              onStatusChange={handleStatusChange}
-            />
+          {/* Context */}
+          {caseData.context && caseData.context !== 'Нет данных' && (
+            <>
+              <div className="section-header">
+                <div className="section-header__title">🧩 Зацепки</div>
+              </div>
+              <div className="card">
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{caseData.context}</p>
+              </div>
+            </>
+          )}
+
+          {/* Report */}
+          {caseData.report && (
+            <>
+              <div className="section-header">
+                <div className="section-header__title">🎁 Отчёт детектива</div>
+              </div>
+              <div className="report-block">{caseData.report}</div>
+            </>
+          )}
+
+          {/* Active case indicator */}
+          {isActive && !caseData.report && (
+            <div className="card" style={{ textAlign: 'center', marginTop: 16 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🕵️‍♂️</div>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>Расследование в процессе</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                Детектив работает над делом. Вы получите уведомление, когда отчёт будет готов.
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 100 }}>
+            <button className="btn btn--secondary" onClick={() => navigate(`/new-case?target=${caseData.target}`)}>
+              🔄 Новое расследование
+            </button>
+            {isActive && (
+              <button className="btn btn--danger" onClick={handleCancel} disabled={cancelling}>
+                {cancelling ? '⏳ Отмена...' : '❌ Отменить расследование'}
+              </button>
+            )}
+            {isClosed && (
+              <button className="btn btn--danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? '⏳ Удаление...' : '🗑 Удалить дело'}
+              </button>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* Tab 1: Chat */}
+        <CaseChatView
+          caseId={caseData.id}
+          spyMode={caseData.spy_mode}
+          isPremium={!!profile?.is_premium}
+          caseStatus={caseData.status}
+          targetName={caseData.display_name}
+          personaName={caseData.persona}
+          targetPhoto={caseData.target_photo}
+          targetDbId={caseData.target_db_id}
+          onStatusChange={handleStatusChange}
+        />
+      </TabView>
 
       {/* Floating Toggle */}
       <div className="chat-view-toggle">
-        <button className={`chat-view-toggle-btn ${viewMode === 'summary' ? 'active' : ''}`} onClick={() => setViewMode('summary')}>
+        <button className={`chat-view-toggle-btn ${tabIndex === 0 ? 'active' : ''}`} onClick={() => setTabIndex(0)}>
           <span className="chat-view-toggle-btn__icon">≡</span> Сводка
         </button>
-        <button className={`chat-view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`} onClick={() => setViewMode('chat')}>
+        <button className={`chat-view-toggle-btn ${tabIndex === 1 ? 'active' : ''}`} onClick={() => setTabIndex(1)}>
           <span className="chat-view-toggle-btn__icon">🔒</span> Переписка
         </button>
       </div>

@@ -1327,27 +1327,31 @@ textarea.input { min-height: 80px; resize: vertical; }
   line-height: 1;
 }
 
-/* ---- Swipeable Tab Panels ---- */
-.case-swipe-container {
+/* ---- TabView ---- */
+.tabview {
   flex: 1;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
   touch-action: pan-y;
 }
 
-.case-swipe-track {
+.tabview__track {
   display: flex;
-  width: 200%;
-  min-height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
   will-change: transform;
 }
 
-.case-swipe-panel {
-  width: 50%;
-  flex-shrink: 0;
+.tabview__panel {
+  width: 100vw;
+  max-width: 480px;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
 }
 
 /* ---- Settings Page ---- */
