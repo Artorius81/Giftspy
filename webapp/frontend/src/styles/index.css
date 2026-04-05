@@ -1327,22 +1327,27 @@ textarea.input { min-height: 80px; resize: vertical; }
   line-height: 1;
 }
 
-/* ---- Tab Fade Transition ---- */
-.case-tab-fade {
-  display: none;
-  opacity: 0;
-  animation: none;
+/* ---- Swipeable Tab Panels ---- */
+.case-swipe-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  touch-action: pan-y;
 }
 
-.case-tab-fade--visible {
-  display: block;
-  opacity: 1;
-  animation: tabFadeIn 0.25s ease;
+.case-swipe-track {
+  display: flex;
+  width: 200%;
+  min-height: 100%;
+  will-change: transform;
 }
 
-@keyframes tabFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.case-swipe-panel {
+  width: 50%;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ---- Settings Page ---- */
@@ -1512,9 +1517,14 @@ textarea.input { min-height: 80px; resize: vertical; }
   object-fit: cover;
 }
 
-/* ---- View Toggle position when no bottom nav ---- */
+/* ---- Case Detail Page Layout ---- */
+.case-detail-page {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px !important;
+}
 
-/* In case-detail, hide the original view-toggle */
+/* In case-detail, position input above toggle */
 .case-detail-page .chat-input-area {
   bottom: 84px;
 }
