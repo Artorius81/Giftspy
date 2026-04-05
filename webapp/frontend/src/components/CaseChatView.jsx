@@ -66,16 +66,22 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
     }
   }, [loading, isActiveTab])
 
-  // Handle mobile keyboard: move input above keyboard + scroll
+  // Handle mobile keyboard: Telegram TMA and standard visualViewport
   useEffect(() => {
-    if (!window.visualViewport) return
-    const vv = window.visualViewport
     const handleResize = () => {
       const el = inputAreaRef.current
       if (!el) return
-      const keyboardHeight = window.innerHeight - vv.height
-      if (keyboardHeight > 100) {
-        el.style.bottom = `${keyboardHeight + 8}px`
+      
+      let kbHeight = 0
+      if (window.Telegram?.WebApp && window.Telegram.WebApp.viewportStableHeight) {
+        const tg = window.Telegram.WebApp
+        kbHeight = tg.viewportStableHeight - tg.viewportHeight
+      } else if (window.visualViewport) {
+        kbHeight = window.innerHeight - window.visualViewport.height
+      }
+
+      if (kbHeight > 100) {
+        el.style.bottom = `${kbHeight + 8}px`
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
         }, 50)
@@ -83,8 +89,22 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
         el.style.bottom = ''
       }
     }
-    vv.addEventListener('resize', handleResize)
-    return () => vv.removeEventListener('resize', handleResize)
+
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.onEvent('viewportChanged', handleResize)
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize)
+    }
+
+    return () => {
+      if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.offEvent('viewportChanged', handleResize)
+      }
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize)
+      }
+    }
   }, [])
 
   const handleSend = async () => {
@@ -279,6 +299,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => window.Telegram?.WebApp?.expand()}
               />
               <button
                 className="chat-send-btn"
@@ -288,7 +309,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                 {sending ? (
                   <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                 ) : (
-                  <span className="chat-send-btn__arrow">→</span>
+                  <span className="chat-send-btn__arrow">↑</span>
                 )}
               </button>
             </div>
@@ -315,7 +336,7 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                 disabled
               />
               <div className="chat-send-btn chat-send-btn--disabled">
-                <span className="chat-send-btn__arrow">→</span>
+                <span className="chat-send-btn__arrow">↑</span>
               </div>
             </div>
           </>
