@@ -189,6 +189,10 @@ export default function CaseDetail() {
 
       {/* Floating Toggle */}
       <div className="chat-view-toggle">
+        <div 
+          className="chat-view-toggle-indicator" 
+          style={{ transform: tabIndex === 1 ? 'translateX(calc(100% + 2px))' : 'translateX(0)' }} 
+        />
         <button className={`chat-view-toggle-btn ${tabIndex === 0 ? 'active' : ''}`} onClick={() => setTabIndex(0)}>
           <span className="chat-view-toggle-btn__icon">≡</span> Сводка
         </button>
