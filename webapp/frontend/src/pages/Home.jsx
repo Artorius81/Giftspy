@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
@@ -16,6 +16,23 @@ const STATUS = {
   error: { icon: '⚠️', label: 'Ошибка', dot: 'cancelled' },
 }
 
+const MARKETPLACES = [
+  { key: 'wildberries', label: 'Wildberries', short: 'WB', color: '#cb11ab' },
+  { key: 'ozon', label: 'Ozon', short: 'Ozon', color: '#005bff' },
+  { key: 'yandex_market', label: 'Яндекс Маркет', short: 'Я.Маркет', color: '#fc0' },
+]
+
+const MP_LOGOS = {
+  wildberries: '🟣',
+  ozon: '🔵',
+  yandex_market: '🟡',
+}
+
+function formatPrice(price) {
+  if (!price) return ''
+  return price.toLocaleString('ru-RU') + ' ₽'
+}
+
 export default function Home() {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState({})
@@ -23,8 +40,26 @@ export default function Home() {
   const { data: profile, loading: pLoading } = useData('profile', api.getProfile)
   const { data: cases, loading: cLoading, mutate } = useData('cases', api.getCases)
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [mpSearchEnabled] = useState(() => localStorage.getItem('giftspy-mp-search') !== 'false')
+  const [activeMarketplaces, setActiveMarketplaces] = useState(() => {
+    const saved = localStorage.getItem('giftspy-marketplaces')
+    return saved ? JSON.parse(saved) : ['wildberries', 'ozon', 'yandex_market']
+  })
+  const [searchResults, setSearchResults] = useState(null)
+  const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+  const searchTimerRef = useRef(null)
+
   const loading = pLoading || cLoading
   const allCases = cases || []
+  const isPremium = !!profile?.is_premium
+
+  // Save marketplace selection
+  useEffect(() => {
+    localStorage.setItem('giftspy-marketplaces', JSON.stringify(activeMarketplaces))
+  }, [activeMarketplaces])
 
   // Poll for status updates
   useEffect(() => {
@@ -33,6 +68,68 @@ export default function Home() {
     }, 10000)
     return () => clearInterval(interval)
   }, [mutate])
+
+  const toggleMarketplace = (key) => {
+    setActiveMarketplaces(prev => {
+      if (prev.includes(key)) {
+        if (prev.length === 1) return prev // At least one must be selected
+        return prev.filter(k => k !== key)
+      }
+      return [...prev, key]
+    })
+  }
+
+  const handleSearch = useCallback(async () => {
+    const q = searchQuery.trim()
+    if (!q) {
+      setSearchResults(null)
+      return
+    }
+    if (!isPremium) return
+
+    setSearching(true)
+    setSearchError('')
+    try {
+      const results = await api.searchMarketplaces(q, activeMarketplaces, 20)
+      setSearchResults(results)
+    } catch (e) {
+      setSearchError(e.message)
+      setSearchResults(null)
+    }
+    setSearching(false)
+  }, [searchQuery, activeMarketplaces, isPremium])
+
+  const handleSearchInput = (e) => {
+    setSearchQuery(e.target.value)
+    // Clear previous timer
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    // Don't auto-search, only on submit
+  }
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    handleSearch()
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSearch()
+    }
+  }
+
+  const openProduct = (url) => {
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  }
+
+  // Count total results
+  const totalResults = searchResults
+    ? Object.values(searchResults).reduce((sum, arr) => sum + arr.length, 0)
+    : 0
 
   const toggleGroup = (target) => {
     setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
@@ -87,6 +184,139 @@ export default function Home() {
         <span className="header__title">Главная</span>
         <div className="header__placeholder" />
       </div>
+
+      {/* Marketplace Search */}
+      {mpSearchEnabled && <><div className="search-section">
+        <div className="search-hero">
+          <div className="search-hero__emoji">🕵️‍♂️🔍</div>
+          <div className="search-hero__text">Найди идеальный подарок</div>
+        </div>
+
+        <form className="search-bar" onSubmit={handleSearchSubmit}>
+          <span className="search-bar__icon">🔍</span>
+          <input
+            type="text"
+            className="search-bar__input"
+            placeholder="Набор для рисования, книги..."
+            value={searchQuery}
+            onChange={handleSearchInput}
+            onKeyDown={handleKeyDown}
+            disabled={!isPremium}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="search-bar__clear"
+              onClick={() => { setSearchQuery(''); setSearchResults(null); setSearchError('') }}
+            >
+              ✕
+            </button>
+          )}
+          {searching && <div className="search-bar__spinner"><div className="spinner" style={{ width: 18, height: 18 }} /></div>}
+        </form>
+
+        {/* Marketplace toggles */}
+        <div className="mp-toggles">
+          {MARKETPLACES.map(mp => (
+            <button
+              key={mp.key}
+              className={`mp-toggle ${activeMarketplaces.includes(mp.key) ? 'active' : ''}`}
+              style={activeMarketplaces.includes(mp.key) ? { borderColor: mp.color, background: mp.color + '18' } : {}}
+              onClick={() => isPremium && toggleMarketplace(mp.key)}
+              disabled={!isPremium}
+            >
+              <span className="mp-toggle__dot" style={{ background: mp.color }} />
+              <span className="mp-toggle__label">{mp.short}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Premium lock overlay */}
+        {!isPremium && (
+          <div className="search-lock" onClick={() => navigate('/store')}>
+            <span className="search-lock__icon">👑</span>
+            <span className="search-lock__text">Поиск подарков доступен с Премиум подпиской</span>
+            <button className="btn btn--primary btn--sm">Подключить</button>
+          </div>
+        )}
+      </div>
+
+      {/* Search Results */}
+      {searchError && (
+        <div className="card" style={{ textAlign: 'center', padding: 16, marginBottom: 16 }}>
+          <div style={{ color: 'var(--destructive)', fontSize: 14 }}>⚠️ {searchError}</div>
+        </div>
+      )}
+
+      {searchResults && totalResults > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="section-header">
+            <div className="section-header__title">🛍 Результаты</div>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              {totalResults} товаров
+            </span>
+          </div>
+
+          {Object.entries(searchResults).map(([mp, products]) => {
+            if (!products.length) return null
+            const mpInfo = MARKETPLACES.find(m => m.key === mp)
+            return (
+              <div key={mp} style={{ marginBottom: 16 }}>
+                <div className="mp-section-label" style={{ borderLeftColor: mpInfo?.color }}>
+                  {MP_LOGOS[mp]} {mpInfo?.label || mp}
+                  <span className="mp-section-count">{products.length}</span>
+                </div>
+                <div className="product-grid">
+                  {products.map(product => (
+                    <div
+                      key={`${mp}-${product.id}`}
+                      className="product-card"
+                      onClick={() => openProduct(product.url)}
+                    >
+                      <div className="product-card__image">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt=""
+                            loading="lazy"
+                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                          />
+                        ) : null}
+                        <div className="product-card__placeholder" style={product.image ? { display: 'none' } : {}}>
+                          🎁
+                        </div>
+                      </div>
+                      <div className="product-card__body">
+                        <div className="product-card__title">{product.title}</div>
+                        {product.price > 0 && (
+                          <div className="product-card__price">{formatPrice(product.price)}</div>
+                        )}
+                        {product.rating > 0 && (
+                          <div className="product-card__rating">
+                            ⭐ {Number(product.rating).toFixed(1)}
+                            {product.reviews > 0 && <span className="product-card__reviews"> · {product.reviews} отз.</span>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="product-card__mp" style={{ background: mpInfo?.color }}>
+                        {mpInfo?.short}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {searchResults && totalResults === 0 && (
+        <div className="card" style={{ textAlign: 'center', padding: '20px 16px', marginBottom: 16 }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🤷</div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Ничего не найдено. Попробуйте другой запрос</div>
+        </div>
+      )}
+      </>}
 
       {/* Quick Stats */}
       <div className="stats-row">

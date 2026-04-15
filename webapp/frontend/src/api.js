@@ -116,6 +116,12 @@ const api = {
   // Settings
   toggleSpyMode: () => request('/api/settings/spy-mode', { method: 'POST' }),
 
+  // Marketplace search
+  searchMarketplaces: (query, marketplaces, limit = 20) => request('/api/marketplace/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, marketplaces, limit })
+  }),
+
   // Balance
   getBalance: () => request('/api/balance'),
 

@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from database import db
 from webapp.auth import get_user_id_from_init_data
+from webapp.parsers import search_marketplaces
 
 app = FastAPI(title="Giftspy Mini App API")
 
@@ -504,6 +505,34 @@ async def delete_case_endpoint(case_id: int, user_id: int = Depends(get_current_
     
     await db.delete_case(case_id)
     return {"ok": True}
+
+
+# ================= MARKETPLACE SEARCH =================
+
+class MarketplaceSearch(BaseModel):
+    query: str
+    marketplaces: list[str] = ["wildberries", "ozon", "yandex_market"]
+    limit: int = 20
+
+
+@app.post("/api/marketplace/search")
+async def marketplace_search(data: MarketplaceSearch, user_id: int = Depends(get_current_user)):
+    """Search across marketplaces. Requires premium subscription."""
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка для поиска по маркетплейсам")
+
+    if not data.query.strip():
+        raise HTTPException(status_code=400, detail="Пустой поисковый запрос")
+
+    valid_marketplaces = ["wildberries", "ozon", "yandex_market"]
+    selected = [mp for mp in data.marketplaces if mp in valid_marketplaces]
+    if not selected:
+        selected = valid_marketplaces
+
+    limit = min(max(data.limit, 1), 50)
+
+    results = await search_marketplaces(data.query.strip(), selected, limit)
+    return results
 
 
 # ================= BALANCE =================
