@@ -36,10 +36,13 @@ async def get_current_user(request: Request) -> int:
     # Dev mode: allow direct user_id header for testing
     dev_user_id = request.headers.get("X-Dev-User-Id")
     if dev_user_id and not init_data:
+        logging.info(f"get_current_user: Dev mode active, user_id={dev_user_id}")
         return int(dev_user_id)
     
+    logging.info(f"get_current_user: Received request with initData length = {len(init_data)}")
     user_id = get_user_id_from_init_data(init_data)
     if not user_id:
+        logging.warning("get_current_user: Failed to authenticate Telegram initData")
         raise HTTPException(status_code=401, detail="Invalid Telegram auth")
     return user_id
 

@@ -9,7 +9,7 @@ TELEGRAM_API_HASH = '68bfc44cd76a71af6edcc72455e85c59'    # ЗАМЕНИ НА С
 USER_PHONE = '+79294279309'        # ТВОЙ НОМЕР ДЕТЕКТИВА (с плюсом)
 
 # ================= TELEGRAM BOT (Для Менеджера) =================
-BOT_TOKEN = '8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4'   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4")   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
 BOT_USERNAME = os.getenv("BOT_USERNAME", "detectiveaiapp_bot")  # Юзернейм бота без @
 
 # ================= OPENROUTER API (ИИ) =================
