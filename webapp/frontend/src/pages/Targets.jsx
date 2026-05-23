@@ -7,7 +7,8 @@ import { showAlert } from '../utils/popup'
 
 export default function Targets() {
   const navigate = useNavigate()
-  const { data: targets, loading, mutate } = useData('targets', api.getTargets)
+  const { data: targetsData, loading, mutate } = useData('targets', api.getTargets)
+  const targets = targetsData || []
   
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ identifier: '', name: '', habits: '', birthday: '' })
