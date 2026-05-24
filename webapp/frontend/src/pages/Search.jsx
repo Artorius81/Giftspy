@@ -8,16 +8,17 @@ export default function Search() {
   
   const urlQuery = searchParams.get('query') || ''
   const [query, setQuery] = useState(urlQuery)
+  const [marketplace, setMarketplace] = useState('yandex') // 'yandex' or 'ozon'
   const [iframeLoading, setIframeLoading] = useState(false)
   const searchInputRef = useRef(null)
 
-  // Trigger search when query param in URL changes
+  // Trigger search when query param in URL changes or marketplace changes
   useEffect(() => {
     if (urlQuery.trim()) {
       setQuery(urlQuery)
       setIframeLoading(true)
     }
-  }, [urlQuery])
+  }, [urlQuery, marketplace])
 
   // Sync Telegram Web App BackButton
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function Search() {
   }
 
   return (
-    <div className="page search-page animate-fade-in" style={{ paddingBottom: '0px', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="page search-page animate-fade-in" style={{ paddingBottom: '0px', display: 'flex', flexDirection: 'column', height: '100vh', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px' }}>
       {/* Header with search bar */}
       <div className="header" style={{ padding: '8px 12px', height: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
         <button className="header__back" onClick={() => navigate(-1)} style={{ marginRight: '4px' }}>
@@ -112,6 +113,46 @@ export default function Search() {
         </form>
       </div>
 
+      {/* Marketplace Selector Tabs */}
+      <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px 16px', background: 'var(--bg)', flexShrink: 0, borderBottom: '1px solid var(--card-border)' }}>
+        <button
+          onClick={() => setMarketplace('yandex')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            fontSize: '13px',
+            fontWeight: '700',
+            borderRadius: 'var(--radius-sm)',
+            border: marketplace === 'yandex' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
+            background: marketplace === 'yandex' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
+            color: marketplace === 'yandex' ? 'var(--accent)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            textAlign: 'center'
+          }}
+        >
+          🇷🇺 Яндекс Маркет
+        </button>
+        <button
+          onClick={() => setMarketplace('ozon')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            fontSize: '13px',
+            fontWeight: '700',
+            borderRadius: 'var(--radius-sm)',
+            border: marketplace === 'ozon' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
+            background: marketplace === 'ozon' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
+            color: marketplace === 'ozon' ? 'var(--accent)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            textAlign: 'center'
+          }}
+        >
+          🔵 Ozon
+        </button>
+      </div>
+
       {/* Main content container */}
       <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', overflow: 'hidden' }}>
         {urlQuery ? (
@@ -131,12 +172,14 @@ export default function Search() {
                 zIndex: 10
               }}>
                 <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '16px' }} />
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Подключаемся к Яндекс Маркету...</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  Подключаемся к {marketplace === 'yandex' ? 'Яндекс Маркету' : 'Ozon'}...
+                </div>
               </div>
             )}
             <iframe
-              src={`/api/market/webview?query=${encodeURIComponent(urlQuery)}`}
-              title="Yandex Market"
+              src={`/api/market/webview?marketplace=${marketplace}&query=${encodeURIComponent(urlQuery)}`}
+              title="Marketplace Webview"
               style={{
                 width: '100%',
                 height: '100%',
@@ -155,7 +198,7 @@ export default function Search() {
                 Ищите подарки напрямую
               </div>
               <div className="empty-state__desc" style={{ maxWidth: '280px', margin: '10px auto 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                Введите название товара или категорию выше, и мы откроем Яндекс Маркет прямо внутри приложения через безопасное соединение.
+                Введите название товара или категорию выше, и мы откроем маркетплейс прямо внутри приложения через безопасное соединение.
               </div>
             </div>
           </div>

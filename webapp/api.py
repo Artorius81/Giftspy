@@ -643,11 +643,11 @@ async def search_yandex_market_endpoint(query: str, page: int = 0, user_id: int 
 
 
 @app.get("/api/market/webview", response_class=HTMLResponse)
-async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str] = None):
+async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str] = None, marketplace: str = "yandex"):
     """
-    Returns proxied Yandex Market search results or product page HTML.
+    Returns proxied Yandex Market or Ozon mobile search results or product page HTML.
     Does not require Telegram authentication since it is rendered inside an iframe,
-    but can accept query / url as input.
+    but can accept query / url / marketplace as input.
     """
     param = url if url else query
     if not param:
@@ -655,7 +655,7 @@ async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str
     try:
         # Run sync function in thread pool
         loop = asyncio.get_event_loop()
-        html_content = await loop.run_in_executor(None, fetch_and_process_market_page, param)
+        html_content = await loop.run_in_executor(None, fetch_and_process_market_page, param, marketplace)
         return HTMLResponse(content=html_content)
     except Exception as e:
         logging.error(f"Error in market_webview_endpoint: {e}")

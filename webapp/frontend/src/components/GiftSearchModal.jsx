@@ -3,6 +3,7 @@ import api from '../api'
 
 export default function GiftSearchModal({ isOpen, onClose, initialQuery }) {
   const [query, setQuery] = useState(initialQuery || '')
+  const [marketplace, setMarketplace] = useState('yandex') // 'yandex' or 'ozon'
   const [iframeQuery, setIframeQuery] = useState('')
   const [iframeLoading, setIframeLoading] = useState(false)
 
@@ -19,6 +20,13 @@ export default function GiftSearchModal({ isOpen, onClose, initialQuery }) {
       }
     }
   }, [isOpen, initialQuery])
+
+  // Trigger load state when marketplace changes
+  useEffect(() => {
+    if (iframeQuery) {
+      setIframeLoading(true)
+    }
+  }, [marketplace])
 
   const handleSearch = () => {
     if (query.trim()) {
@@ -74,6 +82,46 @@ export default function GiftSearchModal({ isOpen, onClose, initialQuery }) {
           </button>
         </div>
 
+        {/* Marketplace Selector Tabs */}
+        <div style={{ display: 'flex', gap: '8px', padding: '0 16px 10px 16px', background: 'var(--bg-secondary)', flexShrink: 0, borderBottom: '1px solid var(--card-border)' }}>
+          <button
+            onClick={() => setMarketplace('yandex')}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: '12px',
+              fontWeight: '750',
+              borderRadius: 'var(--radius-sm)',
+              border: marketplace === 'yandex' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
+              background: marketplace === 'yandex' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
+              color: marketplace === 'yandex' ? 'var(--accent)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'center'
+            }}
+          >
+            🇷🇺 Яндекс Маркет
+          </button>
+          <button
+            onClick={() => setMarketplace('ozon')}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: '12px',
+              fontWeight: '750',
+              borderRadius: 'var(--radius-sm)',
+              border: marketplace === 'ozon' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
+              background: marketplace === 'ozon' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
+              color: marketplace === 'ozon' ? 'var(--accent)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'center'
+            }}
+          >
+            🔵 Ozon
+          </button>
+        </div>
+
         {/* Iframe View */}
         <div style={{ flex: 1, position: 'relative', width: '100%', overflow: 'hidden', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
           {iframeQuery ? (
@@ -93,12 +141,14 @@ export default function GiftSearchModal({ isOpen, onClose, initialQuery }) {
                   zIndex: 10
                 }}>
                   <div className="spinner" style={{ width: '32px', height: '32px', borderWidth: '2px', marginBottom: '12px' }} />
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Подключаемся к Яндекс Маркету...</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    Подключаемся к {marketplace === 'yandex' ? 'Яндекс Маркету' : 'Ozon'}...
+                  </div>
                 </div>
               )}
               <iframe
-                src={`/api/market/webview?query=${encodeURIComponent(iframeQuery)}`}
-                title="Yandex Market Modal"
+                src={`/api/market/webview?marketplace=${marketplace}&query=${encodeURIComponent(iframeQuery)}`}
+                title="Marketplace Webview Modal"
                 style={{
                   width: '100%',
                   flex: 1,
@@ -115,7 +165,7 @@ export default function GiftSearchModal({ isOpen, onClose, initialQuery }) {
                 Подберите идеальный подарок
               </div>
               <div className="empty-state__desc" style={{ maxWidth: '240px', margin: '6px auto 0', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.4' }}>
-                Введите поисковый запрос выше, чтобы открыть Яндекс Маркет прямо в этом окне.
+                Введите поисковый запрос выше, чтобы открыть маркетплейс прямо в этом окне.
               </div>
             </div>
           )}
