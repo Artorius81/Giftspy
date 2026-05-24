@@ -81,16 +81,151 @@ export default function Home() {
   const activeCases = allCases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
   const completedCount = allCases.filter(c => ['done', 'delivered'].includes(c.status)).length
 
+  const getGreeting = () => {
+    const hr = new Date().getHours()
+    if (hr < 6) return 'Доброй ночи'
+    if (hr < 12) return 'Доброе утро'
+    if (hr < 18) return 'Добрый день'
+    return 'Добрый вечер'
+  }
+
   return (
-    <div className="page">
-      <div className="header">
-        <div className="header__placeholder" />
-        <span className="header__title">Главная</span>
-        <div className="header__placeholder" />
+    <div className="page" style={{ paddingBottom: '30px' }}>
+      {/* Redesigned Premium Header */}
+      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', height: 'auto', background: 'transparent', borderBottom: 'none', flexShrink: 0 }}>
+        <button 
+          onClick={() => navigate('/dossier')}
+          style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text)',
+            fontSize: '18px',
+            cursor: 'pointer'
+          }}
+          title="Дела"
+        >
+          📂
+        </button>
+        <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
+          {getGreeting()}
+        </span>
+        <button 
+          onClick={() => navigate('/settings')}
+          style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text)',
+            fontSize: '18px',
+            cursor: 'pointer'
+          }}
+          title="Настройки"
+        >
+          ⚙️
+        </button>
+      </div>
+
+      {/* Redesigned Detective & Capsule Search Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 20px 24px', textAlign: 'center' }}>
+        {/* Detective illustration holding magnifying glass */}
+        <div style={{ position: 'relative', width: '130px', height: '130px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Subtle background glow */}
+          <div style={{
+            position: 'absolute',
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(100, 100, 255, 0.15) 0%, rgba(100,100,255,0) 70%)',
+            zIndex: 1
+          }} />
+          <span style={{ fontSize: '80px', zIndex: 2, display: 'inline-block', transform: 'scaleX(-1)' }} role="img" aria-label="detective">
+            🕵️‍♂️
+          </span>
+          <span style={{
+            position: 'absolute',
+            right: '12px',
+            bottom: '12px',
+            fontSize: '32px',
+            zIndex: 3,
+            transform: 'rotate(-15deg) scaleX(-1)',
+            background: 'rgba(10,10,12,0.6)',
+            borderRadius: '50%',
+            padding: '2px'
+          }} role="img" aria-label="magnifying glass">
+            🔍
+          </span>
+        </div>
+
+        {/* Pill Badge */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '4px 14px',
+          fontSize: '11px',
+          fontWeight: '700',
+          color: '#c2c2c9',
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px',
+          marginBottom: '14px',
+          display: 'inline-block'
+        }}>
+          Поиск идеального подарка
+        </div>
+
+        {/* Capsule Search Input */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: '350px', margin: '0 auto' }}>
+          <span style={{
+            position: 'absolute',
+            left: '18px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            fontSize: '20px',
+            color: 'var(--text-secondary)',
+            pointerEvents: 'none',
+            opacity: 0.6
+          }}>
+            🔍
+          </span>
+          <input
+            type="text"
+            className="input"
+            style={{
+              width: '100%',
+              padding: '14px 18px 14px 48px',
+              fontSize: '14px',
+              borderRadius: '26px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text)',
+              transition: 'all 0.25s ease',
+              outline: 'none'
+            }}
+            placeholder="Что подарить? (например, кофеварка)..."
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && inputQuery.trim()) {
+                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
+              }
+            }}
+          />
+        </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="stats-row">
+      <div className="stats-row" style={{ marginTop: '0px', marginBottom: '24px' }}>
         <div className="stat-card">
           <div className="stat-card__value">{activeCases.length}</div>
           <div className="stat-card__label">В работе</div>
@@ -105,50 +240,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Search */}
-      <div className="card" style={{ padding: '14px 16px', marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>
-          🛍️ Быстрый поиск подарков
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            type="text"
-            className="input"
-            style={{ 
-              flex: 1, 
-              padding: '10px 12px', 
-              fontSize: 13,
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--card-border)'
-            }}
-            placeholder="Что подарить? (например, кофеварка)..."
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && inputQuery.trim()) {
-                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
-              }
-            }}
-          />
-          <button 
-            className="btn btn--primary" 
-            style={{ 
-              width: 'auto', 
-              padding: '10px 16px',
-              fontSize: 13,
-              borderRadius: 'var(--radius-sm)'
-            }}
-            onClick={() => {
-              if (inputQuery.trim()) {
-                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
-              }
-            }}
-          >
-            Найти
-          </button>
-        </div>
-      </div>
 
       {/* Cases grouped by target */}
       <div className="section-header">
