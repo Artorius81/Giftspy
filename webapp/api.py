@@ -626,14 +626,14 @@ async def yookassa_webhook(request: Request):
 # ================= YANDEX MARKET SEARCH =================
 
 @app.get("/api/market/search")
-async def search_yandex_market_endpoint(query: str, user_id: int = Depends(get_current_user)):
+async def search_yandex_market_endpoint(query: str, page: int = 0, user_id: int = Depends(get_current_user)):
     """Search Yandex Market for products by name."""
     if not query or len(query.strip()) < 2:
         raise HTTPException(status_code=400, detail="Search query is too short")
     try:
         # Run synchronous suggestions fetch in a thread pool to avoid blocking the async event loop
         loop = asyncio.get_event_loop()
-        suggestions = await loop.run_in_executor(None, get_yandex_market_suggestions, query)
+        suggestions = await loop.run_in_executor(None, get_yandex_market_suggestions, query, page)
         return suggestions
     except Exception as e:
         logging.error(f"Error in search_yandex_market_endpoint: {e}")

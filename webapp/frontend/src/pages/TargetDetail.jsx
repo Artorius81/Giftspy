@@ -4,7 +4,6 @@ import api from '../api'
 import { useData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
-import GiftSearchModal from '../components/GiftSearchModal'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -22,8 +21,6 @@ export default function TargetDetail() {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [searchModalOpen, setSearchModalOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -228,8 +225,7 @@ export default function TargetDetail() {
                       className="wishlist-item__search-btn"
                       title="Найти на Яндекс Маркете"
                       onClick={() => {
-                        setSearchQuery(w.description)
-                        setSearchModalOpen(true)
+                        navigate(`/search?query=${encodeURIComponent(w.description)}`)
                       }}
                     >
                       🔎
@@ -251,12 +247,7 @@ export default function TargetDetail() {
         🗑 Удалить цель
       </button>
 
-      {/* Gift Search Popup */}
-      <GiftSearchModal 
-        isOpen={searchModalOpen} 
-        onClose={() => setSearchModalOpen(false)} 
-        initialQuery={searchQuery}
-      />
+
     </div>
   )
 }

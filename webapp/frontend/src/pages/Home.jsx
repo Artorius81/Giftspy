@@ -4,7 +4,6 @@ import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
 import { timeAgo } from '../utils/timeAgo'
-import GiftSearchModal from '../components/GiftSearchModal'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -20,8 +19,6 @@ const STATUS = {
 export default function Home() {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState({})
-  const [searchModalOpen, setSearchModalOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [inputQuery, setInputQuery] = useState('')
 
   const { data: profile, loading: pLoading } = useData('profile', api.getProfile)
@@ -130,8 +127,7 @@ export default function Home() {
             onChange={(e) => setInputQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && inputQuery.trim()) {
-                setSearchQuery(inputQuery)
-                setSearchModalOpen(true)
+                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
               }
             }}
           />
@@ -145,8 +141,7 @@ export default function Home() {
             }}
             onClick={() => {
               if (inputQuery.trim()) {
-                setSearchQuery(inputQuery)
-                setSearchModalOpen(true)
+                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
               }
             }}
           >
@@ -240,12 +235,6 @@ export default function Home() {
         })
       )}
 
-      {/* Gift Search Popup */}
-      <GiftSearchModal 
-        isOpen={searchModalOpen} 
-        onClose={() => setSearchModalOpen(false)} 
-        initialQuery={searchQuery}
-      />
     </div>
   )
 }

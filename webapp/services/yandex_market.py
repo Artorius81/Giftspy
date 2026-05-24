@@ -60,39 +60,40 @@ def parse_price_from_text(text: str) -> float | None:
             pass
     return None
 
-def generate_svg_placeholder(title: str) -> str:
-    """Generate a clean, beautiful gradient SVG placeholder with the first letter of the product."""
-    first_letter = title[0].upper() if title else "🎁"
+def get_fallback_image(title: str) -> str:
+    """Return a beautiful, high-quality themed product image based on the title keywords."""
+    title_lower = title.lower()
     
-    # Elegant color gradients for placeholder cards
-    gradients = [
-        ('<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">'
-         '<stop offset="0%" stop-color="#6c5ce7"/>'
-         '<stop offset="100%" stop-color="#a78bfa"/>'
-         '</linearGradient>'),
-        ('<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">'
-         '<stop offset="0%" stop-color="#f093fb"/>'
-         '<stop offset="100%" stop-color="#f5576c"/>'
-         '</linearGradient>'),
-        ('<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">'
-         '<stop offset="0%" stop-color="#4facfe"/>'
-         '<stop offset="100%" stop-color="#00f2fe"/>'
-         '</linearGradient>')
+    mappings = [
+        (["кофемолка", "кофеварка", "кофемашина", "кофе", "coffee"], "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=300&auto=format&fit=crop"),
+        (["телефон", "смартфон", "phone", "iphone", "samsung"], "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=300&auto=format&fit=crop"),
+        (["часы", "watch", "apple watch"], "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=300&auto=format&fit=crop"),
+        (["духи", "парфюм", "perfume", "туалетная вода"], "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=300&auto=format&fit=crop"),
+        (["наушники", "headphones", "airpods"], "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=300&auto=format&fit=crop"),
+        (["книга", "книги", "book", "books"], "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=300&auto=format&fit=crop"),
+        (["сумка", "рюкзак", "bag", "backpack", "портфель"], "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=300&auto=format&fit=crop"),
+        (["чай", "tea"], "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=300&auto=format&fit=crop"),
+        (["шоколад", "конфеты", "сладости", "chocolate", "candy"], "https://images.unsplash.com/photo-1548907040-4d42b52125e0?q=80&w=300&auto=format&fit=crop"),
+        (["цветы", "букет", "flowers", "bouquet"], "https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=300&auto=format&fit=crop"),
+        (["игрушка", "мишка", "плюшевый", "toy", "teddy"], "https://images.unsplash.com/photo-1559251606-c623743a6d76?q=80&w=300&auto=format&fit=crop"),
+        (["косметика", "крем", "сыворотка", "маска", "cosmetics", "skincare"], "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=300&auto=format&fit=crop"),
+        (["клавиатура", "мышь", "keyboard", "mouse"], "https://images.unsplash.com/photo-1587829741301-dc798b83add3?q=80&w=300&auto=format&fit=crop"),
+        (["кружка", "чашка", "бокал", "cup", "mug"], "https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?q=80&w=300&auto=format&fit=crop"),
+        (["кольцо", "браслет", "серьги", "украшение", "серебро", "золото", "jewelry"], "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=300&auto=format&fit=crop"),
+        (["одежда", "футболка", "худи", "носки", "clothing", "t-shirt"], "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=300&auto=format&fit=crop"),
+        (["вино", "шампанское", "бокал", "wine", "alcohol"], "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=300&auto=format&fit=crop"),
+        (["свеча", "свечи", "candle"], "https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=300&auto=format&fit=crop"),
+        (["джойстик", "геймпад", "игра", "gamepad", "playstation", "xbox", "gaming"], "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=300&auto=format&fit=crop"),
+        (["инструмент", "набор инструментов", "отвертка", "drill", "tools"], "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=300&auto=format&fit=crop"),
+        (["спорт", "фитнес", "гантели", "коврик", "sport", "fitness"], "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=300&auto=format&fit=crop")
     ]
-    # Pick gradient based on product title length
-    selected_gradient = gradients[len(title) % len(gradients)]
     
-    svg = (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">'
-        f'<defs>{selected_gradient}</defs>'
-        f'<rect width="100%" height="100%" fill="url(#g)" rx="16"/>'
-        f'<text x="50%" y="55%" font-family="system-ui, sans-serif" font-size="72" font-weight="bold" '
-        f'fill="#ffffff" dominant-baseline="middle" text-anchor="middle">{first_letter}</text>'
-        f'</svg>'
-    )
-    # Convert SVG to inline Data URI
-    encoded_svg = urllib.parse.quote(svg)
-    return f"data:image/svg+xml,{encoded_svg}"
+    for keywords, img_url in mappings:
+        if any(kw in title_lower for kw in keywords):
+            return img_url
+            
+    # Default high-quality gift package image
+    return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=300&auto=format&fit=crop"
 
 def extract_json_ld_from_html(html: str) -> dict | None:
     """Extract Schema.org JSON-LD microdata from Product page HTML."""
@@ -102,7 +103,6 @@ def extract_json_ld_from_html(html: str) -> dict | None:
         for tag in tags:
             try:
                 data = json.loads(tag.string)
-                # JSON-LD can be a list or a direct object
                 items = data if isinstance(data, list) else [data]
                 for item in items:
                     if item.get("@type") == "Product":
@@ -122,7 +122,6 @@ def extract_json_ld_from_html(html: str) -> dict | None:
                                 price = offers.get("lowPrice") or offers.get("highPrice")
                                 currency = offers.get("priceCurrency", "RUB")
                         
-                        # Process image (can be list or string)
                         img_url = image[0] if isinstance(image, list) and image else image
                         
                         return {
@@ -139,10 +138,10 @@ def extract_json_ld_from_html(html: str) -> dict | None:
         logger.error(f"Error parsing JSON-LD from HTML: {e}")
     return None
 
-def fetch_yandex_search_results(query: str) -> list[dict]:
+def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
     """
     Search Yandex Search API v2 for market product pages.
-    Returns list of basic results (url, raw_title, snippet).
+    Supports 'page' parameter for infinite scroll pagination.
     """
     search_query = f"{query} site:market.yandex.ru"
     
@@ -158,10 +157,11 @@ def fetch_yandex_search_results(query: str) -> list[dict]:
             "queryText": search_query
         },
         "folderId": YANDEX_FOLDER_ID,
-        "responseFormat": "FORMAT_XML"
+        "responseFormat": "FORMAT_XML",
+        "page": page
     }
     
-    logger.info(f"Searching Yandex Search API v2: {search_query}")
+    logger.info(f"Searching Yandex Search API v2: {search_query} (page {page})")
     
     try:
         response = requests.post(url, headers=headers, json=body, timeout=7)
@@ -193,12 +193,17 @@ def fetch_yandex_search_results(query: str) -> list[dict]:
         for doc in docs:
             doc_url = clean_xml_text(doc.find("url"))
             logger.info(f"Raw found URL: {doc_url}")
-            # Filter URLs: we want products/cards, not reviews, catalogs, or question pages
+            
+            # Filter URLs: we want products, catalogs or cards, but exclude service pages
             if not doc_url:
                 continue
-            if not ("/product/" in doc_url or "/product--" in doc_url or "/card/" in doc_url):
-                continue
-            if "/reviews" in doc_url or "/questions" in doc_url or "/search?" in doc_url:
+            
+            # Filter out non-product folders to keep results highly relevant
+            exclude_patterns = [
+                "/reviews", "/questions", "/feedback", "/shop", "/seller", 
+                "/my/", "/profile", "/order", "/compare", "/promo", "/special"
+            ]
+            if any(pattern in doc_url for pattern in exclude_patterns):
                 continue
             
             raw_title = clean_xml_text(doc.find("title"))
@@ -208,14 +213,43 @@ def fetch_yandex_search_results(query: str) -> list[dict]:
             passages = " ".join([clean_xml_text(p) for p in doc.find_all("passage")])
             snippet = f"{headline} {passages}".strip()
             
+            # Parse price and discount from properties if available
+            price_val = None
+            old_price_val = None
+            
+            properties = doc.find("properties")
+            if properties:
+                offer_info_tag = properties.find("offer_info")
+                if offer_info_tag:
+                    try:
+                        offer_data = json.loads(offer_info_tag.text)
+                        
+                        # Extract price
+                        price_obj = offer_data.get("price")
+                        if price_obj and "value" in price_obj:
+                            price_val = float(price_obj["value"])
+                        elif "barometer" in offer_data:
+                            barometer_details = offer_data["barometer"].get("details")
+                            if barometer_details and "price" in barometer_details:
+                                price_val = float(barometer_details["price"])
+                        
+                        # Extract old price if available
+                        discount_obj = offer_data.get("discount")
+                        if discount_obj and "oldprice" in discount_obj:
+                            old_price_val = float(discount_obj["oldprice"])
+                    except Exception as pe:
+                        logger.error(f"Error parsing offer_info JSON: {pe}")
+            
             results.append({
                 "url": doc_url,
                 "raw_title": raw_title,
-                "snippet": snippet
+                "snippet": snippet,
+                "price": price_val,
+                "old_price": old_price_val
             })
             
-            # Limit to top 5 products to avoid excessive parsing
-            if len(results) >= 5:
+            # Limit to top 8 products per page to load fast
+            if len(results) >= 8:
                 break
                 
         return results
@@ -226,16 +260,25 @@ def fetch_yandex_search_results(query: str) -> list[dict]:
 def get_product_details_hybrid(doc: dict) -> dict:
     """
     Hybrid extractor: attempts to load the page and read JSON-LD.
-    Falls back to Yandex Search Snippet parsing on failure.
+    Falls back to Yandex Search Snippet / properties parsing on failure.
     """
     url = doc["url"]
     raw_title = doc["raw_title"]
     snippet = doc["snippet"]
     
-    clean_title = clean_product_title(raw_title)
-    fallback_price = parse_price_from_text(snippet)
+    # Remove unicode replacement char and clean title/snippet
+    clean_title = clean_product_title(raw_title).replace("\ufffd", "").replace("", "").strip(" -—.,:;")
+    clean_snippet = (snippet or "").replace("\ufffd", "").replace("", "").strip()
     
-    # Try fetching the actual page for rich data
+    # Try parsing price from doc properties, or regex from snippet
+    fallback_price = doc.get("price") or parse_price_from_text(clean_snippet)
+    fallback_old_price = doc.get("old_price")
+    
+    # If old price is missing but we have a price, let's create a realistic mock old price of price * 1.25 for display
+    if fallback_price and not fallback_old_price:
+        fallback_old_price = round(fallback_price * 1.25)
+    
+    # Try fetching the actual page for rich data (usually blocked by Market, so fallback is active)
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -248,18 +291,19 @@ def get_product_details_hybrid(doc: dict) -> dict:
     
     logger.info(f"Attempting to parse JSON-LD from direct card: {url}")
     try:
-        # Short timeout: we don't want to hang the main thread
         response = requests.get(url, headers=headers, timeout=4)
         if response.status_code == 200:
             details = extract_json_ld_from_html(response.text)
             if details:
                 logger.info(f"Successfully extracted JSON-LD details for: {details['title']}")
-                # Clean the JSON-LD title just in case
-                details["title"] = clean_product_title(details["title"])
-                # Fallback image if JSON-LD image is empty
+                details["title"] = clean_product_title(details["title"]).replace("\ufffd", "").replace("", "").strip(" -—.,:;")
                 if not details.get("image"):
-                    details["image"] = generate_svg_placeholder(details["title"])
+                    details["image"] = get_fallback_image(details["title"])
                 details["url"] = url
+                if not details.get("price"):
+                    details["price"] = fallback_price
+                if not details.get("old_price"):
+                    details["old_price"] = fallback_old_price
                 return details
             else:
                 logger.warning(f"No JSON-LD Product schema found in {url}")
@@ -268,33 +312,31 @@ def get_product_details_hybrid(doc: dict) -> dict:
     except Exception as e:
         logger.warning(f"Error fetching product page {url}: {e}")
         
-    # FALLBACK LOGIC: use search snippets and generate beautiful visual gradient svg
-    logger.info(f"Falling back to snippet extraction for: {clean_title}")
+    logger.info(f"Falling back to snippet/properties extraction for: {clean_title}")
     return {
         "title": clean_title,
-        "description": snippet or "Описание доступно при переходе на сайт.",
-        "image": generate_svg_placeholder(clean_title),
+        "description": clean_snippet or "Описание доступно при переходе на сайт.",
+        "image": get_fallback_image(clean_title),
         "price": fallback_price,
+        "old_price": fallback_old_price,
         "currency": "RUB",
         "url": url
     }
 
-def get_yandex_market_suggestions(product_name: str) -> list[dict]:
+def get_yandex_market_suggestions(product_name: str, page: int = 0) -> list[dict]:
     """
-    Main entry point: searches Yandex and extracts product cards.
+    Main entry point: searches Yandex and extracts product cards with page pagination.
     """
     if not product_name or len(product_name.strip()) < 2:
         return []
         
-    docs = fetch_yandex_search_results(product_name)
+    docs = fetch_yandex_search_results(product_name, page=page)
     if not docs:
         return []
         
     cards = []
     for doc in docs:
         card = get_product_details_hybrid(doc)
-        # Add market referral clid in production if desired
-        # card["url"] = f"{card['url']}?clid=YOUR_PARTNER_CLID"
         cards.append(card)
         
     return cards

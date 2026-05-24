@@ -125,7 +125,7 @@ const api = {
   }),
 
   // Yandex Market Search
-  searchMarket: (query) => request(`/api/market/search?query=${encodeURIComponent(query)}`),
+  searchMarket: (query, page = 0) => request(`/api/market/search?query=${encodeURIComponent(query)}&page=${page}`),
 }
 export default api
 
