@@ -15,14 +15,14 @@ def get_proxies() -> dict | None:
         }
     return None
 
-def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex") -> str:
+def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex", incoming_cookies: dict = None) -> tuple[str, dict]:
     """
     Fetches the Yandex Market or Ozon mobile page by query or URL through Novosibirsk SOCKS proxy,
     injects `<base>` tag, click interceptors, and custom CSS overrides to make it render
     beautifully inside the MiniApp WebView.
     """
     if not url_or_query:
-        return "<h3>Ошибка: не указан поисковый запрос или URL</h3>"
+        return "<h3>Ошибка: не указан поисковый запрос или URL</h3>", {}
 
     # Normalize marketplace from target URL if it is a complete URL
     if url_or_query.startswith("http://") or url_or_query.startswith("https://"):
@@ -37,6 +37,159 @@ def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex"
             target_url = f"https://m.ozon.ru/search/?text={urllib.parse.quote(url_or_query)}"
         else:
             target_url = f"https://m.market.yandex.ru/search?text={urllib.parse.quote(url_or_query)}"
+
+    # Gracefully intercept Ozon and bypass completely by serving a gorgeous Ozon-branded landing
+    # that opens natively in Telegram's secure in-app browser with the user's real residential IP.
+    if marketplace == "ozon":
+        ozon_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>Поиск Ozon</title>
+            <script src="https://telegram.org/js/telegram-web-app.js"></script>
+            <style>
+                :root {{
+                    --ozon-blue: #005bff;
+                    --ozon-blue-hover: #004ecc;
+                    --bg-dark: #0a0a0c;
+                    --card-bg: rgba(255, 255, 255, 0.03);
+                    --border-color: rgba(255, 255, 255, 0.08);
+                    --text: #ffffff;
+                    --text-secondary: #8e8e93;
+                }}
+                
+                * {{
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }}
+                
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    background-color: var(--bg-dark);
+                    color: var(--text);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    padding: 24px;
+                    text-align: center;
+                }}
+                
+                .card {{
+                    background: var(--card-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 20px;
+                    padding: 36px 24px;
+                    max-width: 360px;
+                    width: 100%;
+                    backdrop-filter: blur(10px);
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                    animation: fadeIn 0.4s ease-out;
+                }}
+                
+                @keyframes fadeIn {{
+                    from {{ opacity: 0; transform: translateY(10px); }}
+                    to {{ opacity: 1; transform: translateY(0); }}
+                }}
+                
+                .icon-container {{
+                    width: 76px;
+                    height: 76px;
+                    background: rgba(0, 91, 255, 0.12);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 20px;
+                    font-size: 36px;
+                    border: 1px solid rgba(0, 91, 255, 0.25);
+                }}
+                
+                h2 {{
+                    font-size: 20px;
+                    font-weight: 850;
+                    margin-bottom: 12px;
+                    letter-spacing: -0.5px;
+                }}
+                
+                p {{
+                    font-size: 13.5px;
+                    color: var(--text-secondary);
+                    line-height: 1.55;
+                    margin-bottom: 26px;
+                }}
+                
+                .btn {{
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    padding: 15px 24px;
+                    background: var(--ozon-blue);
+                    color: white;
+                    border: none;
+                    border-radius: 14px;
+                    font-size: 14.5px;
+                    font-weight: 750;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    text-decoration: none;
+                    box-shadow: 0 4px 15px rgba(0, 91, 255, 0.3);
+                }}
+                
+                .btn:hover {{
+                    background: var(--ozon-blue-hover);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(0, 91, 255, 0.45);
+                }}
+                
+                .btn:active {{
+                    transform: translateY(0);
+                }}
+                
+                .btn-icon {{
+                    margin-left: 8px;
+                    font-size: 16px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="icon-container">🔵</div>
+                <h2>Поиск на Ozon</h2>
+                <p>
+                    Для стабильного поиска и безопасности ваших покупок, Ozon откроется непосредственно в оригинальном, безопасном мобильном браузере Telegram.
+                </p>
+                <button onclick="openOzon()" class="btn">
+                    Открыть Ozon <span class="btn-icon">🚀</span>
+                </button>
+            </div>
+            
+            <script>
+                // Initialize Telegram WebApp
+                if (window.Telegram && window.Telegram.WebApp) {{
+                    window.Telegram.WebApp.ready();
+                    // Auto-open on load to make it seamless
+                    setTimeout(openOzon, 150);
+                }}
+                
+                function openOzon() {{
+                    var targetUrl = "{target_url}";
+                    if (window.Telegram && window.Telegram.WebApp) {{
+                        window.Telegram.WebApp.openLink(targetUrl);
+                    }} else {{
+                        window.open(targetUrl, '_blank');
+                    }}
+                }}
+            </script>
+        </body>
+        </html>
+        """
+        return ozon_html, {}
 
     logger.info(f"WebView Proxy ({marketplace}): Fetching target URL: {target_url}")
 
@@ -57,32 +210,39 @@ def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex"
 
     proxies = get_proxies()
     response_text = ""
+    response_cookies = {}
     success = False
 
     # Step 1: Attempt to fetch using SOCKS proxy
     if proxies:
         logger.info(f"WebView Proxy ({marketplace}): Attempting to fetch with Novosibirsk SOCKS proxy...")
         try:
-            response = requests.get(target_url, headers=headers, proxies=proxies, timeout=12)
+            response = requests.get(target_url, headers=headers, cookies=incoming_cookies, proxies=proxies, timeout=12)
             response.raise_for_status()
             response_text = response.text
+            response_cookies = dict(response.cookies)
             success = True
             logger.info(f"WebView Proxy ({marketplace}): Successfully fetched page via SOCKS proxy!")
         except Exception as e:
             logger.error(f"WebView Proxy ({marketplace}): SOCKS proxy fetch failed or timed out: {e}")
 
-    # Step 2: Fallback to direct fetch (crucial for local development)
+    # Step 2: Fallback to direct fetch ONLY if proxies are not configured (Local Dev)
     if not success:
-        logger.info(f"WebView Proxy ({marketplace}): Falling back to direct fetch without proxy (Local Dev Fallback)...")
+        if proxies:
+            logger.error(f"WebView Proxy ({marketplace}): SOCKS proxy request failed, blocking direct fallback on production VPS to prevent foreign IP bans.")
+            return f"<h3>Ошибка подключения к маркетплейсу ({marketplace}) через прокси. Пожалуйста, попробуйте еще раз.</h3>", {}
+
+        logger.info(f"WebView Proxy ({marketplace}): Falling back to direct fetch without proxy (Local Dev)...")
         try:
-            response = requests.get(target_url, headers=headers, timeout=10)
+            response = requests.get(target_url, headers=headers, cookies=incoming_cookies, timeout=10)
             response.raise_for_status()
             response_text = response.text
+            response_cookies = dict(response.cookies)
             success = True
             logger.info(f"WebView Proxy ({marketplace}): Successfully fetched page via direct connection!")
         except Exception as e:
             logger.error(f"WebView Proxy ({marketplace}): Direct fetch fallback also failed: {e}")
-            return f"<h3>Ошибка подключения к маркетплейсу ({marketplace}): {str(e)}</h3>"
+            return f"<h3>Ошибка подключения к маркетплейсу ({marketplace}): {str(e)}</h3>", {}
 
     # Step 3: Process the HTML
     # We inject the `<base>` tag to resolve static assets relative to the correct mobile site.
@@ -196,4 +356,4 @@ def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex"
     else:
         response_text = f"{response_text}{script_injection}"
 
-    return response_text
+    return response_text, response_cookies

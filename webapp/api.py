@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, Request, Response, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -643,7 +643,13 @@ async def search_yandex_market_endpoint(query: str, page: int = 0, user_id: int 
 
 
 @app.get("/api/market/webview", response_class=HTMLResponse)
-async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str] = None, marketplace: str = "yandex"):
+async def market_webview_endpoint(
+    request: Request,
+    response: Response,
+    query: Optional[str] = None,
+    url: Optional[str] = None,
+    marketplace: str = "yandex"
+):
     """
     Returns proxied Yandex Market or Ozon mobile search results or product page HTML.
     Does not require Telegram authentication since it is rendered inside an iframe,
@@ -653,9 +659,16 @@ async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str
     if not param:
         raise HTTPException(status_code=400, detail="Must provide 'query' or 'url' parameter")
     try:
-        # Run sync function in thread pool
+        # Run sync function in thread pool with cookie forwarding
         loop = asyncio.get_event_loop()
-        html_content = await loop.run_in_executor(None, fetch_and_process_market_page, param, marketplace)
+        html_content, resp_cookies = await loop.run_in_executor(
+            None, fetch_and_process_market_page, param, marketplace, dict(request.cookies)
+        )
+        
+        # Forward returned cookies back to client browser
+        for name, value in resp_cookies.items():
+            response.set_cookie(key=name, value=value, path="/")
+            
         return HTMLResponse(content=html_content)
     except Exception as e:
         logging.error(f"Error in market_webview_endpoint: {e}")
