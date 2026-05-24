@@ -4,6 +4,7 @@ import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
 import { timeAgo } from '../utils/timeAgo'
+import GiftSearchModal from '../components/GiftSearchModal'
 
 const STATUS = {
   pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
@@ -19,6 +20,9 @@ const STATUS = {
 export default function Home() {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState({})
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [inputQuery, setInputQuery] = useState('')
 
   const { data: profile, loading: pLoading } = useData('profile', api.getProfile)
   const { data: cases, loading: cLoading, mutate } = useData('cases', api.getCases)
@@ -101,6 +105,53 @@ export default function Home() {
         <div className="stat-card" onClick={() => navigate('/store')} style={{ cursor: 'pointer' }}>
           <div className="stat-card__value">{profile.is_premium ? '∞' : profile.balance}</div>
           <div className="stat-card__label">Осталось 🛍</div>
+        </div>
+      </div>
+
+      {/* Quick Search */}
+      <div className="card" style={{ padding: '14px 16px', marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>
+          🛍️ Быстрый поиск подарков
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="text"
+            className="input"
+            style={{ 
+              flex: 1, 
+              padding: '10px 12px', 
+              fontSize: 13,
+              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid var(--card-border)'
+            }}
+            placeholder="Что подарить? (например, кофеварка)..."
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && inputQuery.trim()) {
+                setSearchQuery(inputQuery)
+                setSearchModalOpen(true)
+              }
+            }}
+          />
+          <button 
+            className="btn btn--primary" 
+            style={{ 
+              width: 'auto', 
+              padding: '10px 16px',
+              fontSize: 13,
+              borderRadius: 'var(--radius-sm)'
+            }}
+            onClick={() => {
+              if (inputQuery.trim()) {
+                setSearchQuery(inputQuery)
+                setSearchModalOpen(true)
+              }
+            }}
+          >
+            Найти
+          </button>
         </div>
       </div>
 
@@ -188,6 +239,13 @@ export default function Home() {
           )
         })
       )}
+
+      {/* Gift Search Popup */}
+      <GiftSearchModal 
+        isOpen={searchModalOpen} 
+        onClose={() => setSearchModalOpen(false)} 
+        initialQuery={searchQuery}
+      />
     </div>
   )
 }
