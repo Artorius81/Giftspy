@@ -26,6 +26,10 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
 YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
 
+# ================= YANDEX SEARCH =================
+YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
+YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID")
+
 # ================= WEBAPP =================
 WEBAPP_URL = os.getenv("WEBAPP_URL", "")  # URL for Telegram Mini App
 WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8001"))

@@ -123,6 +123,9 @@ const api = {
   createPayment: (productId) => request('/api/payments/create', {
     method: 'POST', body: JSON.stringify({ product_id: productId })
   }),
+
+  // Yandex Market Search
+  searchMarket: (query) => request(`/api/market/search?query=${encodeURIComponent(query)}`),
 }
 export default api
 

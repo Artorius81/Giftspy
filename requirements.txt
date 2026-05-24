@@ -11,3 +11,5 @@ fastapi
 uvicorn
 python-multipart
 yookassa
+beautifulsoup4
+lxml

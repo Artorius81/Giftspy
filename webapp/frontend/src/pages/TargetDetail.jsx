@@ -4,6 +4,7 @@ import api from '../api'
 import { useData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
+import GiftSearchModal from '../components/GiftSearchModal'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -21,6 +22,8 @@ export default function TargetDetail() {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -211,14 +214,26 @@ export default function TargetDetail() {
               </div>
               <div className="card">
                 {group.items.map(w => (
-                  <div key={w.id} className="wishlist-item">
-                    <div className="wishlist-item__icon">{w.added_by === 'ai' ? '🤖' : '✍️'}</div>
-                    <div>
-                      <div className="wishlist-item__text">{w.description}</div>
-                      {w.category && (
-                        <div className="wishlist-item__source">{w.category}</div>
-                      )}
+                  <div key={w.id} className="wishlist-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                      <div className="wishlist-item__icon">{w.added_by === 'ai' ? '🤖' : '✍️'}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="wishlist-item__text" style={{ wordBreak: 'break-word' }}>{w.description}</div>
+                        {w.category && (
+                          <div className="wishlist-item__source">{w.category}</div>
+                        )}
+                      </div>
                     </div>
+                    <button 
+                      className="wishlist-item__search-btn"
+                      title="Найти на Яндекс Маркете"
+                      onClick={() => {
+                        setSearchQuery(w.description)
+                        setSearchModalOpen(true)
+                      }}
+                    >
+                      🔎
+                    </button>
                   </div>
                 ))}
               </div>
@@ -235,6 +250,13 @@ export default function TargetDetail() {
       <button className="btn btn--danger" style={{ marginTop: 16 }} onClick={handleDelete}>
         🗑 Удалить цель
       </button>
+
+      {/* Gift Search Popup */}
+      <GiftSearchModal 
+        isOpen={searchModalOpen} 
+        onClose={() => setSearchModalOpen(false)} 
+        initialQuery={searchQuery}
+      />
     </div>
   )
 }
