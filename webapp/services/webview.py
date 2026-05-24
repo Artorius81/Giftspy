@@ -95,10 +95,10 @@ def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex"
     
     # Custom JS to intercept clicks and form submissions in the iframe.
     # We rewrite them so they go through our proxy backend endpoint `/api/market/webview`.
-    script_injection = f"""
+    script_injection = """
     <script>
     (function() {
-        var currentMarketplace = "{marketplace}";
+        var currentMarketplace = "__MARKETPLACE__";
         console.log("Giftspy WebView Proxy (" + currentMarketplace + "): Injecting click and form submit interceptors.");
         
         // Intercept all link clicks
@@ -161,7 +161,7 @@ def fetch_and_process_market_page(url_or_query: str, marketplace: str = "yandex"
         }, true);
     })();
     </script>
-    """
+    """.replace("__MARKETPLACE__", marketplace)
 
     # Custom CSS to hide distracting banners and install ads to make the Webview look premium.
     style_injection = """
