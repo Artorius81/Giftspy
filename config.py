@@ -34,6 +34,9 @@ YANDEX_FOLDER_ID = os.getenv("YANDEX_FOLDER_ID")
 WEBAPP_URL = os.getenv("WEBAPP_URL", "")  # URL for Telegram Mini App
 WEBAPP_PORT = int(os.getenv("WEBAPP_PORT", "8001"))
 
+# ================= PROXY CONFIGURATION =================
+PROXY_URL = os.getenv("PROXY_URL")
+
 
 SYSTEM_PROMPT_TEMPLATE = """
 Ты — ИИ-помощник из «Giftspy». Твоя задача — сыграть роль Детектива.

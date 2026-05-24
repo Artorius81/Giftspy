@@ -15,6 +15,16 @@ logger = logging.getLogger("yandex_market_service")
 YANDEX_API_KEY = config.YANDEX_API_KEY
 YANDEX_FOLDER_ID = config.YANDEX_FOLDER_ID
 
+def get_proxies() -> dict | None:
+    """Return requests proxy mapping if PROXY_URL is configured."""
+    proxy_url = getattr(config, "PROXY_URL", None)
+    if proxy_url:
+        return {
+            "http": proxy_url,
+            "https": proxy_url
+        }
+    return None
+
 def clean_xml_text(element) -> str:
     """Helper to extract text from XML element and remove highlight tags (<hlword>)."""
     if not element:
@@ -164,7 +174,7 @@ def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
     logger.info(f"Searching Yandex Search API v2: {search_query} (page {page})")
     
     try:
-        response = requests.post(url, headers=headers, json=body, timeout=7)
+        response = requests.post(url, headers=headers, json=body, proxies=get_proxies(), timeout=7)
         if response.status_code != 200:
             logger.error(f"Yandex XML v2 returned status {response.status_code}")
             logger.error(f"Response body: {response.text}")
@@ -298,7 +308,7 @@ def get_product_details_hybrid(doc: dict) -> dict:
     if saved_copy_url:
         logger.info(f"Attempting to fetch product card HTML from Yandex Cache: {saved_copy_url[:120]}...")
         try:
-            response = requests.get(saved_copy_url, headers=headers, timeout=5)
+            response = requests.get(saved_copy_url, headers=headers, proxies=get_proxies(), timeout=5)
             if response.status_code == 200:
                 details = extract_json_ld_from_html(response.text)
                 if details and details.get("title"):
@@ -324,7 +334,7 @@ def get_product_details_hybrid(doc: dict) -> dict:
     # Step 2: Direct URL fetch fallback (in case cache is missing or fails)
     logger.info(f"Attempting direct fetch of product card URL: {url}")
     try:
-        response = requests.get(url, headers=headers, timeout=4)
+        response = requests.get(url, headers=headers, proxies=get_proxies(), timeout=4)
         if response.status_code == 200:
             details = extract_json_ld_from_html(response.text)
             if details and details.get("title"):

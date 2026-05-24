@@ -13,3 +13,4 @@ python-multipart
 yookassa
 beautifulsoup4
 lxml
+pysocks
