@@ -213,6 +213,10 @@ def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
             passages = " ".join([clean_xml_text(p) for p in doc.find_all("passage")])
             snippet = f"{headline} {passages}".strip()
             
+            # Parse saved copy url for caching bypass
+            cache_tag = doc.find("saved-copy-url")
+            saved_copy_url = clean_xml_text(cache_tag) if cache_tag else None
+            
             # Parse price and discount from properties if available
             price_val = None
             old_price_val = None
@@ -245,7 +249,8 @@ def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
                 "raw_title": raw_title,
                 "snippet": snippet,
                 "price": price_val,
-                "old_price": old_price_val
+                "old_price": old_price_val,
+                "saved_copy_url": saved_copy_url
             })
             
             # Limit to top 8 products per page to load fast
@@ -259,12 +264,13 @@ def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
 
 def get_product_details_hybrid(doc: dict) -> dict:
     """
-    Hybrid extractor: attempts to load the page and read JSON-LD.
-    Falls back to Yandex Search Snippet / properties parsing on failure.
+    Hybrid extractor: attempts to fetch product card details using Yandex Web Cache.
+    If that fails, falls back to direct fetch, and finally properties & snippet text.
     """
     url = doc["url"]
     raw_title = doc["raw_title"]
     snippet = doc["snippet"]
+    saved_copy_url = doc.get("saved_copy_url")
     
     # Remove unicode replacement char and clean title/snippet
     clean_title = clean_product_title(raw_title).replace("\ufffd", "").replace("", "").strip(" -—.,:;")
@@ -277,41 +283,71 @@ def get_product_details_hybrid(doc: dict) -> dict:
     # If old price is missing but we have a price, let's create a realistic mock old price of price * 1.25 for display
     if fallback_price and not fallback_old_price:
         fallback_old_price = round(fallback_price * 1.25)
-    
-    # Try fetching the actual page for rich data (usually blocked by Market, so fallback is active)
+        
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
         "Connection": "keep-alive"
     }
-    
-    logger.info(f"Attempting to parse JSON-LD from direct card: {url}")
+
+    # Step 1: Highly reliable bypass - fetch from Yandex Web Cache URL (saved_copy_url)
+    if saved_copy_url:
+        logger.info(f"Attempting to fetch product card HTML from Yandex Cache: {saved_copy_url[:120]}...")
+        try:
+            response = requests.get(saved_copy_url, headers=headers, timeout=5)
+            if response.status_code == 200:
+                details = extract_json_ld_from_html(response.text)
+                if details and details.get("title"):
+                    logger.info(f"Successfully extracted real card details via Yandex Cache: {details['title']}")
+                    details["title"] = clean_product_title(details["title"]).replace("\ufffd", "").replace("", "").strip(" -—.,:;")
+                    if details.get("description"):
+                        details["description"] = details["description"].replace("\ufffd", "").replace("", "").strip()
+                    if not details.get("image"):
+                        details["image"] = get_fallback_image(details["title"])
+                    details["url"] = url
+                    if not details.get("price"):
+                        details["price"] = fallback_price
+                    if not details.get("old_price"):
+                        details["old_price"] = fallback_old_price or (round(details["price"] * 1.25) if details.get("price") else None)
+                    return details
+                else:
+                    logger.warning("JSON-LD not found in cached HTML, falling back to direct/snippets")
+            else:
+                logger.warning(f"Yandex Cache returned HTTP status {response.status_code}")
+        except Exception as e:
+            logger.warning(f"Error fetching cached page: {e}")
+
+    # Step 2: Direct URL fetch fallback (in case cache is missing or fails)
+    logger.info(f"Attempting direct fetch of product card URL: {url}")
     try:
         response = requests.get(url, headers=headers, timeout=4)
         if response.status_code == 200:
             details = extract_json_ld_from_html(response.text)
-            if details:
-                logger.info(f"Successfully extracted JSON-LD details for: {details['title']}")
+            if details and details.get("title"):
+                logger.info(f"Successfully extracted JSON-LD details from direct URL: {details['title']}")
                 details["title"] = clean_product_title(details["title"]).replace("\ufffd", "").replace("", "").strip(" -—.,:;")
+                if details.get("description"):
+                    details["description"] = details["description"].replace("\ufffd", "").replace("", "").strip()
                 if not details.get("image"):
                     details["image"] = get_fallback_image(details["title"])
                 details["url"] = url
                 if not details.get("price"):
                     details["price"] = fallback_price
                 if not details.get("old_price"):
-                    details["old_price"] = fallback_old_price
+                    details["old_price"] = fallback_old_price or (round(details["price"] * 1.25) if details.get("price") else None)
                 return details
             else:
-                logger.warning(f"No JSON-LD Product schema found in {url}")
+                logger.warning("No JSON-LD Product schema found in direct page HTML")
         else:
-            logger.warning(f"Failed to fetch product page (HTTP {response.status_code}) for: {url}")
+            logger.warning(f"Failed to fetch product page directly (HTTP {response.status_code})")
     except Exception as e:
-        logger.warning(f"Error fetching product page {url}: {e}")
+        logger.warning(f"Error fetching product page directly: {e}")
         
+    # Step 3: Ultimate robust fallback to snippets & properties
     logger.info(f"Falling back to snippet/properties extraction for: {clean_title}")
     return {
         "title": clean_title,
