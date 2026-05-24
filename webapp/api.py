@@ -10,11 +10,13 @@ from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from database import db
 from webapp.auth import get_user_id_from_init_data
 from webapp.services.yandex_market import get_yandex_market_suggestions
+from webapp.services.webview import fetch_and_process_market_page
 
 app = FastAPI(title="Giftspy Mini App API")
 
@@ -638,6 +640,27 @@ async def search_yandex_market_endpoint(query: str, page: int = 0, user_id: int 
     except Exception as e:
         logging.error(f"Error in search_yandex_market_endpoint: {e}")
         raise HTTPException(status_code=500, detail="Search failed")
+
+
+@app.get("/api/market/webview", response_class=HTMLResponse)
+async def market_webview_endpoint(query: Optional[str] = None, url: Optional[str] = None):
+    """
+    Returns proxied Yandex Market search results or product page HTML.
+    Does not require Telegram authentication since it is rendered inside an iframe,
+    but can accept query / url as input.
+    """
+    param = url if url else query
+    if not param:
+        raise HTTPException(status_code=400, detail="Must provide 'query' or 'url' parameter")
+    try:
+        # Run sync function in thread pool
+        loop = asyncio.get_event_loop()
+        html_content = await loop.run_in_executor(None, fetch_and_process_market_page, param)
+        return HTMLResponse(content=html_content)
+    except Exception as e:
+        logging.error(f"Error in market_webview_endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Webview proxy failed")
+
 
 
 # ================= STARTUP =================
