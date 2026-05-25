@@ -5,7 +5,7 @@ import { useData } from '../hooks/useData'
 const tabs = [
   { path: '/', icon: '🏠', label: 'Главная' },
   { path: '/new-case', icon: '🕵️', label: 'Детектив' },
-  { path: '/targets', icon: '🤍', label: 'Цели' },
+  { path: '/targets', icon: '❤️', label: 'Вишлист' },
 ]
 
 const CUTE_EMOJIS = ['🐰', '🦊', '🐼', '🐨', '🐱', '🐹', '🐯', '🦁', '🦄', '🐸'];
