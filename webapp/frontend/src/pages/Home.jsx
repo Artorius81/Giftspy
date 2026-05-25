@@ -48,7 +48,7 @@ export default function Home() {
   }
 
   return (
-    <div className="page" style={{ paddingBottom: '120px' }}>
+    <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       {/* Centered Premium Header with Greeting & No Header Buttons */}
       <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
