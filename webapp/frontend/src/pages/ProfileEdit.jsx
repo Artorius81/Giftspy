@@ -3,15 +3,68 @@ import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
+import { getTargetEmoji } from './TargetDetail'
+import { timeAgo } from '../utils/timeAgo'
 
 // Детерминированные эмодзи-аватары для пользователей по умолчанию
 const CUTE_EMOJIS = ['🐰', '🦊', '🐼', '🐨', '🐱', '🐹', '🐯', '🦁', '🦄', '🐸'];
 
+const STATUS = {
+  pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
+  started: { icon: '🔵', label: 'Начато', dot: 'active' },
+  in_progress: { icon: '🔵', label: 'Допрос', dot: 'active' },
+  manual_mode: { icon: '🛑', label: 'Перехват', dot: 'active' },
+  done: { icon: '✅', label: 'Готово', dot: 'done' },
+  delivered: { icon: '✅', label: 'Доставлено', dot: 'done' },
+  cancelled: { icon: '❌', label: 'Отменено', dot: 'cancelled' },
+  error: { icon: '⚠️', label: 'Ошибка', dot: 'cancelled' },
+}
+
+const validateBirthday = (bdayStr) => {
+  if (!bdayStr) return true;
+  const parts = bdayStr.split('.')
+  if (parts.length === 2) {
+    const day = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10)
+    if (isNaN(day) || isNaN(month)) return false
+    if (month < 1 || month > 12) return false
+    const maxDays = new Date(2024, month, 0).getDate()
+    if (day < 1 || day > maxDays) return false
+    return true
+  }
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10)
+    const year = parseInt(parts[2], 10)
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return false
+    if (month < 1 || month > 12) return false
+    const currentYear = new Date().getFullYear()
+    if (year < 1900 || year > currentYear) return false
+    const maxDays = new Date(year, month, 0).getDate()
+    if (day < 1 || day > maxDays) return false
+    return true
+  }
+  return false
+}
+
 export default function ProfileEdit() {
   const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useState({})
   const { data: profile, loading, mutate } = useData('profile', api.getProfile)
-  const { data: cases } = useData('cases', api.getCases)
+  const { data: cases, mutate: mutateCases } = useData('cases', api.getCases)
   const { data: targetsData } = useData('targets', api.getTargets)
+
+  // Poll for cases status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      api.getCases().then(mutateCases).catch(console.error)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [mutateCases])
+
+  const toggleGroup = (target) => {
+    setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
+  }
 
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -36,6 +89,10 @@ export default function ProfileEdit() {
     e.preventDefault()
     if (!form.nickname.trim()) {
       await showAlert('Пожалуйста, введите имя')
+      return
+    }
+    if (form.birthday && !validateBirthday(form.birthday)) {
+      await showAlert('Пожалуйста, введите корректную дату рождения в формате ДД.ММ.ГГГГ')
       return
     }
     setSaving(true)
@@ -113,8 +170,32 @@ export default function ProfileEdit() {
   if (loading) return <div className="page page-profile-bg"><div className="loading"><div className="spinner" /></div></div>
   if (!profile) return <div className="page page-profile-bg"><div className="empty-state"><div className="empty-state__title">Ошибка загрузки</div></div></div>
 
-  // Фильтр активных расследований для списка заказов
-  const activeCases = cases ? cases.filter(c => ['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) : []
+  const allCases = cases || []
+
+  // Group cases by target
+  const grouped = {}
+  allCases.forEach(c => {
+    if (!grouped[c.target]) {
+      grouped[c.target] = {
+        display: c.display_name,
+        cases: [],
+        target_photo: c.target_photo,
+        target_db_id: c.target_db_id,
+        hasActive: false,
+      }
+    }
+    grouped[c.target].cases.push(c)
+    if (['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) {
+      grouped[c.target].hasActive = true
+    }
+  })
+
+  // Sort: active-first targets
+  const sortedGroups = Object.entries(grouped).sort(([, a], [, b]) => {
+    if (a.hasActive && !b.hasActive) return -1
+    if (!a.hasActive && b.hasActive) return 1
+    return 0
+  })
 
   // Получить имя и юзернейм из Telegram WebApp
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {}
@@ -238,13 +319,13 @@ export default function ProfileEdit() {
 
       {/* Список активных расследований (Редизайн) */}
       <div className="section-header" style={{ margin: '16px 0 12px' }}>
-        <h2 className="section-header__title" style={{ fontSize: '17px', color: '#ffffff' }}>Мои расследования</h2>
+        <h2 className="section-header__title" style={{ fontSize: '17px', color: 'var(--text)' }}>Мои расследования</h2>
       </div>
 
-      {activeCases.length === 0 ? (
+      {allCases.length === 0 ? (
         <div className="new-orders-empty">
           <div className="new-orders-empty-icon">
-            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" style={{ color: '#4a4a5a' }}>
+            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" style={{ color: 'var(--text-secondary)' }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -255,31 +336,79 @@ export default function ProfileEdit() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 100 }}>
-          {activeCases.map(c => (
-            <div
-              key={c.id}
-              className="profile-order-card"
-              onClick={() => navigate(`/dossier/${c.id}`)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ fontSize: 22 }}>🕵️‍♂️</span>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'inherit', fontSize: 15 }}>{c.display_name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{c.holiday}</div>
+          {sortedGroups.map(([target, group]) => {
+            const isExpanded = collapsed[target] === true
+            return (
+              <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* Target Card in Profile Style */}
+                <div
+                  className="profile-order-card"
+                  style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  onClick={() => toggleGroup(target)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {group.target_photo ? <img src={group.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : getTargetEmoji(group.target_db_id || 0)}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{group.display}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{target}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {group.hasActive && <span className="status-dot status-dot--active" style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />}
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
+                    <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)' }}>▾</span>
+                  </div>
+                </div>
+
+                {/* Cases List */}
+                <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                  <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
+                    {group.cases.map(c => {
+                      const st = STATUS[c.status] || STATUS.error
+                      return (
+                        <div
+                          key={c.id}
+                          className="profile-order-card"
+                          style={{
+                            padding: '12px 16px',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--card-border)',
+                            borderRadius: '12px',
+                            marginLeft: '8px',
+                            marginBottom: 0
+                          }}
+                          onClick={() => navigate(`/dossier/${c.id}`)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                            <div className="card__avatar" style={{ width: 32, height: 32, fontSize: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                Дело №{c.id}
+                                {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
+                                {st.label}
+                                {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {c.has_report && <span className="badge badge--success" style={{ padding: '2px 6px', fontSize: 10 }}>📋</span>}
+                            <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className={`badge ${
-                  c.status === 'manual_mode' ? 'badge--warning' :
-                  c.status === 'pending' ? 'badge--active' : 'badge--success'
-                }`} style={{ fontSize: 11, padding: '3px 8px' }}>
-                  {c.status === 'manual_mode' ? 'Перехвачено' :
-                   c.status === 'pending' ? 'В очереди' : 'В работе'}
-                </span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

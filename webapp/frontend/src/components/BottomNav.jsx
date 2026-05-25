@@ -31,29 +31,58 @@ export default function BottomNav() {
     return CUTE_EMOJIS[idx]
   }
 
+  const triggerHaptic = () => {
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch (e) {
+      console.warn('Haptic feedback is not supported or failed:', e)
+    }
+  }
+
   return (
     <nav className="bottom-nav" style={{ padding: '6px 12px' }}>
-      {/* First 3 main tabs */}
-      {tabs.map((tab, idx) => {
-        const isActive = activeIndex === idx;
-        return (
-          <button
-            key={tab.path}
-            className={`nav-item ${isActive ? 'active' : ''}`}
-            onClick={() => {
-              if (isActive) return;
-              if (tab.path === '/') {
-                navigate('/', { replace: true, state: { trapInitialized: true, isTrap: false } });
-              } else {
-                navigate(tab.path, { replace: true });
-              }
-            }}
-          >
-            <span className="icon">{tab.icon}</span>
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
+      {/* Wrapper for the first 3 tabs to support smooth sliding indicator */}
+      <div style={{ display: 'flex', flex: 1, position: 'relative', alignItems: 'center' }}>
+        {/* Dynamic sliding selector indicator */}
+        <div 
+          className="bottom-nav-indicator" 
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: '33.333%',
+            transform: `translateX(${activeIndex >= 0 && activeIndex < 3 ? activeIndex * 100 : 0}%)`,
+            opacity: activeIndex >= 0 && activeIndex < 3 ? 1 : 0,
+            transition: 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.2s ease',
+            pointerEvents: 'none',
+            borderRadius: '8px',
+            boxSizing: 'border-box'
+          }}
+        />
+
+        {tabs.map((tab, idx) => {
+          const isActive = activeIndex === idx;
+          return (
+            <button
+              key={tab.path}
+              className={`nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => {
+                triggerHaptic();
+                if (isActive) return;
+                if (tab.path === '/') {
+                  navigate('/', { replace: true, state: { trapInitialized: true, isTrap: false } });
+                } else {
+                  navigate(tab.path, { replace: true });
+                }
+              }}
+            >
+              <span className="icon">{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Vertical Divider line */}
       <div className="bottom-nav-divider" />
@@ -62,6 +91,7 @@ export default function BottomNav() {
       <button
         className="nav-item"
         onClick={() => {
+          triggerHaptic();
           if (isProfileActive) return;
           navigate('/profile/edit', { replace: true });
         }}
