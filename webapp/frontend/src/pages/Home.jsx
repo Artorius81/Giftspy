@@ -1,43 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
-import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
-import { timeAgo } from '../utils/timeAgo'
-
-const STATUS = {
-  pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
-  started: { icon: '🔵', label: 'Начато', dot: 'active' },
-  in_progress: { icon: '🔵', label: 'Допрос', dot: 'active' },
-  manual_mode: { icon: '🛑', label: 'Перехват', dot: 'active' },
-  done: { icon: '✅', label: 'Готово', dot: 'done' },
-  delivered: { icon: '✅', label: 'Доставлено', dot: 'done' },
-  cancelled: { icon: '❌', label: 'Отменено', dot: 'cancelled' },
-  error: { icon: '⚠️', label: 'Ошибка', dot: 'cancelled' },
-}
+import detectiveImg from '../assets/detective.png'
 
 export default function Home() {
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState({})
-  const [inputQuery, setInputQuery] = useState('')
 
   const { data: profile, loading: pLoading } = useData('profile', api.getProfile)
-  const { data: cases, loading: cLoading, mutate } = useData('cases', api.getCases)
+  const { data: cases, loading: cLoading } = useData('cases', api.getCases)
+  const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
 
-  const loading = pLoading || cLoading
-  const allCases = cases || []
-
-  // Poll for status updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      api.getCases().then(mutate).catch(console.error)
-    }, 10000)
-    return () => clearInterval(interval)
-  }, [mutate])
-
-  const toggleGroup = (target) => {
-    setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
-  }
+  const loading = pLoading || cLoading || tLoading
 
   if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
 
@@ -53,33 +27,17 @@ export default function Home() {
     )
   }
 
-  // Group cases by target
-  const grouped = {}
-  allCases.forEach(c => {
-    if (!grouped[c.target]) {
-      grouped[c.target] = {
-        display: c.display_name,
-        cases: [],
-        target_photo: c.target_photo,
-        target_db_id: c.target_db_id,
-        hasActive: false,
-      }
-    }
-    grouped[c.target].cases.push(c)
-    if (['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) {
-      grouped[c.target].hasActive = true
-    }
-  })
-
-  // Sort: active-first targets
-  const sortedGroups = Object.entries(grouped).sort(([, a], [, b]) => {
-    if (a.hasActive && !b.hasActive) return -1
-    if (!a.hasActive && b.hasActive) return 1
-    return 0
-  })
-
+  const allCases = cases || []
   const activeCases = allCases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
   const completedCount = allCases.filter(c => ['done', 'delivered'].includes(c.status)).length
+  const targetsCount = targetsData ? targetsData.length : 0
+
+  // Format Russian plural suffix for targets
+  const getTargetsText = (count) => {
+    if (count % 10 === 1 && count % 100 !== 11) return `${count} цель`;
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} цели`;
+    return `${count} целей`;
+  }
 
   const getGreeting = () => {
     const hr = new Date().getHours()
@@ -90,141 +48,57 @@ export default function Home() {
   }
 
   return (
-    <div className="page" style={{ paddingBottom: '30px' }}>
-      {/* Redesigned Premium Header */}
-      <div className="header" style={{ background: 'transparent', borderBottom: 'none', flexShrink: 0 }}>
-        <button 
-          onClick={() => navigate('/settings')}
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text)',
-            fontSize: '18px',
-            cursor: 'pointer'
-          }}
-          title="Настройки"
-        >
-          ⚙️
-        </button>
-        <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
+    <div className="page" style={{ paddingBottom: '120px' }}>
+      {/* Centered Premium Header with Greeting & No Header Buttons */}
+      <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
+        <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
           {getGreeting()}
-        </span>
-        <button 
-          onClick={() => navigate('/dossier')}
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text)',
-            fontSize: '18px',
-            cursor: 'pointer'
-          }}
-          title="Дела"
-        >
-          📂
+        </h1>
+      </div>
+
+      {/* Breathing Detective Illustration Widget */}
+      <div className="detective-container">
+        <img src={detectiveImg} className="animated-detective" alt="Детектив" />
+      </div>
+
+      {/* Search-Alternative CTA Card (Styled exactly like Profile's Wishlist Card) */}
+      <div className="profile-wishlist-card" style={{ marginBottom: '20px' }}>
+        <div className="profile-wishlist-card-top" onClick={() => navigate('/new-case')}>
+          <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
+            🕵️‍♂️
+          </div>
+          <div className="profile-wishlist-card-details">
+            <span className="profile-wishlist-card-title">Поиск идеального подарка</span>
+            <span className="profile-wishlist-card-subtitle">Детектив готов начать расследование</span>
+          </div>
+        </div>
+        <button className="profile-wishlist-card-btn" onClick={() => navigate('/new-case')}>
+          🕵️‍♂️ Начать расследование
         </button>
       </div>
 
-      {/* Redesigned Detective & Capsule Search Section */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 20px 24px', textAlign: 'center' }}>
-        {/* Detective illustration holding magnifying glass */}
-        <div style={{ position: 'relative', width: '130px', height: '130px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Subtle background glow */}
-          <div style={{
-            position: 'absolute',
-            width: '90px',
-            height: '90px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(100, 100, 255, 0.15) 0%, rgba(100,100,255,0) 70%)',
-            zIndex: 1
-          }} />
-          <span style={{ fontSize: '80px', zIndex: 2, display: 'inline-block', transform: 'scaleX(-1)' }} role="img" aria-label="detective">
-            🕵️‍♂️
-          </span>
-          <span style={{
-            position: 'absolute',
-            right: '12px',
-            bottom: '12px',
-            fontSize: '32px',
-            zIndex: 3,
-            transform: 'rotate(-15deg) scaleX(-1)',
-            background: 'rgba(10,10,12,0.6)',
-            borderRadius: '50%',
-            padding: '2px'
-          }} role="img" aria-label="magnifying glass">
-            🔍
-          </span>
+      {/* Grid: Side-by-Side Quick Cards mirroring Profile design system */}
+      <div className="profile-grid" style={{ marginBottom: '24px' }}>
+        {/* Targets Card */}
+        <div className="profile-grid-card" onClick={() => navigate('/targets')} style={{ cursor: 'pointer' }}>
+          <span className="profile-grid-card-icon">👥</span>
+          <div className="profile-grid-card-bottom">
+            <span className="profile-grid-card-label">Мои цели (люди)</span>
+            <span className="profile-grid-card-value">{getTargetsText(targetsCount)}</span>
+          </div>
         </div>
 
-        {/* Pill Badge */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '4px 14px',
-          fontSize: '11px',
-          fontWeight: '700',
-          color: '#c2c2c9',
-          textTransform: 'uppercase',
-          letterSpacing: '0.6px',
-          marginBottom: '14px',
-          display: 'inline-block'
-        }}>
-          Поиск идеального подарка
-        </div>
-
-        {/* Capsule Search Input */}
-        <div style={{ position: 'relative', width: '100%', maxWidth: '350px', margin: '0 auto' }}>
-          <span style={{
-            position: 'absolute',
-            left: '18px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            fontSize: '20px',
-            color: 'var(--text-secondary)',
-            pointerEvents: 'none',
-            opacity: 0.6
-          }}>
-            🔍
-          </span>
-          <input
-            type="text"
-            className="input"
-            style={{
-              width: '100%',
-              padding: '14px 18px 14px 48px',
-              fontSize: '14px',
-              borderRadius: '26px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: 'var(--text)',
-              transition: 'all 0.25s ease',
-              outline: 'none'
-            }}
-            placeholder="Что подарить? (например, кофеварка)..."
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && inputQuery.trim()) {
-                navigate(`/search?query=${encodeURIComponent(inputQuery)}`)
-              }
-            }}
-          />
+        {/* Balance Card */}
+        <div className="profile-grid-card" onClick={() => navigate('/store')} style={{ cursor: 'pointer' }}>
+          <span className="profile-grid-card-icon">🛍️</span>
+          <div className="profile-grid-card-bottom">
+            <span className="profile-grid-card-label">Баланс поисков</span>
+            <span className="profile-grid-card-value">{profile.is_premium ? 'Безлимит ∞' : `${profile.balance} 🛍️`}</span>
+          </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Stats Quick Cards Row */}
       <div className="stats-row" style={{ marginTop: '0px', marginBottom: '24px' }}>
         <div className="stat-card">
           <div className="stat-card__value">{activeCases.length}</div>
@@ -234,14 +108,40 @@ export default function Home() {
           <div className="stat-card__value">{completedCount}</div>
           <div className="stat-card__label">Закрыто</div>
         </div>
-        <div className="stat-card" onClick={() => navigate('/store')} style={{ cursor: 'pointer' }}>
-          <div className="stat-card__value">{profile.is_premium ? '∞' : profile.balance}</div>
-          <div className="stat-card__label">Осталось 🛍</div>
-        </div>
       </div>
 
+      {/* Upcoming Birthdays Card (Mockup Widget matching exact mockup content) */}
+      <div className="section-header" style={{ margin: '24px 0 12px' }}>
+        <h2 className="section-header__title" style={{ fontSize: '17px', color: 'var(--text)' }}>Ближайшие дни рождения</h2>
+      </div>
 
-
+      <div className="receive-gifts-banner" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-md)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '42px' }} role="img" aria-label="birthday cake">🎂</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span style={{ fontSize: '17px', fontWeight: '700', color: 'var(--text)' }}>Отслеживайте дни рождения</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              Добавьте дни рождения ваших близких в список целей, и детектив вовремя напомнит вам о подготовке!
+            </span>
+          </div>
+        </div>
+        <button 
+          className="btn btn--primary" 
+          onClick={() => navigate('/targets')} 
+          style={{ 
+            background: '#ffffff', 
+            color: '#000000', 
+            border: 'none', 
+            borderRadius: 'var(--radius-full)', 
+            fontWeight: '700', 
+            padding: '12px 24px',
+            fontSize: '14px',
+            boxShadow: 'none'
+          }}
+        >
+          👤 Перейти к целям
+        </button>
+      </div>
 
     </div>
   )

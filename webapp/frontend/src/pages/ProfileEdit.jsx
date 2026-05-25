@@ -208,13 +208,9 @@ export default function ProfileEdit() {
 
   return (
     <div className="page page-profile-bg">
-      {/* Шапка профиля */}
-      <div className="new-header">
-        <button className="new-header-btn" onClick={() => navigate('/settings')} aria-label="Настройки">
-          <span>⚙️</span>
-        </button>
-        <h1 className="new-header-title">Профиль</h1>
-        <div style={{ width: 36 }} /> {/* спейсер для центрирования */}
+      {/* Шапка профиля — Убраны сторонние кнопки */}
+      <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
+        <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)' }}>Профиль</h1>
       </div>
 
       {/* Блок пользователя (Имя, Телефон, Бейдж, Аватар) */}
@@ -232,6 +228,14 @@ export default function ProfileEdit() {
               aria-label="Редактировать профиль"
             >
               ✏️
+            </button>
+            <button
+              className="new-profile-edit-btn"
+              onClick={() => navigate('/settings')}
+              aria-label="Настройки"
+              style={{ marginLeft: 8 }}
+            >
+              ⚙️
             </button>
           </div>
         </div>
