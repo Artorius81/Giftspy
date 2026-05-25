@@ -3004,3 +3004,42 @@ html {
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
 }
 
+/* ---- Opaque Card & Birthday Button Styles ---- */
+.profile-wishlist-card--opaque {
+  background: #170d24 !important; /* solid deep dark purple to block the background completely */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .profile-wishlist-card--opaque {
+  background: #ffffff !important; /* solid white */
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-mockup-cake {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: none;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  padding: 12px 24px;
+  font-size: 14px;
+  box-shadow: none;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.btn-mockup-cake:active {
+  transform: scale(0.97);
+}
+
+[data-theme="light"] .btn-mockup-cake {
+  background: #1a1a2e !important;
+  color: #ffffff !important;
+}
+

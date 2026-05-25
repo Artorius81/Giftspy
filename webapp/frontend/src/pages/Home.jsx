@@ -61,8 +61,8 @@ export default function Home() {
         <img src={detectiveImg} className="animated-detective" alt="Детектив" />
       </div>
 
-      {/* Search-Alternative CTA Card (Styled exactly like Profile's Wishlist Card) */}
-      <div className="profile-wishlist-card" style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+      {/* Search-Alternative CTA Card (Opaque background blocks detective bottom crop) */}
+      <div className="profile-wishlist-card profile-wishlist-card--opaque" style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
         <div className="profile-wishlist-card-top" onClick={() => navigate('/new-case')}>
           <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
             🎁
@@ -114,18 +114,8 @@ export default function Home() {
           </div>
         </div>
         <button 
-          className="btn btn--primary" 
+          className="btn-mockup-cake" 
           onClick={() => navigate('/targets')} 
-          style={{ 
-            background: '#ffffff', 
-            color: '#000000', 
-            border: 'none', 
-            borderRadius: 'var(--radius-full)', 
-            fontWeight: '700', 
-            padding: '12px 24px',
-            fontSize: '14px',
-            boxShadow: 'none'
-          }}
         >
           👤 Перейти к целям
         </button>
