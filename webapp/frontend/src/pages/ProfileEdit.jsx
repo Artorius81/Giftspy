@@ -309,7 +309,7 @@ export default function ProfileEdit() {
       <div className="profile-wishlist-card">
         <div className="profile-wishlist-card-top" onClick={() => navigate('/targets')}>
           <div className="profile-wishlist-card-icon-container">
-            📝❤️
+            ❤️
           </div>
           <div className="profile-wishlist-card-details">
             <span className="profile-wishlist-card-title">Список желаний</span>

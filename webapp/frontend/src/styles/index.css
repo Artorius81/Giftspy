@@ -237,19 +237,26 @@ a { color: var(--link); text-decoration: none; }
 
 .bottom-nav-indicator {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 6px;
-  width: calc((100% - 12px) / 3);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 33.333%;
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.2s ease;
   z-index: 0;
   box-sizing: border-box;
+  pointer-events: none;
 }
 
-[data-theme="light"] .bottom-nav-indicator {
+.bottom-nav-indicator-pill {
+  margin: 6px 6px;
+  height: calc(100% - 12px);
+  background: var(--nav-active-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .bottom-nav-indicator-pill {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.06);
 }
@@ -2982,9 +2989,10 @@ html {
   justify-content: center;
   align-items: center;
   position: relative;
-  margin: 16px 0 20px 0;
+  margin: 16px 0 -15px 0; /* negative margin bottom to tuck it behind */
   height: 160px;
   width: 100%;
+  z-index: 1;
 }
 
 .animated-detective {

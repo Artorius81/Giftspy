@@ -62,10 +62,10 @@ export default function Home() {
       </div>
 
       {/* Search-Alternative CTA Card (Styled exactly like Profile's Wishlist Card) */}
-      <div className="profile-wishlist-card" style={{ marginBottom: '20px' }}>
+      <div className="profile-wishlist-card" style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
         <div className="profile-wishlist-card-top" onClick={() => navigate('/new-case')}>
           <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
-            🕵️‍♂️
+            🎁
           </div>
           <div className="profile-wishlist-card-details">
             <span className="profile-wishlist-card-title">Поиск идеального подарка</span>
@@ -73,7 +73,7 @@ export default function Home() {
           </div>
         </div>
         <button className="profile-wishlist-card-btn" onClick={() => navigate('/new-case')}>
-          🕵️‍♂️ Начать расследование
+          Начать расследование
         </button>
       </div>
 
@@ -95,18 +95,6 @@ export default function Home() {
             <span className="profile-grid-card-label">Баланс поисков</span>
             <span className="profile-grid-card-value">{profile.is_premium ? 'Безлимит ∞' : `${profile.balance} 🛍️`}</span>
           </div>
-        </div>
-      </div>
-
-      {/* Stats Quick Cards Row */}
-      <div className="stats-row" style={{ marginTop: '0px', marginBottom: '24px' }}>
-        <div className="stat-card">
-          <div className="stat-card__value">{activeCases.length}</div>
-          <div className="stat-card__label">В работе</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card__value">{completedCount}</div>
-          <div className="stat-card__label">Закрыто</div>
         </div>
       </div>
 

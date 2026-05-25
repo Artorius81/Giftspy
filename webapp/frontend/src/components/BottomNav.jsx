@@ -43,23 +43,16 @@ export default function BottomNav() {
     <nav className="bottom-nav" style={{ padding: '6px 12px' }}>
       {/* Wrapper for the first 3 tabs to support smooth sliding indicator */}
       <div style={{ display: 'flex', flex: 1, position: 'relative', alignItems: 'center' }}>
-        {/* Dynamic sliding selector indicator */}
+        {/* Dynamic sliding selector indicator with nested inset pill */}
         <div 
           className="bottom-nav-indicator" 
           style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            width: '33.333%',
             transform: `translateX(${activeIndex >= 0 && activeIndex < 3 ? activeIndex * 100 : 0}%)`,
-            opacity: activeIndex >= 0 && activeIndex < 3 ? 1 : 0,
-            transition: 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.2s ease',
-            pointerEvents: 'none',
-            borderRadius: '8px',
-            boxSizing: 'border-box'
+            opacity: activeIndex >= 0 && activeIndex < 3 ? 1 : 0
           }}
-        />
+        >
+          <div className="bottom-nav-indicator-pill" />
+        </div>
 
         {tabs.map((tab, idx) => {
           const isActive = activeIndex === idx;
