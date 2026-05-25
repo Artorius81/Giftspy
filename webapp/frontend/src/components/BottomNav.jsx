@@ -5,8 +5,10 @@ import { useData } from '../hooks/useData'
 const tabs = [
   { path: '/', icon: '🏠', label: 'Главная' },
   { path: '/new-case', icon: '🕵️', label: 'Детектив' },
-  { path: '/targets', icon: '👥', label: 'Цели' },
+  { path: '/targets', icon: '🤍', label: 'Цели' },
 ]
+
+const CUTE_EMOJIS = ['🐰', '🦊', '🐼', '🐨', '🐱', '🐹', '🐯', '🦁', '🦄', '🐸'];
 
 export default function BottomNav() {
   const location = useLocation()
@@ -21,48 +23,69 @@ export default function BottomNav() {
     return -1;
   })();
 
+  const isProfileActive = activeIndex === 3;
+
+  const getDefaultAvatar = (userId) => {
+    if (!userId) return '🐰'
+    const idx = Math.abs(parseInt(userId, 10)) % CUTE_EMOJIS.length
+    return CUTE_EMOJIS[idx]
+  }
+
   return (
-    <nav className="bottom-nav">
-      {activeIndex >= 0 && (
-        <div 
-          className="bottom-nav-indicator"
-          style={{ transform: `translateX(${activeIndex * 100}%)` }}
-        />
-      )}
-      {tabs.map(tab => (
-        <button
-          key={tab.path}
-          className={`nav-item ${location.pathname === tab.path ? 'active' : ''}`}
-          onClick={() => {
-            if (tab.path === location.pathname) return;
-            if (tab.path === '/') {
-              navigate('/', { replace: true, state: { trapInitialized: true, isTrap: false } });
-            } else {
-              navigate(tab.path, { replace: true });
-            }
-          }}
-        >
-          <span className="icon">{tab.icon}</span>
-          <span>{tab.label}</span>
-        </button>
-      ))}
-      {/* Profile Avatar */}
+    <nav className="bottom-nav" style={{ padding: '6px 12px' }}>
+      {/* First 3 main tabs */}
+      {tabs.map((tab, idx) => {
+        const isActive = activeIndex === idx;
+        return (
+          <button
+            key={tab.path}
+            className={`nav-item ${isActive ? 'active' : ''}`}
+            onClick={() => {
+              if (isActive) return;
+              if (tab.path === '/') {
+                navigate('/', { replace: true, state: { trapInitialized: true, isTrap: false } });
+              } else {
+                navigate(tab.path, { replace: true });
+              }
+            }}
+            style={{ color: isActive ? '#ffffff' : 'var(--text-secondary)' }}
+          >
+            <span className="icon" style={{ color: isActive ? '#ffffff' : 'inherit' }}>{tab.icon}</span>
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
+
+      {/* Vertical Divider line */}
+      <div className="bottom-nav-divider" />
+
+      {/* Redesigned Profile Avatar Tab with divider and glowing active ring */}
       <button
-        className={`nav-item ${location.pathname === '/profile/edit' ? 'active' : ''}`}
+        className="nav-item"
         onClick={() => {
-          if (location.pathname === '/profile/edit') return;
+          if (isProfileActive) return;
           navigate('/profile/edit', { replace: true });
         }}
+        style={{
+          flex: '0 0 auto',
+          padding: '4px 6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer'
+        }}
       >
-        <span className="icon">
-          <span className="nav-avatar">
-            {profile?.photo && profile.photo !== 'None'
-              ? <img src={profile.photo} alt="" className="nav-avatar__img" />
-              : '👤'
-            }
-          </span>
-        </span>
-        <span>Профиль</span>
+        <div className={isProfileActive ? "bottom-nav-profile-active" : "bottom-nav-profile-inactive"}>
+          {profile?.photo && profile.photo !== 'None' ? (
+            <img src={profile.photo} alt="" />
+          ) : (
+            <span className={isProfileActive ? "bottom-nav-profile-active-emoji" : "bottom-nav-profile-inactive-emoji"}>
+              {getDefaultAvatar(profile?.user_id)}
+            </span>
+          )}
+        </div>
       </button>
     </nav>
   )

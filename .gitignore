@@ -28,3 +28,9 @@ webapp/frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
+webapp/scratch/test_bypass.py
+webapp/scratch/test_detailed_redirects.py
+webapp/scratch/test_ozon_redirects.py
+webapp/scratch/test_socks_ozon_vps.py
+webapp/scratch/test_ozon.py
+webapp/scratch/test_ozon_curl_cookies.py
