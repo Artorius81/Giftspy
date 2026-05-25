@@ -48,9 +48,8 @@ export default function BottomNav() {
                 navigate(tab.path, { replace: true });
               }
             }}
-            style={{ color: isActive ? '#ffffff' : 'var(--text-secondary)' }}
           >
-            <span className="icon" style={{ color: isActive ? '#ffffff' : 'inherit' }}>{tab.icon}</span>
+            <span className="icon">{tab.icon}</span>
             <span>{tab.label}</span>
           </button>
         );

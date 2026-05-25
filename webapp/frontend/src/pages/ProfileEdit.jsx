@@ -11,6 +11,7 @@ export default function ProfileEdit() {
   const navigate = useNavigate()
   const { data: profile, loading, mutate } = useData('profile', api.getProfile)
   const { data: cases } = useData('cases', api.getCases)
+  const { data: targetsData } = useData('targets', api.getTargets)
 
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -120,15 +121,19 @@ export default function ProfileEdit() {
   const displayPhone = tgUser.username ? `@${tgUser.username}` : `+573150981777`
   const displayName = profile.nickname || `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'Пользователь'
 
+  // Подсчитать общее количество целей
+  const targetsCount = targetsData ? targetsData.length : 0
+  const wishlistSubtitle = `${targetsCount} ${targetsCount === 1 ? 'идея' : targetsCount > 1 && targetsCount < 5 ? 'идеи' : 'идей'}`
+
   return (
     <div className="page page-profile-bg">
       {/* Шапка профиля */}
       <div className="new-header">
-        <div style={{ width: 36 }} /> {/* спейсер для центрирования */}
-        <h1 className="new-header-title">Профиль</h1>
         <button className="new-header-btn" onClick={() => navigate('/settings')} aria-label="Настройки">
           <span>⚙️</span>
         </button>
+        <h1 className="new-header-title">Профиль</h1>
+        <div style={{ width: 36 }} /> {/* спейсер для центрирования */}
       </div>
 
       {/* Блок пользователя (Имя, Телефон, Бейдж, Аватар) */}
@@ -215,50 +220,51 @@ export default function ProfileEdit() {
         </div>
       </div>
 
-      {/* Карточка списка желаний */}
-      <div className="profile-list-card" onClick={() => navigate('/targets')}>
-        <div className="profile-list-card-left">
-          <div className="profile-list-card-icon-container">
+      {/* Карточка списка желаний (Редизайн) */}
+      <div className="profile-wishlist-card">
+        <div className="profile-wishlist-card-top" onClick={() => navigate('/targets')}>
+          <div className="profile-wishlist-card-icon-container">
             📝❤️
           </div>
-          <div className="profile-list-card-details">
-            <span className="profile-list-card-title">Список желаний</span>
-            <span className="profile-list-card-subtitle">0 идей</span>
+          <div className="profile-wishlist-card-details">
+            <span className="profile-wishlist-card-title">Список желаний</span>
+            <span className="profile-wishlist-card-subtitle">{wishlistSubtitle}</span>
           </div>
         </div>
-        <span className="profile-list-card-arrow">›</span>
+        <button className="profile-wishlist-card-btn" onClick={() => navigate('/targets')}>
+          <span style={{ fontSize: '18px', marginRight: '6px', fontWeight: 'bold' }}>+</span> Добавить идею
+        </button>
       </div>
 
-      {/* Список активных расследований */}
+      {/* Список активных расследований (Редизайн) */}
       <div className="section-header" style={{ margin: '16px 0 12px' }}>
-        <h2 className="section-header__title" style={{ fontSize: '17px', color: '#ffffff' }}>Мои заказы</h2>
+        <h2 className="section-header__title" style={{ fontSize: '17px', color: '#ffffff' }}>Мои расследования</h2>
       </div>
 
       {activeCases.length === 0 ? (
-        <div className="card" style={{ padding: '20px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.02)', color: 'var(--text-secondary)' }}>
-          У вас пока нет активных расследований
+        <div className="new-orders-empty">
+          <div className="new-orders-empty-icon">
+            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" style={{ color: '#4a4a5a' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <div className="new-orders-empty-text">
+            Все ваши расследования появятся здесь.
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 100 }}>
           {activeCases.map(c => (
             <div
               key={c.id}
-              className="card"
+              className="profile-order-card"
               onClick={() => navigate(`/dossier/${c.id}`)}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                cursor: 'pointer',
-                padding: '14px 18px',
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.06)'
-              }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <span style={{ fontSize: 22 }}>🕵️‍♂️</span>
                 <div>
-                  <div style={{ fontWeight: 600, color: '#ffffff', fontSize: 15 }}>{c.display_name}</div>
+                  <div style={{ fontWeight: 600, color: 'inherit', fontSize: 15 }}>{c.display_name}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{c.holiday}</div>
                 </div>
               </div>
@@ -296,7 +302,6 @@ export default function ProfileEdit() {
                   maxLength={32}
                   value={form.nickname}
                   onChange={e => setForm({ ...form, nickname: e.target.value })}
-                  style={{ background: 'rgba(255, 255, 255, 0.04)', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                 />
                 <span className="input-hint">{form.nickname.length}/32</span>
               </div>
@@ -317,7 +322,6 @@ export default function ProfileEdit() {
                     else v = digits
                     setForm({ ...form, birthday: v })
                   }}
-                  style={{ background: 'rgba(255, 255, 255, 0.04)', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                 />
               </div>
 

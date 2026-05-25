@@ -92,29 +92,7 @@ export default function Home() {
   return (
     <div className="page" style={{ paddingBottom: '30px' }}>
       {/* Redesigned Premium Header */}
-      <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', height: 'auto', background: 'transparent', borderBottom: 'none', flexShrink: 0 }}>
-        <button 
-          onClick={() => navigate('/dossier')}
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text)',
-            fontSize: '18px',
-            cursor: 'pointer'
-          }}
-          title="Дела"
-        >
-          📂
-        </button>
-        <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
-          {getGreeting()}
-        </span>
+      <div className="header" style={{ background: 'transparent', borderBottom: 'none', flexShrink: 0 }}>
         <button 
           onClick={() => navigate('/settings')}
           style={{
@@ -133,6 +111,28 @@ export default function Home() {
           title="Настройки"
         >
           ⚙️
+        </button>
+        <span style={{ fontSize: '19px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
+          {getGreeting()}
+        </span>
+        <button 
+          onClick={() => navigate('/dossier')}
+          style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text)',
+            fontSize: '18px',
+            cursor: 'pointer'
+          }}
+          title="Дела"
+        >
+          📂
         </button>
       </div>
 
