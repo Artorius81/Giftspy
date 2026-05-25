@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
+import { timeAgo } from '../utils/timeAgo'
 
 // Emoji pool for target avatars (deterministic based on target ID)
 const AVATAR_EMOJIS = ['🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐧', '🦋', '🌸', '🌻', '🍀', '⭐', '🌙', '🎈', '🎀', '🧸', '🦄', '🐝', '🐬']
@@ -147,7 +148,8 @@ export default function TargetDetail() {
       description: val,
       added_by: 'user',
       created_at: new Date().toISOString(),
-      category: 'Идея'
+      category: 'Идея',
+      holiday: 'Личные идеи'
     }
 
     const updated = [newItem, ...customIdeas]
@@ -174,8 +176,9 @@ export default function TargetDetail() {
       const year = parts.length === 3 ? parseInt(parts[2], 10) : new Date().getFullYear()
       if (!isNaN(day) && !isNaN(month)) {
         const date = new Date(year, month, day)
-        const options = { weekday: 'short', month: 'short', day: 'numeric' }
-        return date.toLocaleDateString('en-US', options) // e.g. "Fri, Jun 15"
+        const options = { weekday: 'short', month: 'long', day: 'numeric' }
+        let formatted = date.toLocaleDateString('ru-RU', options)
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1)
       }
     }
     return bdayStr
@@ -190,10 +193,29 @@ export default function TargetDetail() {
   const dbWishlist = target.wishlist || []
   const combinedWishlist = [...customIdeas, ...dbWishlist]
 
+  // Group wishlist items by holiday occasion + case_date
+  const groups = {}
+  combinedWishlist.forEach(w => {
+    const holiday = w.holiday || 'Без повода'
+    const key = `${holiday}__${w.case_date || ''}`
+    if (!groups[key]) {
+      groups[key] = { holiday, date: w.case_date, items: [] }
+    }
+    groups[key].items.push(w)
+  })
+  
+  const sortedGroups = Object.values(groups)
+
+  const getItemsText = (count) => {
+    if (count % 10 === 1 && count % 100 !== 11) return `${count} идея`;
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} идеи`;
+    return `${count} идей`;
+  }
+
   return (
     <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       
-      {/* Sleek Mockup Header (Photo 2) */}
+      {/* Sleek Russian Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         <button 
           className="wishlist-header-btn" 
@@ -204,12 +226,12 @@ export default function TargetDetail() {
           ‹
         </button>
         <span className="new-header-title" style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)' }}>
-          Profile
+          Профиль
         </span>
         <div style={{ width: 36 }} />
       </div>
 
-      {/* User Split Info Section (Photo 2 top) */}
+      {/* User Split Info Section */}
       <div className="friend-profile-top">
         <div className="friend-profile-info">
           <h1 className="friend-profile-name">
@@ -220,10 +242,11 @@ export default function TargetDetail() {
           </div>
         </div>
 
-        {/* Large Editable Round Avatar on Right */}
+        {/* Large Editable Round Avatar */}
         <div 
           className="friend-profile-avatar-container"
           onClick={() => fileInputRef.current?.click()}
+          style={{ cursor: 'pointer' }}
         >
           {uploading ? (
             <div className="spinner" style={{ width: 28, height: 28 }} />
@@ -244,7 +267,7 @@ export default function TargetDetail() {
         />
       </div>
 
-      {/* Action Button Bar Strip (Photo 2) */}
+      {/* Action Button Bar Strip */}
       <div className="friend-profile-action-bar">
         <button 
           className="btn-pill-action" 
@@ -253,7 +276,7 @@ export default function TargetDetail() {
             showAlert(`Контакты вашего друга синхронизированы! 👥`)
           }}
         >
-          👥 Contact
+          👥 Контакт
         </button>
         
         <button 
@@ -287,7 +310,7 @@ export default function TargetDetail() {
         </button>
       </div>
 
-      {/* Large Premium "Send Sherlock" CTA Button (Photo 2) */}
+      {/* Primary "Send Sherlock" CTA */}
       <button 
         className="btn-sherlock" 
         onClick={() => {
@@ -295,35 +318,35 @@ export default function TargetDetail() {
           navigate(`/new-case?target=${encodeURIComponent(target.identifier)}`)
         }}
       >
-        🔎 Send Sherlock
+        🔎 Отправить Шерлока
       </button>
 
-      {/* "Easily send gifts to your contacts" Helper Address Banner (Photo 2) */}
+      {/* Helper Address Banner */}
       <div className="address-banner">
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <span style={{ fontSize: '32px', flexShrink: 0 }} role="img" aria-label="house">🏠</span>
-          <div style={{ display: 'flex', flexDir: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)', display: 'block' }}>
-              Easily send gifts to your contacts
+              Легко отправляйте подарки
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>
-              Add their address so you don't have to fill it in each time.
+              Добавьте адрес друга, чтобы детективу было проще доставить подарок.
             </span>
           </div>
         </div>
 
         <button className="btn-add-address" onClick={() => { triggerHaptic(); setShowAddAddress(true); }}>
-          ➕ Add address
+          ➕ Добавить адрес
         </button>
 
         <div className="address-lock-row">
-          <span>🔒</span> Address details will only be visible to you
+          <span>🔒</span> Адрес будет виден только вам
         </div>
       </div>
 
-      {/* Birthday & Address Side-by-Side Cards (Photo 2) */}
+      {/* Birthday & Address Side-by-Side Cards */}
       <div className="detail-grid">
-        {/* Birthday card */}
+        {/* Birthday Card */}
         <div 
           className="detail-grid-card" 
           onClick={() => { triggerHaptic(); setEditing(true); }}
@@ -331,7 +354,7 @@ export default function TargetDetail() {
         >
           <span className="detail-grid-card-emoji">🎂</span>
           <div>
-            <div className="detail-grid-card-label">Birthday</div>
+            <div className="detail-grid-card-label">День рождения</div>
             <div className="detail-grid-card-value">
               {target.birthday ? formatBirthdayLabel(target.birthday) : 'Добавить'}
             </div>
@@ -346,7 +369,7 @@ export default function TargetDetail() {
         >
           <span className="detail-grid-card-emoji">🏠</span>
           <div>
-            <div className="detail-grid-card-label">Address</div>
+            <div className="detail-grid-card-label">Адрес доставки</div>
             <div 
               className="detail-grid-card-value" 
               style={{ 
@@ -357,103 +380,140 @@ export default function TargetDetail() {
                 maxWidth: '120px'
               }}
             >
-              {address || '➕ Add address'}
+              {address || '➕ Добавить'}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Friend Wishlist Section Box Card (Photo 2 bottom) */}
-      <div className="friend-wishlist-card">
-        <div className="friend-wishlist-card-top">
-          {/* Custom wishlist sheet icon */}
-          <div className="friend-wishlist-card-icon">
-            <span className="friend-wishlist-card-icon-heart">❤️</span>
-            <div className="friend-wishlist-card-icon-line" style={{ width: '85%' }}></div>
-            <div className="friend-wishlist-card-icon-line" style={{ width: '55%' }}></div>
-            <div className="friend-wishlist-card-icon-roll"></div>
-          </div>
-          <div>
-            <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', display: 'block' }}>
-              Wishlist
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              {combinedWishlist.length} items
-            </span>
-          </div>
-        </div>
+      {/* Wishlist Header */}
+      <div className="section-header" style={{ margin: '24px 0 12px' }}>
+        <h2 className="section-header__title" style={{ fontSize: '17px', color: 'var(--text)' }}>Вишлист друга</h2>
+      </div>
 
-        {/* Gift idea list inside the card */}
-        {combinedWishlist.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-            {combinedWishlist.map(w => (
-              <div 
-                key={w.id} 
-                className="profile-order-card"
-                style={{ 
-                  padding: '12px 14px', 
-                  background: 'rgba(255,255,255,0.02)', 
-                  border: '1px solid rgba(255,255,255,0.04)', 
-                  margin: 0,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '16px', flexShrink: 0 }}>
-                    {w.added_by === 'ai' ? '🤖' : '✍️'}
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: '13.5px', color: 'var(--text)', wordBreak: 'break-word', fontWeight: '500' }}>
-                      {w.description}
-                    </div>
-                    {w.category && (
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{w.category}</div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button 
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)' }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/search?query=${encodeURIComponent(w.description)}`)
-                    }}
-                    title="Найти"
-                  >
-                    🔎
-                  </button>
-
-                  {/* If custom idea, support deleting */}
-                  {w.id.toString().startsWith('custom_') && (
-                    <button 
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', color: '#ef4444' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteCustomIdea(w.id)
-                      }}
-                      title="Удалить идею"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* Grouped Wishlist occasion cards */}
+      {sortedGroups.length === 0 ? (
+        <div className="friend-wishlist-card">
+          <div className="friend-wishlist-card-top">
+            <div className="friend-wishlist-card-icon">
+              <span className="friend-wishlist-card-icon-heart">❤️</span>
+              <div className="friend-wishlist-card-icon-line" style={{ width: '85%' }}></div>
+              <div className="friend-wishlist-card-icon-line" style={{ width: '55%' }}></div>
+              <div className="friend-wishlist-card-icon-roll"></div>
+            </div>
+            <div>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)', display: 'block' }}>
+                Вишлист пуст
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>0 идей</span>
+            </div>
           </div>
-        ) : (
           <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
             В вишлисте вашего друга пока нет идей. Нажмите кнопку ниже или отправьте Шерлока!
           </div>
-        )}
+          <button className="btn-add-idea" onClick={() => { triggerHaptic(); setShowAddIdea(true); }}>
+            ➕ Добавить идею
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {sortedGroups.map((group, gIdx) => (
+            <div key={gIdx} className="friend-wishlist-card" style={{ margin: 0 }}>
+              <div className="friend-wishlist-card-top">
+                <div className="friend-wishlist-card-icon">
+                  <span className="friend-wishlist-card-icon-heart">❤️</span>
+                  <div className="friend-wishlist-card-icon-line" style={{ width: '85%' }}></div>
+                  <div className="friend-wishlist-card-icon-line" style={{ width: '55%' }}></div>
+                  <div className="friend-wishlist-card-icon-roll"></div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span 
+                    style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '700', 
+                      color: 'var(--text)', 
+                      display: 'block', 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis' 
+                    }}
+                  >
+                    {group.holiday}
+                  </span>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    {getItemsText(group.items.length)}
+                    {group.date && ` · ${timeAgo(group.date)}`}
+                  </span>
+                </div>
+              </div>
 
-        {/* Large pure white + Add gift idea button (Photo 2 bottom) */}
-        <button className="btn-add-idea" onClick={() => { triggerHaptic(); setShowAddIdea(true); }}>
-          ➕ Add gift idea
-        </button>
-      </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                {group.items.map(w => (
+                  <div 
+                    key={w.id} 
+                    className="profile-order-card"
+                    style={{ 
+                      padding: '12px 14px', 
+                      background: 'rgba(255,255,255,0.02)', 
+                      border: '1px solid rgba(255,255,255,0.04)', 
+                      margin: 0,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '16px', flexShrink: 0 }}>
+                        {w.added_by === 'ai' ? '🤖' : '✍️'}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '13.5px', color: 'var(--text)', wordBreak: 'break-word', fontWeight: '500' }}>
+                          {w.description}
+                        </div>
+                        {w.category && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{w.category}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/search?query=${encodeURIComponent(w.description)}`)
+                        }}
+                        title="Найти на Яндекс Маркете"
+                      >
+                        🔎
+                      </button>
+
+                      {/* Delete button if custom user-added idea */}
+                      {w.id.toString().startsWith('custom_') && (
+                        <button 
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', color: '#ef4444' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCustomIdea(w.id)
+                          }}
+                          title="Удалить идею"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {/* Standing "+ Add gift idea" Button below all lists */}
+          <button className="btn-add-idea" onClick={() => { triggerHaptic(); setShowAddIdea(true); }} style={{ width: '100%', marginTop: 4 }}>
+            ➕ Добавить идею
+          </button>
+        </div>
+      )}
 
       {/* Edit Friend Modal bottom sheet */}
       {editing && (
