@@ -33,6 +33,18 @@ export default function TargetDetail() {
   const [address, setAddress] = useState('')
   const [customIdeas, setCustomIdeas] = useState([])
 
+  // Favorites state synced with Targets list page
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('target_favorites')
+    return saved ? JSON.parse(saved) : {}
+  })
+
+  // Collapsible sections state for wishlist occasion grouping
+  const [collapsed, setCollapsed] = useState({})
+
+  // Keyboard active states for Android lifting adjustments
+  const [isModalFocused, setIsModalFocused] = useState(false)
+
   useEffect(() => {
     if (target) {
       setForm({ name: target.name || '', habits: target.habits || '', birthday: target.birthday || '' })
@@ -76,6 +88,19 @@ export default function TargetDetail() {
       .catch(console.error)
   }
 
+  const toggleFavorite = () => {
+    const isFav = favorites[id] === true
+    const updated = { ...favorites, [id]: !isFav }
+    localStorage.setItem('target_favorites', JSON.stringify(updated))
+    setFavorites(updated)
+    triggerHaptic()
+  }
+
+  const toggleGroup = (holiday) => {
+    setCollapsed(prev => ({ ...prev, [holiday]: !prev[holiday] }))
+    triggerHaptic()
+  }
+
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -101,6 +126,13 @@ export default function TargetDetail() {
       await api.deleteTarget(id)
       localStorage.removeItem(`target_address_${id}`)
       localStorage.removeItem(`target_custom_ideas_${id}`)
+      
+      // Remove from favorites if favorited
+      const updatedFavs = { ...favorites }
+      delete updatedFavs[id]
+      localStorage.setItem('target_favorites', JSON.stringify(updatedFavs))
+      setFavorites(updatedFavs)
+
       navigate('/targets', { replace: true })
     } catch (err) { 
       await showAlert(err.message) 
@@ -188,6 +220,7 @@ export default function TargetDetail() {
   if (!target) return <div className="page page-profile-bg"><div className="empty-state"><div className="empty-state__title">Друг не найден</div></div></div>
 
   const avatarEmoji = getTargetEmoji(target.id)
+  const isFav = favorites[id] === true
 
   // Merge database wishlist with custom user-added wishlist items
   const dbWishlist = target.wishlist || []
@@ -279,15 +312,14 @@ export default function TargetDetail() {
           👥 Контакт
         </button>
         
+        {/* Interactive star favorite button (syncs with localStorage) */}
         <button 
           className="btn-circle-action" 
-          onClick={() => {
-            triggerHaptic()
-            showAlert('Добавлено в избранное! ⭐')
-          }}
+          onClick={toggleFavorite}
           aria-label="В избранное"
+          style={{ color: isFav ? '#f59e0b' : 'var(--text)' }}
         >
-          ☆
+          {isFav ? '★' : '☆'}
         </button>
         
         <button 
@@ -310,7 +342,7 @@ export default function TargetDetail() {
         </button>
       </div>
 
-      {/* Primary "Send Sherlock" CTA */}
+      {/* Primary "Send Detective" CTA */}
       <button 
         className="btn-sherlock" 
         onClick={() => {
@@ -318,7 +350,7 @@ export default function TargetDetail() {
           navigate(`/new-case?target=${encodeURIComponent(target.identifier)}`)
         }}
       >
-        🔎 Отправить Шерлока
+        🕵️ Отправить детектива
       </button>
 
       {/* Helper Address Banner */}
@@ -391,7 +423,7 @@ export default function TargetDetail() {
         <h2 className="section-header__title" style={{ fontSize: '17px', color: 'var(--text)' }}>Вишлист друга</h2>
       </div>
 
-      {/* Grouped Wishlist occasion cards */}
+      {/* Grouped Wishlist Collapsible Accordion Cards */}
       {sortedGroups.length === 0 ? (
         <div className="friend-wishlist-card">
           <div className="friend-wishlist-card-top">
@@ -409,104 +441,115 @@ export default function TargetDetail() {
             </div>
           </div>
           <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '13px' }}>
-            В вишлисте вашего друга пока нет идей. Нажмите кнопку ниже или отправьте Шерлока!
+            В вишлисте вашего друга пока нет идей. Нажмите кнопку ниже или отправьте детектива!
           </div>
           <button className="btn-add-idea" onClick={() => { triggerHaptic(); setShowAddIdea(true); }}>
             ➕ Добавить идею
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {sortedGroups.map((group, gIdx) => (
-            <div key={gIdx} className="friend-wishlist-card" style={{ margin: 0 }}>
-              <div className="friend-wishlist-card-top">
-                <div className="friend-wishlist-card-icon">
-                  <span className="friend-wishlist-card-icon-heart">❤️</span>
-                  <div className="friend-wishlist-card-icon-line" style={{ width: '85%' }}></div>
-                  <div className="friend-wishlist-card-icon-line" style={{ width: '55%' }}></div>
-                  <div className="friend-wishlist-card-icon-roll"></div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span 
-                    style={{ 
-                      fontSize: '16px', 
-                      fontWeight: '700', 
-                      color: 'var(--text)', 
-                      display: 'block', 
-                      whiteSpace: 'nowrap', 
-                      overflow: 'hidden', 
-                      textOverflow: 'ellipsis' 
-                    }}
-                  >
-                    {group.holiday}
-                  </span>
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    {getItemsText(group.items.length)}
-                    {group.date && ` · ${timeAgo(group.date)}`}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                {group.items.map(w => (
-                  <div 
-                    key={w.id} 
-                    className="profile-order-card"
-                    style={{ 
-                      padding: '12px 14px', 
-                      background: 'rgba(255,255,255,0.02)', 
-                      border: '1px solid rgba(255,255,255,0.04)', 
-                      margin: 0,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '16px', flexShrink: 0 }}>
-                        {w.added_by === 'ai' ? '🤖' : '✍️'}
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: '13.5px', color: 'var(--text)', wordBreak: 'break-word', fontWeight: '500' }}>
-                          {w.description}
-                        </div>
-                        {w.category && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{w.category}</div>
-                        )}
-                      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {sortedGroups.map((group, gIdx) => {
+            // Expand by default (true unless explicitly collapsed)
+            const isExpanded = collapsed[group.holiday] !== true
+            return (
+              <div key={gIdx} style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* Clickable collaspsible header card */}
+                <div 
+                  className="profile-order-card"
+                  style={{ 
+                    marginBottom: isExpanded ? 4 : 0, 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '14px 16px'
+                  }}
+                  onClick={() => toggleGroup(group.holiday)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                    <div className="friend-wishlist-card-icon">
+                      <span className="friend-wishlist-card-icon-heart">❤️</span>
+                      <div className="friend-wishlist-card-icon-line" style={{ width: '85%' }}></div>
+                      <div className="friend-wishlist-card-icon-line" style={{ width: '55%' }}></div>
+                      <div className="friend-wishlist-card-icon-roll"></div>
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button 
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)' }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/search?query=${encodeURIComponent(w.description)}`)
-                        }}
-                        title="Найти на Яндекс Маркете"
-                      >
-                        🔎
-                      </button>
-
-                      {/* Delete button if custom user-added idea */}
-                      {w.id.toString().startsWith('custom_') && (
-                        <button 
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', color: '#ef4444' }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteCustomIdea(w.id)
-                          }}
-                          title="Удалить идею"
-                        >
-                          ✕
-                        </button>
-                      )}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {group.holiday}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        {getItemsText(group.items.length)}
+                        {group.date && ` · ${timeAgo(group.date)}`}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)' }}>▾</span>
+                </div>
+
+                {/* Collapsible content (Vanish when collapsed) */}
+                <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                  <div className="expandable-inner" style={{ paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, marginBottom: 8 }}>
+                    {group.items.map(w => (
+                      <div 
+                        key={w.id} 
+                        className="profile-order-card"
+                        style={{ 
+                          padding: '12px 14px', 
+                          background: 'rgba(255,255,255,0.02)', 
+                          border: '1px solid rgba(255,255,255,0.04)', 
+                          margin: 0,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '16px', flexShrink: 0 }}>
+                            {w.added_by === 'ai' ? '🤖' : '✍️'}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: '13.5px', color: 'var(--text)', wordBreak: 'break-word', fontWeight: '500' }}>
+                              {w.description}
+                            </div>
+                            {w.category && (
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: 2 }}>{w.category}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <button 
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--text-secondary)' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/search?query=${encodeURIComponent(w.description)}`)
+                            }}
+                            title="Найти на Яндекс Маркете"
+                          >
+                            🔎
+                          </button>
+
+                          {/* Delete button if custom user-added idea */}
+                          {w.id.toString().startsWith('custom_') && (
+                            <button 
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px', color: '#ef4444' }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteCustomIdea(w.id)
+                              }}
+                              title="Удалить идею"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
           
           {/* Standing "+ Add gift idea" Button below all lists */}
           <button className="btn-add-idea" onClick={() => { triggerHaptic(); setShowAddIdea(true); }} style={{ width: '100%', marginTop: 4 }}>
@@ -519,7 +562,13 @@ export default function TargetDetail() {
       {editing && (
         <>
           <div className="bottom-sheet-backdrop" onClick={() => setEditing(false)} />
-          <div className="bottom-sheet" style={{ zIndex: 1000 }}>
+          <div 
+            className="bottom-sheet" 
+            style={{ 
+              zIndex: 1000,
+              ...(isModalFocused ? { bottom: 'auto', top: '35%', transform: 'translate(-50%, -50%)', borderRadius: '24px' } : {})
+            }}
+          >
             <div className="bottom-sheet-header">
               <span className="bottom-sheet-title">Редактировать друга</span>
               <button className="bottom-sheet-close" onClick={() => setEditing(false)}>✕</button>
@@ -533,6 +582,8 @@ export default function TargetDetail() {
                   required
                   value={form.name} 
                   onChange={e => setForm({ ...form, name: e.target.value })} 
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -552,6 +603,8 @@ export default function TargetDetail() {
                     else v = digits
                     setForm({ ...form, birthday: v })
                   }} 
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -561,6 +614,8 @@ export default function TargetDetail() {
                   className="input" 
                   value={form.habits} 
                   onChange={e => setForm({ ...form, habits: e.target.value })} 
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -576,7 +631,13 @@ export default function TargetDetail() {
       {showAddAddress && (
         <>
           <div className="bottom-sheet-backdrop" onClick={() => setShowAddAddress(false)} />
-          <div className="bottom-sheet" style={{ zIndex: 1000 }}>
+          <div 
+            className="bottom-sheet" 
+            style={{ 
+              zIndex: 1000,
+              ...(isModalFocused ? { bottom: 'auto', top: '35%', transform: 'translate(-50%, -50%)', borderRadius: '24px' } : {})
+            }}
+          >
             <div className="bottom-sheet-header">
               <span className="bottom-sheet-title">Адрес доставки</span>
               <button className="bottom-sheet-close" onClick={() => setShowAddAddress(false)}>✕</button>
@@ -592,6 +653,8 @@ export default function TargetDetail() {
                   placeholder="Улица, дом, квартира, город..." 
                   value={addressInput} 
                   onChange={e => setAddressInput(e.target.value)} 
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -607,7 +670,13 @@ export default function TargetDetail() {
       {showAddIdea && (
         <>
           <div className="bottom-sheet-backdrop" onClick={() => setShowAddIdea(false)} />
-          <div className="bottom-sheet" style={{ zIndex: 1000 }}>
+          <div 
+            className="bottom-sheet" 
+            style={{ 
+              zIndex: 1000,
+              ...(isModalFocused ? { bottom: 'auto', top: '35%', transform: 'translate(-50%, -50%)', borderRadius: '24px' } : {})
+            }}
+          >
             <div className="bottom-sheet-header">
               <span className="bottom-sheet-title">Добавить идею подарка</span>
               <button className="bottom-sheet-close" onClick={() => setShowAddIdea(false)}>✕</button>
@@ -624,6 +693,8 @@ export default function TargetDetail() {
                   placeholder="Что подарить? Например: Носки с уточками..." 
                   value={ideaInput} 
                   onChange={e => setIdeaInput(e.target.value)} 
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 

@@ -23,6 +23,15 @@ export default function Targets() {
   const [form, setForm] = useState({ identifier: '', name: '', habits: '', birthday: '' })
   const [creating, setCreating] = useState(false)
 
+  // Favorites state
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('target_favorites')
+    return saved ? JSON.parse(saved) : {}
+  })
+
+  // Focus state for lifting modals on Android
+  const [isModalFocused, setIsModalFocused] = useState(false)
+
   const triggerHaptic = () => {
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
@@ -35,6 +44,13 @@ export default function Targets() {
     api.getTargets()
       .then(mutate)
       .catch(console.error)
+  }
+
+  const toggleFavorite = (tId) => {
+    const updated = { ...favorites, [tId]: !favorites[tId] }
+    localStorage.setItem('target_favorites', JSON.stringify(updated))
+    setFavorites(updated)
+    triggerHaptic()
   }
 
   const handleCreate = async (e) => {
@@ -81,6 +97,83 @@ export default function Targets() {
     return nameMatch || idMatch
   })
 
+  // Separate favorites vs. regular friends
+  const favoritedTargets = filteredTargets.filter(t => favorites[t.id] === true)
+  const regularTargets = filteredTargets.filter(t => favorites[t.id] !== true)
+
+  const renderTargetRow = (t) => {
+    const isFav = favorites[t.id] === true
+    return (
+      <div 
+        key={t.id} 
+        className="profile-order-card"
+        onClick={() => {
+          triggerHaptic()
+          navigate(`/targets/${t.id}`)
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Avatar with dynamic contact-badge overlay */}
+          <div className="wishlist-avatar-wrapper">
+            <div 
+              className="card__avatar" 
+              style={{ 
+                width: 44, 
+                height: 44, 
+                fontSize: 22, 
+                borderRadius: '50%', 
+                background: 'var(--gradient-primary)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
+            >
+              {t.photo ? (
+                <img src={t.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                getTargetEmoji(t.id)
+              )}
+            </div>
+            {/* Sync icon badge overlay */}
+            <div className="avatar-sync-badge">👤</div>
+          </div>
+          
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
+              {t.name || t.identifier}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>0 идей</span>
+              {t.birthday && <span>· {formatBirthday(t.birthday)}</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Star favorites trigger circle */}
+        <div 
+          style={{ 
+            width: 36, 
+            height: 36, 
+            borderRadius: '50%', 
+            background: 'rgba(255,255,255,0.06)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontSize: 16,
+            color: isFav ? '#f59e0b' : 'var(--text-secondary)',
+            cursor: 'pointer'
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggleFavorite(t.id)
+          }}
+        >
+          {isFav ? '★' : '☆'}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       
@@ -97,7 +190,7 @@ export default function Targets() {
           👥
         </button>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)' }}>
-          Wishlists
+          Вишлист
         </h1>
         <button 
           className="wishlist-header-btn" 
@@ -229,7 +322,7 @@ export default function Targets() {
         <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>Добавить друга</span>
       </div>
 
-      {/* List of Friends (renamed from targets) */}
+      {/* Friends List Split into Pinned Favorites and Regular list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filteredTargets.length === 0 ? (
           <div className="new-orders-empty" style={{ padding: '30px 20px' }}>
@@ -237,75 +330,37 @@ export default function Targets() {
             <div className="new-orders-empty-text">Список друзей пуст. Добавьте своего первого друга!</div>
           </div>
         ) : (
-          filteredTargets.map(t => (
-            <div 
-              key={t.id} 
-              className="profile-order-card"
-              onClick={() => {
-                triggerHaptic()
-                navigate(`/targets/${t.id}`)
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                {/* Avatar with dynamic contact-badge overlay */}
-                <div className="wishlist-avatar-wrapper">
-                  <div 
-                    className="card__avatar" 
-                    style={{ 
-                      width: 44, 
-                      height: 44, 
-                      fontSize: 22, 
-                      borderRadius: '50%', 
-                      background: 'var(--gradient-primary)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center' 
-                    }}
-                  >
-                    {t.photo ? (
-                      <img src={t.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                      getTargetEmoji(t.id)
-                    )}
-                  </div>
-                  {/* Miniature Sync icon overlay badge (Photo 1) */}
-                  <div className="avatar-sync-badge">👤</div>
+          <>
+            {/* Pinned Favorites Section */}
+            {favoritedTargets.length > 0 && (
+              <>
+                <div className="section-header" style={{ margin: '8px 0 6px 0', borderBottom: 'none' }}>
+                  <h2 className="section-header__title" style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                    ⭐ Избранные
+                  </h2>
                 </div>
-                
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
-                    Вишлист {t.name || t.identifier}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span>0 идей</span>
-                    {t.birthday && <span>· {formatBirthday(t.birthday)}</span>}
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: '8px' }}>
+                  {favoritedTargets.map(t => renderTargetRow(t))}
                 </div>
-              </div>
+              </>
+            )}
 
-              {/* Star badge trigger circle */}
-              <div 
-                style={{ 
-                  width: 36, 
-                  height: 36, 
-                  borderRadius: '50%', 
-                  background: 'rgba(255,255,255,0.06)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  color: '#f59e0b',
-                  cursor: 'pointer'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  triggerHaptic()
-                }}
-              >
-                ☆
-              </div>
-            </div>
-          ))
+            {/* Regular Friends Section */}
+            {regularTargets.length > 0 && (
+              <>
+                {favoritedTargets.length > 0 && (
+                  <div className="section-header" style={{ margin: '14px 0 6px 0', borderBottom: 'none' }}>
+                    <h2 className="section-header__title" style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>
+                      👥 Другие друзья
+                    </h2>
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {regularTargets.map(t => renderTargetRow(t))}
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
 
@@ -313,7 +368,13 @@ export default function Targets() {
       {showAdd && (
         <>
           <div className="bottom-sheet-backdrop" onClick={() => setShowAdd(false)} />
-          <div className="bottom-sheet" style={{ zIndex: 1000 }}>
+          <div 
+            className="bottom-sheet" 
+            style={{ 
+              zIndex: 1000,
+              ...(isModalFocused ? { bottom: 'auto', top: '35%', transform: 'translate(-50%, -50%)', borderRadius: '24px' } : {})
+            }}
+          >
             <div className="bottom-sheet-header">
               <span className="bottom-sheet-title">Добавить друга</span>
               <button className="bottom-sheet-close" onClick={() => setShowAdd(false)}>✕</button>
@@ -329,6 +390,8 @@ export default function Targets() {
                   maxLength={32}
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -340,6 +403,8 @@ export default function Targets() {
                   placeholder="@username или +7..."
                   value={form.identifier}
                   onChange={e => setForm({ ...form, identifier: e.target.value })}
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -350,6 +415,8 @@ export default function Targets() {
                   placeholder="ДД.ММ.ГГГГ"
                   value={form.birthday}
                   onChange={e => setForm({ ...form, birthday: e.target.value })}
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
@@ -360,6 +427,8 @@ export default function Targets() {
                   placeholder="Чем он увлекается? Какие подарки любит?"
                   value={form.habits}
                   onChange={e => setForm({ ...form, habits: e.target.value })}
+                  onFocus={() => setIsModalFocused(true)}
+                  onBlur={() => setIsModalFocused(false)}
                 />
               </div>
 
