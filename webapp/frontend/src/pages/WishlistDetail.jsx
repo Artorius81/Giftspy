@@ -104,7 +104,7 @@ function SlideToReceive({ onConfirm, isReceived }) {
     >
       <div className="wishlist-slide-receive__fill" style={{ width: `${(dragX + thumbSize + padding * 2)}px` }} />
       <span className="wishlist-slide-receive__label" style={{ opacity: 1 - progress * 1.8 }}>
-        Проведите, чтобы отметить полученным
+        Проведите для получения
       </span>
       {confirmed && (
         <span className="wishlist-slide-receive__label wishlist-slide-receive__label--done">
@@ -206,8 +206,11 @@ export default function WishlistDetail() {
       p.style.borderRadius = `${Math.random() > 0.5 ? '50%' : '2px'}`;
       
       const fallDuration = Math.random() * 1.5 + 2.0;
+      const spinDuration = Math.random() * 1.0 + 0.5;
       const fallDelay = Math.random() * 0.4;
-      p.style.animation = `confetti-fall ${fallDuration}s linear ${fallDelay}s forwards, confetti-spin ${Math.random() * 1 + 0.5}s linear infinite`;
+      
+      p.style.animationDuration = `${fallDuration}s, ${spinDuration}s`;
+      p.style.animationDelay = `${fallDelay}s, ${fallDelay}s`;
       
       container.appendChild(p);
     }

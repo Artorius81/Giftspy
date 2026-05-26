@@ -4769,5 +4769,221 @@ html {
   font-size: 11px;
 }
 
+/* ================= THEME AND ACCOUNT SUB-SCREENS ================= */
+.settings-theme-card.active {
+  border-color: var(--accent) !important;
+  background: rgba(108, 92, 231, 0.06) !important;
+  box-shadow: 0 0 16px rgba(108, 92, 231, 0.15);
+}
+
+.settings-theme-glow-light {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #ffb703;
+  filter: blur(25px);
+  opacity: 0.25;
+  border-radius: 50%;
+}
+
+.settings-theme-glow-dark {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #8338ec;
+  filter: blur(25px);
+  opacity: 0.25;
+  border-radius: 50%;
+}
+
+.settings-theme-system-btn {
+  width: 100%;
+  height: 56px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 16px;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .settings-theme-system-btn {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.settings-theme-system-btn.active {
+  border-color: #22c55e !important;
+  background: rgba(34, 197, 94, 0.08) !important;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.2);
+  color: var(--text) !important;
+}
+
+.settings-theme-system-btn:active {
+  transform: scale(0.97);
+}
+
+/* Account Sub-screen components */
+.settings-account-profile-capsule {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+[data-theme="light"] .settings-account-profile-capsule {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-account-profile-capsule:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-account-profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #ffffff;
+  overflow: hidden;
+  margin-right: 16px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-account-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-account-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings-account-profile-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-account-profile-phone {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ================= STANDARDIZATION & CONFETTI ================= */
+.confetti-particle {
+  position: absolute;
+  will-change: transform;
+  animation-name: confetti-fall, confetti-spin;
+  animation-timing-function: linear, linear;
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: forwards, none;
+}
+
+.wishlist-slide-receive__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px !important;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  white-space: nowrap !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* Глобальные Safe Area отступы для всех экранов */
+.page {
+  padding-top: calc(36px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 16px))) !important;
+  box-sizing: border-box;
+}
+
+.page:has(.header), 
+.page:has(.new-header), 
+.page:has(.settings-new-header) {
+  padding-top: 16px !important;
+}
+
+/* Унифицированные идеально круглые кнопки назад на всех страницах */
+.header__back, 
+.header__btn, 
+.wishlist-header-btn, 
+.wishlist-details-header-btn, 
+.new-header-back-btn, 
+.chat-header__btn, 
+.chat-header-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--text) !important;
+  font-size: 22px !important;
+  cursor: pointer !important;
+  transition: var(--transition) !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+[data-theme="light"] .header__back, 
+[data-theme="light"] .header__btn, 
+[data-theme="light"] .wishlist-header-btn, 
+[data-theme="light"] .wishlist-details-header-btn,
+[data-theme="light"] .new-header-back-btn,
+[data-theme="light"] .chat-header__btn,
+[data-theme="light"] .chat-header-btn {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: var(--text) !important;
+}
+
+.header__back:active, 
+.header__btn:active, 
+.wishlist-header-btn:active, 
+.wishlist-details-header-btn:active, 
+.new-header-back-btn:active,
+.chat-header__btn:active,
+.chat-header-btn:active {
+  transform: scale(0.9) !important;
+  opacity: 0.8 !important;
+}
+
 
 
