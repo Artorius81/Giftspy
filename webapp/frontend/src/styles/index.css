@@ -118,7 +118,7 @@ a { color: var(--link); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(16px + env(safe-area-inset-top, 12px)) 16px 16px 16px;
+  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -2287,11 +2287,15 @@ html {
   min-height: 100vh;
 }
 
+[data-theme="light"] .page-profile-bg {
+  background: var(--bg) !important;
+}
+
 .new-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(16px + env(safe-area-inset-top, 12px)) 16px 16px 16px;
+  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
   background: transparent;
   box-sizing: border-box;
 }
@@ -3549,20 +3553,20 @@ html {
 }
 
 .detective-search-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 16px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
 }
 
 .detective-search-box:active {
   transform: scale(0.98);
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 0.9;
 }
 
 .detective-promo-card {
@@ -3576,6 +3580,12 @@ html {
   gap: 14px;
 }
 
+[data-theme="light"] .detective-promo-card {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.08) 0%, rgba(167, 139, 250, 0.04) 100%);
+  border: 1px solid rgba(108, 92, 231, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
 .detective-promo-title-row {
   display: flex;
   align-items: center;
@@ -3585,13 +3595,13 @@ html {
 .detective-promo-title {
   font-size: 16.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   letter-spacing: -0.2px;
 }
 
 .detective-promo-desc {
   font-size: 13.5px;
-  color: #8e8ea0;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -3603,15 +3613,15 @@ html {
 
 .btn-send-detective {
   flex: 1;
-  background: #6366f1;
+  background: var(--accent);
   border-radius: 9999px;
   height: 52px;
   border: none;
   font-weight: 700;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--accent-text);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -3620,16 +3630,16 @@ html {
 
 .btn-send-detective:active {
   transform: scale(0.98);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.2);
 }
 
 .btn-refresh-history {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text);
   font-size: 22px;
   font-weight: bold;
   display: flex;
@@ -3637,12 +3647,12 @@ html {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .btn-refresh-history:active {
   transform: scale(0.9) rotate(45deg);
-  background: rgba(255, 255, 255, 0.12);
+  opacity: 0.8;
 }
 
 .history-section-header {
@@ -3655,7 +3665,7 @@ html {
 .history-section-title {
   font-size: 14px;
   font-weight: 700;
-  color: #8e8ea0;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
@@ -3671,21 +3681,22 @@ html {
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px dashed var(--card-border);
   border-radius: 20px;
   text-align: center;
 }
 
 .history-empty-icon {
   font-size: 36px;
-  color: #4e4e61;
+  color: var(--text-secondary);
   margin-bottom: 12px;
+  opacity: 0.6;
 }
 
 .history-empty-text {
   font-size: 14px;
-  color: #8e8ea0;
+  color: var(--text-secondary);
 }
 
 /* ================= WISHLIST REDESIGN (PHOTO 2 & 3) ================= */
@@ -3701,12 +3712,12 @@ html {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #443c5b 0%, #201a35 100%);
-  border: 2px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+  border: 2px solid var(--card-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   margin-bottom: 16px;
 }
@@ -3725,7 +3736,7 @@ html {
 .wishlist-hero-title {
   font-size: 22px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
   letter-spacing: -0.3px;
   margin: 0 0 8px 0;
 }
@@ -3735,13 +3746,13 @@ html {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 9999px;
   padding: 6px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(10px);
 }
@@ -3754,8 +3765,8 @@ html {
 
 .wishlist-grid-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 20px;
   padding: 18px;
   display: flex;
@@ -3763,12 +3774,12 @@ html {
   gap: 10px;
   box-sizing: border-box;
   transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .wishlist-grid-card:active {
   transform: translateY(2px) scale(0.97);
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 0.9;
 }
 
 .wishlist-grid-card-delete {
@@ -3799,18 +3810,18 @@ html {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .wishlist-grid-card-desc {
   font-size: 14.5px;
   font-weight: 650;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.4;
   word-break: break-word;
   margin-top: 4px;
@@ -3818,7 +3829,7 @@ html {
 
 .wishlist-grid-card-holiday {
   font-size: 11px;
-  color: #8e8ea0;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -3838,7 +3849,7 @@ html {
 }
 
 .wishlist-grid-card-add-trigger {
-  border: 2px dashed rgba(255, 255, 255, 0.12);
+  border: 2px dashed var(--card-border);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -3854,28 +3865,28 @@ html {
 
 .wishlist-grid-card-add-trigger:active {
   transform: scale(0.97);
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--accent);
+  background: var(--card-bg);
 }
 
 .wishlist-grid-card-add-circle {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
 .wishlist-grid-card-add-label {
   font-size: 13px;
   font-weight: 600;
-  color: #8e8ea0;
+  color: var(--text-secondary);
   line-height: 1.3;
 }
 
@@ -3887,8 +3898,8 @@ html {
   justify-content: center;
   text-align: center;
   padding: 48px 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px dashed var(--card-border);
   border-radius: 20px;
 }
 
@@ -3916,6 +3927,12 @@ html {
   gap: 8px;
 }
 
+[data-theme="light"] .wishlist-sticky-bottom-btn {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);
+}
+
 .wishlist-sticky-bottom-btn:active {
   transform: translateX(-50%) scale(0.96);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -3927,6 +3944,12 @@ html {
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5) !important;
   padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 12px)) 20px !important;
+}
+
+[data-theme="light"] .wishlist-add-gift-sheet {
+  background: var(--bg) !important;
+  border-top: 1px solid var(--card-border) !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.1) !important;
 }
 
 .wishlist-add-gift-link-btn {
@@ -3947,14 +3970,21 @@ html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+[data-theme="light"] .wishlist-add-gift-link-btn {
+  background: var(--bg-secondary);
+  border-color: var(--card-border);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
 .wishlist-add-gift-link-btn:active {
   transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.1);
+  opacity: 0.9;
 }
 
 .wishlist-add-gift-container-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 20px;
   padding: 14px 18px;
   margin-bottom: 20px;
@@ -3972,12 +4002,12 @@ html {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
   flex-shrink: 0;
 }
 
@@ -3987,19 +4017,20 @@ html {
   outline: none !important;
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff !important;
+  color: var(--text) !important;
   flex: 1;
   padding: 6px 0 !important;
   font-family: var(--font);
 }
 
 .wishlist-add-gift-input::placeholder {
-  color: #5b5b72;
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .wishlist-add-gift-separator {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--card-border);
   margin: 14px 0 10px 0;
 }
 
@@ -4009,7 +4040,7 @@ html {
   align-items: center;
   font-size: 13.5px;
   font-weight: 600;
-  color: #8e8ea0;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 0;
 }
@@ -4046,16 +4077,21 @@ html {
   transition: all 0.2s ease;
 }
 
+[data-theme="light"] .wishlist-add-gift-save-btn {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
 .wishlist-add-gift-save-btn.active {
-  background: #6366f1;
-  color: #ffffff;
+  background: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
 }
 
 .wishlist-add-gift-save-btn.active:active {
   transform: scale(0.98);
-  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 2px 6px rgba(108, 92, 231, 0.15);
 }
 
 .wishlist-add-gift-close-circle-btn {
@@ -4075,9 +4111,16 @@ html {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
+[data-theme="light"] .wishlist-add-gift-close-circle-btn {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
 .wishlist-add-gift-close-circle-btn:active {
   transform: scale(0.9);
-  background: rgba(255, 255, 255, 0.12);
+  opacity: 0.8;
 }
 
 
