@@ -79,6 +79,12 @@ class CaseCreate(BaseModel):
     budget: str = "Не указан"
 
 
+class WishlistItemCreate(BaseModel):
+    target_id: int
+    description: str
+    category: Optional[str] = "Другое"
+
+
 # ================= PROFILE =================
 
 @app.get("/api/profile")
@@ -92,6 +98,9 @@ async def get_profile(user_id: int = Depends(get_current_user)):
             is_premium = datetime.fromisoformat(premium_until) > datetime.utcnow()
         except (ValueError, TypeError):
             pass
+            
+    self_target_id = await db.get_or_create_self_target(user_id)
+    wishlist = await db.get_wishlist_grouped(self_target_id)
     
     return {
         "user_id": user_id,
@@ -104,7 +113,22 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "spy_mode": spy_mode,
         "birthday": birthday,
         "description": description,
-        "photo": photo
+        "photo": photo,
+        "self_target_id": self_target_id,
+        "wishlist": [
+            {
+                "id": w[0],
+                "description": w[1],
+                "added_by": w[2],
+                "created_at": w[3],
+                "category": w[4],
+                "case_id": w[5],
+                "holiday": w[6],
+                "case_date": w[7],
+                "received": w[8]
+            }
+            for w in wishlist
+        ]
     }
 
 
@@ -175,7 +199,8 @@ async def get_target(target_id: int, user_id: int = Depends(get_current_user)):
                 "category": w[4],
                 "case_id": w[5],
                 "holiday": w[6],
-                "case_date": w[7]
+                "case_date": w[7],
+                "received": w[8]
             }
             for w in wishlist
         ]
@@ -240,6 +265,52 @@ async def upload_target_photo_endpoint(target_id: int, file: UploadFile = File(.
             raise HTTPException(status_code=500, detail="Ошибка загрузки фото")
     await db.update_target(target_id, photo_file_id=photo_url)
     return {"photo": photo_url}
+
+
+# ================= WISHLIST =================
+
+@app.post("/api/wishlist")
+async def add_wishlist_item(data: WishlistItemCreate, user_id: int = Depends(get_current_user)):
+    target = await db.get_target_by_id(data.target_id)
+    if not target or target[1] != user_id:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    await db.add_to_wishlist(
+        target_id=data.target_id,
+        gift_description=data.description,
+        category=data.category,
+        added_by='user'
+    )
+    return {"ok": True}
+
+
+@app.post("/api/wishlist/{item_id}/toggle-received")
+async def toggle_wishlist_item_received(item_id: int, received: Optional[bool] = None, user_id: int = Depends(get_current_user)):
+    item = await db.get_wishlist_item_by_id(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Wishlist item not found")
+        
+    target = await db.get_target_by_id(item['target_id'])
+    if not target or target[1] != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    new_received = received if received is not None else not bool(item.get('received', False))
+    await db.set_wishlist_item_received(item_id, new_received)
+    return {"ok": True, "received": new_received}
+
+
+@app.delete("/api/wishlist/{item_id}")
+async def delete_wishlist_item_endpoint(item_id: int, user_id: int = Depends(get_current_user)):
+    item = await db.get_wishlist_item_by_id(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Wishlist item not found")
+        
+    target = await db.get_target_by_id(item['target_id'])
+    if not target or target[1] != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    await db.delete_wishlist_item(item_id)
+    return {"ok": True}
 
 
 # ================= CASES (DOSSIER) =================

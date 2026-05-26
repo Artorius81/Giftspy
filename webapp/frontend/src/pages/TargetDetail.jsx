@@ -31,7 +31,6 @@ export default function TargetDetail() {
 
   // Local storage state for address & custom gift ideas
   const [address, setAddress] = useState('')
-  const [customIdeas, setCustomIdeas] = useState([])
 
   // Favorites state synced with Targets list page
   const [favorites, setFavorites] = useState(() => {
@@ -60,17 +59,6 @@ export default function TargetDetail() {
     } else {
       setAddress('')
       setAddressInput('')
-    }
-
-    const savedIdeas = localStorage.getItem(`target_custom_ideas_${id}`)
-    if (savedIdeas) {
-      try {
-        setCustomIdeas(JSON.parse(savedIdeas))
-      } catch (e) {
-        console.error('Failed to parse custom ideas:', e)
-      }
-    } else {
-      setCustomIdeas([])
     }
   }, [id])
 
@@ -125,7 +113,6 @@ export default function TargetDetail() {
     try {
       await api.deleteTarget(id)
       localStorage.removeItem(`target_address_${id}`)
-      localStorage.removeItem(`target_custom_ideas_${id}`)
       
       // Remove from favorites if favorited
       const updatedFavs = { ...favorites }
@@ -170,33 +157,37 @@ export default function TargetDetail() {
     triggerHaptic()
   }
 
-  const handleAddIdea = (e) => {
+  const handleAddIdea = async (e) => {
     e.preventDefault()
     const val = ideaInput.trim()
     if (!val) return
 
-    const newItem = {
-      id: `custom_${Date.now()}`,
-      description: val,
-      added_by: 'user',
-      created_at: new Date().toISOString(),
-      category: 'Идея',
-      holiday: 'Личные идеи'
+    try {
+      await api.addWishlistItem({
+        target_id: parseInt(id),
+        description: val,
+        category: 'Идея'
+      })
+      setIdeaInput('')
+      setShowAddIdea(false)
+      triggerHaptic()
+      load()
+    } catch (err) {
+      console.error(err)
+      await showAlert('Не удалось сохранить подарок 😢')
     }
-
-    const updated = [newItem, ...customIdeas]
-    localStorage.setItem(`target_custom_ideas_${id}`, JSON.stringify(updated))
-    setCustomIdeas(updated)
-    setIdeaInput('')
-    setShowAddIdea(false)
-    triggerHaptic()
   }
 
-  const handleDeleteCustomIdea = (itemId) => {
-    const updated = customIdeas.filter(item => item.id !== itemId)
-    localStorage.setItem(`target_custom_ideas_${id}`, JSON.stringify(updated))
-    setCustomIdeas(updated)
+  const handleDeleteCustomIdea = async (itemId) => {
     triggerHaptic()
+    if (!window.confirm('Удалить эту идею подарка?')) return
+    try {
+      await api.deleteWishlistItem(itemId)
+      load()
+    } catch (err) {
+      console.error(err)
+      await showAlert('Не удалось удалить подарок 😢')
+    }
   }
 
   const formatBirthdayLabel = (bdayStr) => {
@@ -223,8 +214,7 @@ export default function TargetDetail() {
   const isFav = favorites[id] === true
 
   // Merge database wishlist with custom user-added wishlist items
-  const dbWishlist = target.wishlist || []
-  const combinedWishlist = [...customIdeas, ...dbWishlist]
+  const combinedWishlist = target.wishlist || []
 
   // Group wishlist items by holiday occasion + case_date
   const groups = {}

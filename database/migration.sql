@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS wishlist (
     category TEXT DEFAULT 'Другое',
     added_by TEXT DEFAULT 'user',
     case_id INTEGER REFERENCES cases(id) ON DELETE SET NULL,
+    received BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

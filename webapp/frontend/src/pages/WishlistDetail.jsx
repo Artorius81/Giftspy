@@ -134,7 +134,6 @@ export default function WishlistDetail() {
   const navigate = useNavigate()
 
   // Local state
-  const [customIdeas, setCustomIdeas] = useState([])
   const [showAdd, setShowAdd] = useState(false)
   const [ideaInput, setIdeaInput] = useState('')
   
@@ -142,13 +141,6 @@ export default function WishlistDetail() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [holidayInput, setHolidayInput] = useState('Без повода')
   const [categoryInput, setCategoryInput] = useState('Другое')
-
-  // Received toggle tracking for DB wishlist items on friends
-  const [receivedDbItems, setReceivedDbItems] = useState(() => {
-    if (isOwn) return {}
-    const saved = localStorage.getItem(`received_db_items_${id}`)
-    return saved ? JSON.parse(saved) : {}
-  })
 
   // Keyboard active states for Android lifting adjustments
   const [isModalFocused, setIsModalFocused] = useState(false)
@@ -163,21 +155,6 @@ export default function WishlistDetail() {
   )
 
   const loading = tLoading
-
-  // Load custom ideas from local storage
-  useEffect(() => {
-    const key = isOwn ? 'my_custom_ideas' : `target_custom_ideas_${id}`
-    const saved = localStorage.getItem(key)
-    if (saved) {
-      try {
-        setCustomIdeas(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to parse wishlist ideas:', e)
-      }
-    } else {
-      setCustomIdeas([])
-    }
-  }, [id, isOwn])
 
   const triggerHaptic = () => {
     try {
@@ -221,64 +198,55 @@ export default function WishlistDetail() {
   }
 
   // Toggle Received status for own or friend's wishlist items
-  const handleToggleReceived = (itemId, isDbItem = false) => {
+  const handleToggleReceived = async (itemId) => {
     triggerHaptic()
-    if (isDbItem) {
-      // Toggle for DB items (only for friends)
-      const updated = { ...receivedDbItems, [itemId]: !receivedDbItems[itemId] }
-      localStorage.setItem(`received_db_items_${id}`, JSON.stringify(updated))
-      setReceivedDbItems(updated)
-    } else {
-      // Toggle for custom local storage items (for both own and friend)
-      const updated = customIdeas.map(item => {
-        if (item.id === itemId) {
-          return { ...item, received: !item.received }
-        }
-        return item
-      })
-      const key = isOwn ? 'my_custom_ideas' : `target_custom_ideas_${id}`
-      localStorage.setItem(key, JSON.stringify(updated))
-      setCustomIdeas(updated)
+    try {
+      await api.toggleWishlistItemReceived(itemId)
+      await mutateTarget()
+    } catch (err) {
+      console.error(err)
+      showAlert('Не удалось изменить статус получения 😢')
     }
   }
 
   // Delete local custom idea
-  const handleDeleteCustomIdea = (itemId) => {
+  const handleDeleteCustomIdea = async (itemId) => {
     triggerHaptic()
-    const updated = customIdeas.filter(item => item.id !== itemId)
-    const key = isOwn ? 'my_custom_ideas' : `target_custom_ideas_${id}`
-    localStorage.setItem(key, JSON.stringify(updated))
-    setCustomIdeas(updated)
+    try {
+      await api.deleteWishlistItem(itemId)
+      await mutateTarget()
+    } catch (err) {
+      console.error(err)
+      showAlert('Не удалось удалить подарок 😢')
+    }
   }
 
   // Add new wishlist item
-  const handleAddGift = (e) => {
+  const handleAddGift = async (e) => {
     e.preventDefault()
     const val = ideaInput.trim()
     if (!val) return
 
-    const newItem = {
-      id: `custom_${Date.now()}`,
-      description: val,
-      added_by: 'user',
-      created_at: new Date().toISOString(),
-      category: categoryInput,
-      holiday: holidayInput,
-      received: false
+    try {
+      const targetId = isOwn ? target.self_target_id : target.id
+      await api.addWishlistItem({
+        target_id: targetId,
+        description: val,
+        category: categoryInput
+      })
+      await mutateTarget()
+      
+      // Reset inputs
+      setIdeaInput('')
+      setShowAdd(false)
+      setShowAdvanced(false)
+      setHolidayInput('Без повода')
+      setCategoryInput('Другое')
+      triggerHaptic()
+    } catch (err) {
+      console.error(err)
+      showAlert('Не удалось сохранить подарок 😢')
     }
-
-    const updated = [newItem, ...customIdeas]
-    const key = isOwn ? 'my_custom_ideas' : `target_custom_ideas_${id}`
-    localStorage.setItem(key, JSON.stringify(updated))
-    setCustomIdeas(updated)
-    
-    // Reset inputs
-    setIdeaInput('')
-    setShowAdd(false)
-    setShowAdvanced(false)
-    setHolidayInput('Без повода')
-    setCategoryInput('Другое')
-    triggerHaptic()
   }
 
   const handleShare = () => {
@@ -314,14 +282,11 @@ export default function WishlistDetail() {
   const avatarEmoji = isOwn ? getDefaultAvatar(target.user_id) : getTargetEmoji(target.id)
   const photo = target.photo
 
-  // Combine database wishlist items for friends
-  const dbWishlist = !isOwn ? (target.wishlist || []) : []
-  const combinedWishlist = [...customIdeas, ...dbWishlist]
+  const combinedWishlist = target.wishlist || []
 
   // Render a specific wishlist grid card
   const renderWishlistCard = (item, idx) => {
-    const isDb = !item.id.toString().startsWith('custom_')
-    const isReceived = isDb ? !!receivedDbItems[item.id] : !!item.received
+    const isReceived = !!item.received
 
     return (
       <div 
@@ -330,18 +295,18 @@ export default function WishlistDetail() {
         onClick={() => { triggerHaptic(); setSelectedGift(item); }}
         style={{ cursor: 'pointer' }}
       >
-        {/* Delete button for custom local ideas */}
-        {!isDb && (
-          <button 
-            className="wishlist-grid-card-delete"
-            onClick={(e) => {
-              e.stopPropagation()
+        {/* Delete button */}
+        <button 
+          className="wishlist-grid-card-delete"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (window.confirm('Удалить эту идею подарка?')) {
               handleDeleteCustomIdea(item.id)
-            }}
-          >
-            ✕
-          </button>
-        )}
+            }
+          }}
+        >
+          ✕
+        </button>
 
         {/* Gift Circle Icon */}
         <div className="wishlist-grid-card-icon-circle">
@@ -653,17 +618,10 @@ export default function WishlistDetail() {
               {/* Slider for marking as received */}
               <div className="wishlist-details-slider-wrapper">
                 <SlideToReceive 
-                  isReceived={
-                    !selectedGift.id.toString().startsWith('custom_') 
-                      ? !!receivedDbItems[selectedGift.id] 
-                      : !!selectedGift.received
-                  }
+                  isReceived={!!selectedGift.received}
                   onConfirm={() => {
-                    const isDb = !selectedGift.id.toString().startsWith('custom_')
-                    const isAlreadyReceived = isDb ? !!receivedDbItems[selectedGift.id] : !!selectedGift.received
-                    
-                    if (!isAlreadyReceived) {
-                      handleToggleReceived(selectedGift.id, isDb)
+                    if (!selectedGift.received) {
+                      handleToggleReceived(selectedGift.id)
                       triggerConfetti()
                       
                       // smooth auto-close overlay so user sees the progress completes
@@ -700,14 +658,9 @@ export default function WishlistDetail() {
               className="wishlist-details-more-btn"
               onClick={() => {
                 triggerHaptic();
-                const isDb = !selectedGift.id.toString().startsWith('custom_')
-                if (!isDb) {
-                  if (window.confirm('Удалить эту идею подарка?')) {
-                    handleDeleteCustomIdea(selectedGift.id)
-                    setSelectedGift(null)
-                  }
-                } else {
-                  showAlert('Настройки этого подарка хранятся в базе данных 🔒')
+                if (window.confirm('Удалить эту идею подарка?')) {
+                  handleDeleteCustomIdea(selectedGift.id)
+                  setSelectedGift(null)
                 }
               }}
               aria-label="Опции"

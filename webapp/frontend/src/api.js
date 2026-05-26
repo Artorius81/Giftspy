@@ -116,6 +116,18 @@ const api = {
   // Settings
   toggleSpyMode: () => request('/api/settings/spy-mode', { method: 'POST' }),
 
+  // Wishlist
+  addWishlistItem: (data) => request('/api/wishlist', {
+    method: 'POST', body: JSON.stringify(data)
+  }),
+  toggleWishlistItemReceived: (id, received) => {
+    const url = received !== undefined 
+      ? `/api/wishlist/${id}/toggle-received?received=${received}`
+      : `/api/wishlist/${id}/toggle-received`
+    return request(url, { method: 'POST' })
+  },
+  deleteWishlistItem: (id) => request(`/api/wishlist/${id}`, { method: 'DELETE' }),
+
   // Balance
   getBalance: () => request('/api/balance'),
 

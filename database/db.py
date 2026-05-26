@@ -8,10 +8,26 @@ _client: Client = None
 
 
 async def init_db():
-    """Initialize Supabase client (replaces SQLite init)."""
+    """Initialize Supabase client (replaces SQLite init) and run auto-migration."""
     global _client
     _client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
     logging.info("Supabase client initialized.")
+    
+    # Run auto-migration
+    try:
+        import os
+        from sqlalchemy import create_engine
+        from database.auto_migrate import perform_auto_migration
+        
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            logging.info("Starting database auto-migration via SQLAlchemy...")
+            engine = create_engine(db_url)
+            await asyncio.to_thread(perform_auto_migration, engine)
+        else:
+            logging.warning("DATABASE_URL not found in environment, skipping auto-migration.")
+    except Exception as e:
+        logging.error(f"Failed to run auto-migration: {e}")
 
 
 # ================= CASES =================
@@ -678,7 +694,7 @@ async def get_wishlist_grouped(target_id):
     # Fetch wishlist with embedded case data via FK
     result = await asyncio.to_thread(
         lambda: _client.table('wishlist')
-            .select('id, gift_description, added_by, created_at, category, case_id, cases(holiday, created_at)')
+            .select('id, gift_description, added_by, created_at, category, case_id, received, cases(holiday, created_at)')
             .eq('target_id', target_id)
             .order('case_id', desc=True)
             .order('id', desc=True)
@@ -690,7 +706,7 @@ async def get_wishlist_grouped(target_id):
         holiday = case_data['holiday'] if case_data else None
         case_date = r['created_at']  # use wishlist created_at as date
         rows.append((r['id'], r['gift_description'], r['added_by'], r['created_at'],
-                      r['category'], r['case_id'], holiday, case_date))
+                      r['category'], r['case_id'], holiday, case_date, r.get('received', False)))
     return rows
 
 
@@ -698,6 +714,65 @@ async def delete_wishlist_item(item_id):
     await asyncio.to_thread(
         lambda: _client.table('wishlist')
             .delete()
+            .eq('id', item_id)
+            .execute()
+    )
+
+
+async def get_or_create_self_target(user_id: int) -> int:
+    """Получает или создает специальную запись 'self' в targets для хранения личного вишлиста пользователя."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('targets')
+            .select('id')
+            .eq('owner_id', user_id)
+            .eq('identifier', 'self')
+            .execute()
+    )
+    if result.data:
+        return result.data[0]['id']
+
+    # Если не найдено, создаем запись 'self'
+    profile_res = await asyncio.to_thread(
+        lambda: _client.table('users')
+            .select('nickname, birthday')
+            .eq('id', user_id)
+            .execute()
+    )
+    name = "Мой вишлист"
+    birthday = None
+    if profile_res.data:
+        name = profile_res.data[0].get('nickname') or "Мой вишлист"
+        birthday = profile_res.data[0].get('birthday')
+
+    insert_res = await asyncio.to_thread(
+        lambda: _client.table('targets').insert({
+            'owner_id': user_id,
+            'identifier': 'self',
+            'name': name,
+            'birthday': birthday
+        }).execute()
+    )
+    return insert_res.data[0]['id']
+
+
+async def get_wishlist_item_by_id(item_id: int):
+    """Возвращает элемент вишлиста по его id."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('wishlist')
+            .select('id, target_id, gift_description, category, added_by, case_id, received, created_at')
+            .eq('id', item_id)
+            .execute()
+    )
+    if result.data:
+        return result.data[0]
+    return None
+
+
+async def set_wishlist_item_received(item_id: int, received: bool):
+    """Обновляет статус 'received' для элемента вишлиста."""
+    await asyncio.to_thread(
+        lambda: _client.table('wishlist')
+            .update({'received': received})
             .eq('id', item_id)
             .execute()
     )

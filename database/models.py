@@ -75,6 +75,7 @@ class WishlistItem(Base):
     category = Column(Text, default='Другое')
     added_by = Column(Text, default='user')  # 'user' or 'ai'
     case_id = Column(Integer, default=None)
+    received = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     target = relationship("Target", back_populates="wishlist")

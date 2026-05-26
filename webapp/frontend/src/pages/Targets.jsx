@@ -264,11 +264,7 @@ export default function Targets() {
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>Мой вишлист</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
               {(() => {
-                const saved = localStorage.getItem('my_custom_ideas')
-                let count = 0
-                if (saved) {
-                  try { count = JSON.parse(saved).length } catch (e) {}
-                }
+                const count = profile?.wishlist?.length || 0
                 if (count % 10 === 1 && count % 100 !== 11) return `${count} идея`;
                 if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} идеи`;
                 return `${count} идей`;
