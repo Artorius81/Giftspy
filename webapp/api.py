@@ -83,6 +83,7 @@ class WishlistItemCreate(BaseModel):
     target_id: int
     description: str
     category: Optional[str] = "Другое"
+    holiday: Optional[str] = "Без повода"
 
 
 # ================= PROFILE =================
@@ -168,7 +169,8 @@ async def list_targets(user_id: int = Depends(get_current_user)):
             "name": t[2],
             "habits": t[3],
             "birthday": t[4],
-            "photo": t[5]
+            "photo": t[5],
+            "wishlist_count": t[6] if len(t) > 6 else 0
         }
         for t in targets
     ]
@@ -279,6 +281,7 @@ async def add_wishlist_item(data: WishlistItemCreate, user_id: int = Depends(get
         target_id=data.target_id,
         gift_description=data.description,
         category=data.category,
+        holiday=data.holiday,
         added_by='user'
     )
     return {"ok": True}

@@ -266,6 +266,92 @@ export default function ProfileEdit() {
 
       <hr className="new-profile-divider" />
 
+      {/* Информация о балансе и Премиум подписке */}
+      <div className="profile-balance-premium-container" style={{ margin: '16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Карточка Баланса */}
+        <div
+          className="profile-order-card"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, padding: '14px 18px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 22 }}>🔍</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Баланс</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Используется для отправки Детектива</div>
+            </div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--accent)' }}>
+            {profile.is_premium ? 'Безлимит 👑' : `${profile.balance || 0} шт.`}
+          </div>
+        </div>
+
+        {/* Карточка Премиума */}
+        {profile.is_premium ? (
+          <div
+            className="profile-order-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              margin: 0,
+              padding: '14px 18px',
+              background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+              border: '1px solid rgba(139, 92, 246, 0.2)'
+            }}
+          >
+            <span style={{ fontSize: 24 }}>👑</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Премиум активен</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                До {new Date(profile.premium_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="profile-order-card"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              margin: 0,
+              padding: '16px 18px',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(236, 72, 153, 0.08) 100%)',
+              border: '1px solid rgba(139, 92, 246, 0.15)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <span style={{ fontSize: 26 }}>👑</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Получите Giftspy Premium</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>
+                  Безлимитные расследования, шпионский режим, умные рекомендации и приоритетная поддержка!
+                </div>
+              </div>
+            </div>
+            <button
+              className="btn-send-detective"
+              onClick={() => navigate('/store')}
+              style={{
+                margin: 0,
+                width: '100%',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 14,
+                padding: '10px 0',
+                borderRadius: '12px',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+                cursor: 'pointer'
+              }}
+            >
+              Активировать Premium
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Баннер доставки подарков */}
       <div className="receive-gifts-banner">
         <div className="receive-gifts-hero">
@@ -306,7 +392,7 @@ export default function ProfileEdit() {
       </div>
 
       {/* Карточка списка желаний (Редизайн) */}
-      <div className="profile-wishlist-card">
+      <div className="profile-wishlist-card" style={{ marginBottom: '100px' }}>
         <div className="profile-wishlist-card-top" onClick={() => navigate('/targets')}>
           <div className="profile-wishlist-card-icon-container">
             ❤️
@@ -321,150 +407,57 @@ export default function ProfileEdit() {
         </button>
       </div>
 
-      {/* Список активных расследований (Редизайн) */}
-      <div className="section-header" style={{ margin: '16px 0 12px' }}>
-        <h2 className="section-header__title" style={{ fontSize: '17px', color: 'var(--text)' }}>Мои расследования</h2>
-      </div>
-
-      {allCases.length === 0 ? (
-        <div className="new-orders-empty">
-          <div className="new-orders-empty-icon">
-            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" style={{ color: 'var(--text-secondary)' }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <div className="new-orders-empty-text">
-            Все ваши расследования появятся здесь.
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 100 }}>
-          {sortedGroups.map(([target, group]) => {
-            const isExpanded = collapsed[target] === true
-            return (
-              <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
-                {/* Target Card in Profile Style */}
-                <div
-                  className="profile-order-card"
-                  style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  onClick={() => toggleGroup(target)}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {group.target_photo ? <img src={group.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : getTargetEmoji(group.target_db_id || 0)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{group.display}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{target}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {group.hasActive && <span className="status-dot status-dot--active" style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />}
-                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
-                    <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)' }}>▾</span>
-                  </div>
-                </div>
-
-                {/* Cases List */}
-                <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-                  <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
-                    {group.cases.map(c => {
-                      const st = STATUS[c.status] || STATUS.error
-                      return (
-                        <div
-                          key={c.id}
-                          className="profile-order-card"
-                          style={{
-                            padding: '12px 16px',
-                            background: 'var(--bg-secondary)',
-                            border: '1px solid var(--card-border)',
-                            borderRadius: '12px',
-                            marginLeft: '8px',
-                            marginBottom: 0
-                          }}
-                          onClick={() => navigate(`/dossier/${c.id}`)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                            <div className="card__avatar" style={{ width: 32, height: 32, fontSize: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                Дело №{c.id}
-                                {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
-                              </div>
-                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
-                                {st.label}
-                                {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {c.has_report && <span className="badge badge--success" style={{ padding: '2px 6px', fontSize: 10 }}>📋</span>}
-                            <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
       {/* iOS-Style Bottom Sheet форма редактирования */}
-      {showEditModal && (
-        <>
-          <div className="bottom-sheet-backdrop" onClick={() => setShowEditModal(false)} />
-          <div className="bottom-sheet">
-            <div className="bottom-sheet-header">
-              <span className="bottom-sheet-title">Редактировать профиль</span>
-              <button className="bottom-sheet-close" onClick={() => setShowEditModal(false)}>✕</button>
-            </div>
+{
+  showEditModal && (
+    <>
+      <div className="bottom-sheet-backdrop" onClick={() => setShowEditModal(false)} />
+      <div className="bottom-sheet">
+        <div className="bottom-sheet-header">
+          <span className="bottom-sheet-title">Редактировать профиль</span>
+          <button className="bottom-sheet-close" onClick={() => setShowEditModal(false)}>✕</button>
+        </div>
 
-            <form onSubmit={handleSave}>
-              <div className="input-group">
-                <label>👤 Имя / Никнейм</label>
-                <input
-                  className="input"
-                  placeholder="Как вас зовут?"
-                  maxLength={32}
-                  value={form.nickname}
-                  onChange={e => setForm({ ...form, nickname: e.target.value })}
-                />
-                <span className="input-hint">{form.nickname.length}/32</span>
-              </div>
-
-              <div className="input-group">
-                <label>🎂 День рождения</label>
-                <input
-                  className="input"
-                  placeholder="ДД.ММ.ГГГГ"
-                  inputMode="numeric"
-                  maxLength={10}
-                  value={form.birthday}
-                  onChange={e => {
-                    let v = e.target.value.replace(/[^\d.]/g, '')
-                    const digits = v.replace(/\./g, '')
-                    if (digits.length >= 4) v = digits.slice(0,2) + '.' + digits.slice(2,4) + '.' + digits.slice(4,8)
-                    else if (digits.length >= 2) v = digits.slice(0,2) + '.' + digits.slice(2)
-                    else v = digits
-                    setForm({ ...form, birthday: v })
-                  }}
-                />
-              </div>
-
-              <button className="btn btn--primary" type="submit" disabled={saving} style={{ marginTop: 8 }}>
-                {saving ? '⏳ Сохранение...' : '✅ Сохранить'}
-              </button>
-            </form>
+        <form onSubmit={handleSave}>
+          <div className="input-group">
+            <label>👤 Имя / Никнейм</label>
+            <input
+              className="input"
+              placeholder="Как вас зовут?"
+              maxLength={32}
+              value={form.nickname}
+              onChange={e => setForm({ ...form, nickname: e.target.value })}
+            />
+            <span className="input-hint">{form.nickname.length}/32</span>
           </div>
-        </>
-      )}
-    </div>
+
+          <div className="input-group">
+            <label>🎂 День рождения</label>
+            <input
+              className="input"
+              placeholder="ДД.ММ.ГГГГ"
+              inputMode="numeric"
+              maxLength={10}
+              value={form.birthday}
+              onChange={e => {
+                let v = e.target.value.replace(/[^\d.]/g, '')
+                const digits = v.replace(/\./g, '')
+                if (digits.length >= 4) v = digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4, 8)
+                else if (digits.length >= 2) v = digits.slice(0, 2) + '.' + digits.slice(2)
+                else v = digits
+                setForm({ ...form, birthday: v })
+              }}
+            />
+          </div>
+
+          <button className="btn btn--primary" type="submit" disabled={saving} style={{ marginTop: 8 }}>
+            {saving ? '⏳ Сохранение...' : '✅ Сохранить'}
+          </button>
+        </form>
+      </div>
+    </>
+  )
+}
+    </div >
   )
 }

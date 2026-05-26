@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS wishlist (
     added_by TEXT DEFAULT 'user',
     case_id INTEGER REFERENCES cases(id) ON DELETE SET NULL,
     received BOOLEAN DEFAULT FALSE,
+    holiday TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

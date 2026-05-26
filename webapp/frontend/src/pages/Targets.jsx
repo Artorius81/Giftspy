@@ -143,7 +143,14 @@ export default function Targets() {
               {t.name || t.identifier}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>0 идей</span>
+              <span>
+                {(() => {
+                  const count = t.wishlist_count || 0
+                  if (count % 10 === 1 && count % 100 !== 11) return `${count} идея`;
+                  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} идеи`;
+                  return `${count} идей`;
+                })()}
+              </span>
               {t.birthday && <span>· {formatBirthday(t.birthday)}</span>}
             </div>
           </div>

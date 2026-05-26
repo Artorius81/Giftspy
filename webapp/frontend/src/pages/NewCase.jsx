@@ -138,6 +138,11 @@ export default function NewCase() {
   const [searchParams] = useSearchParams()
 
   const [step, setStep] = useState(0)
+  const [collapsed, setCollapsed] = useState({})
+  
+  const toggleGroup = (target) => {
+    setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
+  }
   
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
   const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
@@ -339,38 +344,101 @@ export default function NewCase() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {cases.map(c => {
-                  const st = STATUS[c.status] || STATUS.error
-                  return (
-                    <div
-                      key={c.id}
-                      className="profile-order-card"
-                      onClick={() => navigate(`/dossier/${c.id}`)}
-                      style={{ cursor: 'pointer', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {c.target_photo ? (
-                            <img src={c.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                          ) : (
-                            getTargetEmoji(c.target_db_id || 0)
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 650, fontSize: 14.5, color: 'var(--text)' }}>
-                            {c.display_name}
+                {(() => {
+                  const groups = {}
+                  cases.forEach(c => {
+                    const targetKey = c.target
+                    if (!groups[targetKey]) {
+                      groups[targetKey] = {
+                        display: c.display_name,
+                        target_photo: c.target_photo,
+                        target_db_id: c.target_db_id,
+                        cases: [],
+                        hasActive: false
+                      }
+                    }
+                    groups[targetKey].cases.push(c)
+                    if (['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) {
+                      groups[targetKey].hasActive = true
+                    }
+                  })
+                  const sortedGroups = Object.entries(groups)
+                  
+                  return sortedGroups.map(([target, group]) => {
+                    const isExpanded = collapsed[target] === true
+                    return (
+                      <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* Target Card in Profile Style */}
+                        <div
+                          className="profile-order-card"
+                          style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                          onClick={() => toggleGroup(target)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {group.target_photo ? <img src={group.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : getTargetEmoji(group.target_db_id || 0)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{group.display}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{target}</div>
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
-                            {st.label}
-                            {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {group.hasActive && <span className="status-dot status-dot--active" style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />}
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
+                            <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)', display: 'inline-block', transform: isExpanded ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▾</span>
+                          </div>
+                        </div>
+
+                        {/* Cases List */}
+                        <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ display: isExpanded ? 'block' : 'none' }}>
+                          <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
+                            {group.cases.map(c => {
+                              const st = STATUS[c.status] || STATUS.error
+                              return (
+                                <div
+                                  key={c.id}
+                                  className="profile-order-card"
+                                  style={{
+                                    padding: '12px 16px',
+                                    background: 'var(--bg-secondary)',
+                                    border: '1px solid var(--card-border)',
+                                    borderRadius: '12px',
+                                    marginLeft: '8px',
+                                    marginBottom: 0,
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => navigate(`/dossier/${c.id}`)}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                                    <div className="card__avatar" style={{ width: 32, height: 32, fontSize: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                      {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
+                                    </div>
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        Дело №{c.id}
+                                        {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
+                                      </div>
+                                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
+                                        {st.label}
+                                        {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    {c.has_report && <span className="badge badge--success" style={{ padding: '2px 6px', fontSize: 10 }}>📋</span>}
+                                    <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       </div>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
               </div>
             )}
           </div>

@@ -578,15 +578,36 @@ async def add_target(owner_id, identifier, name=None, habits=None, birthday=None
 
 
 async def get_user_targets(owner_id):
-    result = await asyncio.to_thread(
+    targets_res = await asyncio.to_thread(
         lambda: _client.table('targets')
             .select('id, identifier, name, habits, birthday, photo_file_id')
             .eq('owner_id', owner_id)
             .order('id', desc=True)
             .execute()
     )
-    return [(r['id'], r['identifier'], r['name'], r['habits'], r['birthday'], r['photo_file_id'])
-            for r in result.data]
+    if not targets_res.data:
+        return []
+        
+    target_ids = [t['id'] for t in targets_res.data]
+    
+    # Запрашиваем количество подарков для каждой цели
+    wishlist_counts_res = await asyncio.to_thread(
+        lambda: _client.table('wishlist')
+            .select('target_id')
+            .in_('target_id', target_ids)
+            .execute()
+    )
+    
+    # Считаем количество в Python
+    counts = {}
+    for w in wishlist_counts_res.data:
+        tid = w['target_id']
+        counts[tid] = counts.get(tid, 0) + 1
+        
+    return [
+        (r['id'], r['identifier'], r['name'], r['habits'], r['birthday'], r['photo_file_id'], counts.get(r['id'], 0))
+        for r in targets_res.data
+    ]
 
 
 async def get_target_by_id(target_id):
@@ -662,7 +683,7 @@ async def find_target_by_identifier(owner_id, identifier):
 
 # ================= WISHLIST =================
 
-async def add_to_wishlist(target_id, gift_description, category='Другое', added_by='user', case_id=None):
+async def add_to_wishlist(target_id, gift_description, category='Другое', added_by='user', case_id=None, holiday=None):
     data = {
         'target_id': target_id,
         'gift_description': gift_description,
@@ -671,6 +692,8 @@ async def add_to_wishlist(target_id, gift_description, category='Другое', 
     }
     if case_id is not None:
         data['case_id'] = case_id
+    if holiday is not None:
+        data['holiday'] = holiday
     await asyncio.to_thread(
         lambda: _client.table('wishlist').insert(data).execute()
     )
@@ -694,7 +717,7 @@ async def get_wishlist_grouped(target_id):
     # Fetch wishlist with embedded case data via FK
     result = await asyncio.to_thread(
         lambda: _client.table('wishlist')
-            .select('id, gift_description, added_by, created_at, category, case_id, received, cases(holiday, created_at)')
+            .select('id, gift_description, added_by, created_at, category, case_id, received, holiday, cases(holiday, created_at)')
             .eq('target_id', target_id)
             .order('case_id', desc=True)
             .order('id', desc=True)
@@ -703,7 +726,7 @@ async def get_wishlist_grouped(target_id):
     rows = []
     for r in result.data:
         case_data = r.get('cases')
-        holiday = case_data['holiday'] if case_data else None
+        holiday = case_data['holiday'] if case_data else r.get('holiday')
         case_date = r['created_at']  # use wishlist created_at as date
         rows.append((r['id'], r['gift_description'], r['added_by'], r['created_at'],
                       r['category'], r['case_id'], holiday, case_date, r.get('received', False)))

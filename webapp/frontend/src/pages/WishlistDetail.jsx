@@ -197,12 +197,21 @@ export default function WishlistDetail() {
     }, 4500);
   }
 
+  const loadTarget = async () => {
+    try {
+      const res = await (isOwn ? api.getProfile() : api.getTarget(id))
+      mutateTarget(res)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   // Toggle Received status for own or friend's wishlist items
   const handleToggleReceived = async (itemId) => {
     triggerHaptic()
     try {
       await api.toggleWishlistItemReceived(itemId)
-      await mutateTarget()
+      await loadTarget()
     } catch (err) {
       console.error(err)
       showAlert('Не удалось изменить статус получения 😢')
@@ -214,7 +223,7 @@ export default function WishlistDetail() {
     triggerHaptic()
     try {
       await api.deleteWishlistItem(itemId)
-      await mutateTarget()
+      await loadTarget()
     } catch (err) {
       console.error(err)
       showAlert('Не удалось удалить подарок 😢')
@@ -232,9 +241,10 @@ export default function WishlistDetail() {
       await api.addWishlistItem({
         target_id: targetId,
         description: val,
-        category: categoryInput
+        category: categoryInput,
+        holiday: holidayInput
       })
-      await mutateTarget()
+      await loadTarget()
       
       // Reset inputs
       setIdeaInput('')

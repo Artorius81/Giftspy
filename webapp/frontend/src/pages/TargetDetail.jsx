@@ -166,7 +166,8 @@ export default function TargetDetail() {
       await api.addWishlistItem({
         target_id: parseInt(id),
         description: val,
-        category: 'Идея'
+        category: 'Идея',
+        holiday: 'Личные идеи'
       })
       setIdeaInput('')
       setShowAddIdea(false)
