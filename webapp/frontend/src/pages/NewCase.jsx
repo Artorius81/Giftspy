@@ -4,6 +4,7 @@ import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
+import { timeAgo } from '../utils/timeAgo'
 
 /* ── Slide-to-confirm component ── */
 function SlideToConfirm({ onConfirm, submitting }) {
@@ -109,6 +110,16 @@ function SlideToConfirm({ onConfirm, submitting }) {
     </div>
   )
 }
+const STATUS = {
+  pending: { icon: '🟡', label: 'Ожидание', dot: 'pending' },
+  started: { icon: '🔵', label: 'Начато', dot: 'active' },
+  in_progress: { icon: '🔵', label: 'Допрос', dot: 'active' },
+  manual_mode: { icon: '🛑', label: 'Перехват', dot: 'active' },
+  done: { icon: '✅', label: 'Готово', dot: 'done' },
+  delivered: { icon: '✅', label: 'Доставлено', dot: 'done' },
+  cancelled: { icon: '❌', label: 'Отменено', dot: 'cancelled' },
+  error: { icon: '⚠️', label: 'Ошибка', dot: 'cancelled' },
+}
 
 const HOLIDAY_OPTIONS = [
   '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
@@ -130,9 +141,12 @@ export default function NewCase() {
   
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
   const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
+  const { data: casesData, loading: cLoading, mutate: mutateCases } = useData('cases', api.getCases)
   
   const targets = targetsData || []
   const personas = personasData || []
+  const cases = casesData || []
+  
   const [personaIdx, setPersonaIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
@@ -163,12 +177,21 @@ export default function NewCase() {
   }, [targetsData, searchParams])
 
   useEffect(() => {
-    if (searchParams.get('target')) setStep(1)
+    if (searchParams.get('target')) setStep(2) // go directly to holiday step (step 2)
   }, [searchParams])
 
-  const currentStepKey = STEPS[step]
+  const currentStepKey = step > 0 ? STEPS[step - 1] : null
 
   const hasCustomHoliday = form.holiday && !HOLIDAY_OPTIONS.includes(form.holiday) && form.holiday !== 'Без повода'
+
+  const handleRefresh = async () => {
+    try {
+      const updated = await api.getCases()
+      mutateCases(updated)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -180,7 +203,22 @@ export default function NewCase() {
         persona: form.persona,
         budget: form.budget || 'Не указан',
       })
-      navigate('/', { replace: true })
+      
+      // Reset form and return to dashboard
+      setForm({
+        target: '',
+        holiday: '',
+        context: '',
+        persona: '',
+        budget: '',
+      })
+      setTargetDisplayName('')
+      setStep(0)
+      
+      const updated = await api.getCases()
+      mutateCases(updated)
+      
+      navigate('/new-case', { replace: true })
     } catch (err) {
       await showAlert(err.message)
     }
@@ -213,29 +251,133 @@ export default function NewCase() {
   }
 
   return (
-    <div className="page">
-      <div className="header">
+    <div className="page" style={{ paddingBottom: '120px' }}>
+      {/* Sleek Custom Header */}
+      <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         {step > 0 ? (
-          <button className="header__back" onClick={() => setStep(step - 1)}>
-            <span className="icon">‹</span>
+          <button 
+            className="wishlist-header-btn" 
+            onClick={() => setStep(step - 1)} 
+            style={{ width: 36, height: 36 }}
+            aria-label="Назад"
+          >
+            ‹
           </button>
         ) : (
-          <div className="header__placeholder" />
+          <div style={{ width: 36 }} />
         )}
-        <span className="header__title">Новое дело</span>
-        <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
-          {step + 1}/{STEPS.length}
+        <span className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)' }}>
+          {step === 0 ? 'Детектив' : 'Новое дело'}
+        </span>
+        {step === 0 ? (
+          <button 
+            className="wishlist-header-btn" 
+            onClick={() => navigate('/settings')}
+            style={{ width: 36, height: 36 }}
+            aria-label="Настройки"
+          >
+            ⚙️
+          </button>
+        ) : (
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
+            {step}/{STEPS.length}
+          </div>
+        )}
+      </div>
+
+      {/* Progress (only visible when in wizard) */}
+      {step > 0 && (
+        <div className="wizard-progress">
+          {STEPS.map((s, i) => (
+            <div key={s} className={`wizard-dot ${i === (step - 1) ? 'active' : i < (step - 1) ? 'done' : ''}`} />
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Progress */}
-      <div className="wizard-progress">
-        {STEPS.map((s, i) => (
-          <div key={s} className={`wizard-dot ${i === step ? 'active' : i < step ? 'done' : ''}`} />
-        ))}
-      </div>
+      {/* Step 0: Dashboard (Photo 1) */}
+      {step === 0 && (
+        <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Search bar input placeholder */}
+          <div className="detective-search-box" onClick={() => setStep(1)} style={{ cursor: 'pointer' }}>
+            <span style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>🔍</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Подарки на новоселье до 5000 руб...</span>
+          </div>
 
-      {/* Step: Target */}
+          {/* Sherlock Promo Card */}
+          <div className="detective-promo-card">
+            <div className="detective-promo-title-row">
+              <span style={{ fontSize: '22px' }}>🔒</span>
+              <span className="detective-promo-title">Не хотите спрашивать напрямую?</span>
+            </div>
+            <div className="detective-promo-desc">
+              Пусть Детектив пообщается с кем-то за вас и выяснит, что они хотят получить в подарок.
+            </div>
+            <div className="detective-promo-actions">
+              <button className="btn-send-detective" onClick={() => setStep(1)}>
+                Отправить Детектива
+              </button>
+              <button className="btn-refresh-history" onClick={handleRefresh} aria-label="Обновить">
+                ↻
+              </button>
+            </div>
+          </div>
+
+          {/* History Header Section */}
+          <div className="history-section-header">
+            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>☰</span>
+            <span className="history-section-title">История поисков</span>
+          </div>
+
+          {/* History List */}
+          <div className="history-list-container">
+            {cLoading ? (
+              <div className="loading" style={{ padding: '20px 0' }}><div className="spinner" /></div>
+            ) : cases.length === 0 ? (
+              <div className="history-empty-state">
+                <span className="history-empty-icon">🔍</span>
+                <span className="history-empty-text">Пока нет поисков Детектива.</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {cases.map(c => {
+                  const st = STATUS[c.status] || STATUS.error
+                  return (
+                    <div
+                      key={c.id}
+                      className="profile-order-card"
+                      onClick={() => navigate(`/dossier/${c.id}`)}
+                      style={{ cursor: 'pointer', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {c.target_photo ? (
+                            <img src={c.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            getTargetEmoji(c.target_db_id || 0)
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 650, fontSize: 14.5, color: 'var(--text)' }}>
+                            {c.display_name}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
+                            {st.label}
+                            {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: Target */}
       {currentStepKey === 'target' && (
         <div className="wizard-step">
           <div className="wizard-step__title">🎯 Выберите цель</div>
@@ -251,7 +393,7 @@ export default function NewCase() {
                   key={t.id}
                   className={`card ${form.target === t.identifier ? 'selected' : ''}`}
                   style={form.target === t.identifier ? { borderColor: 'var(--accent)' } : {}}
-                  onClick={() => { setForm({ ...form, target: t.identifier }); setTargetDisplayName(t.name || ''); setStep(1) }}
+                  onClick={() => { setForm({ ...form, target: t.identifier }); setTargetDisplayName(t.name || ''); setStep(2) }}
                 >
                   <div className="card__header">
                     <div className="card__avatar">
@@ -278,13 +420,13 @@ export default function NewCase() {
               onChange={e => setForm({ ...form, target: e.target.value })}
             />
           </div>
-          <button className="btn btn--primary" disabled={!form.target} onClick={() => setStep(1)}>
+          <button className="btn btn--primary" disabled={!form.target} onClick={() => setStep(2)}>
             Далее →
           </button>
         </div>
       )}
 
-      {/* Step: Holiday */}
+      {/* Step 2: Holiday */}
       {currentStepKey === 'holiday' && (
         <div className="wizard-step">
           <div className="wizard-step__title">🎉 Какой повод?</div>
@@ -294,7 +436,7 @@ export default function NewCase() {
               <div
                 key={h}
                 className={`option-item ${form.holiday === h ? 'selected' : ''}`}
-                onClick={() => { setForm({ ...form, holiday: h }); setStep(2) }}
+                onClick={() => { setForm({ ...form, holiday: h }); setStep(3) }}
               >
                 {h}
               </div>
@@ -309,18 +451,18 @@ export default function NewCase() {
             />
           </div>
           {hasCustomHoliday ? (
-            <button className="btn btn--primary" onClick={() => setStep(2)}>
+            <button className="btn btn--primary" onClick={() => setStep(3)}>
               Далее →
             </button>
           ) : (
-            <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(2) }}>
+            <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(3) }}>
               ⏩ Пропустить
             </button>
           )}
         </div>
       )}
 
-      {/* Step: Context */}
+      {/* Step 3: Context */}
       {currentStepKey === 'context' && (
         <div className="wizard-step">
           <div className="wizard-step__title">🧩 Зацепки</div>
@@ -334,13 +476,13 @@ export default function NewCase() {
               onChange={e => setForm({ ...form, context: e.target.value })}
             />
           </div>
-          <button className="btn btn--primary" onClick={() => setStep(3)}>
+          <button className="btn btn--primary" onClick={() => setStep(4)}>
             {form.context ? 'Далее →' : '⏩ Пропустить'}
           </button>
         </div>
       )}
 
-      {/* Step: Persona */}
+      {/* Step 4: Persona */}
       {currentStepKey === 'persona' && personas.length > 0 && (
         <div className="wizard-step">
           <div className="wizard-step__title">🕵️‍♂️ Выберите детектива</div>
@@ -364,7 +506,7 @@ export default function NewCase() {
                   <div className="persona-carousel__desc">{p.desc}</div>
                   <button
                     className="btn btn--primary"
-                    onClick={() => { setForm({ ...form, persona: p.name }); setStep(4) }}
+                    onClick={() => { setForm({ ...form, persona: p.name }); setStep(5) }}
                   >
                     ✅ Выбрать
                   </button>
@@ -384,7 +526,7 @@ export default function NewCase() {
         </div>
       )}
 
-      {/* Step: Budget */}
+      {/* Step 5: Budget */}
       {currentStepKey === 'budget' && (
         <div className="wizard-step">
           <div className="wizard-step__title">💵 Бюджет</div>
@@ -394,19 +536,19 @@ export default function NewCase() {
               <div
                 key={b}
                 className={`option-item ${form.budget === b ? 'selected' : ''}`}
-                onClick={() => { setForm({ ...form, budget: b }); setStep(5) }}
+                onClick={() => { setForm({ ...form, budget: b }); setStep(6) }}
               >
                 {b}
               </div>
             ))}
           </div>
-          <button className="btn btn--secondary" style={{ marginTop: 12 }} onClick={() => { setForm({ ...form, budget: 'Не указан' }); setStep(5) }}>
+          <button className="btn btn--secondary" style={{ marginTop: 12 }} onClick={() => { setForm({ ...form, budget: 'Не указан' }); setStep(6) }}>
             ⏩ Пропустить
           </button>
         </div>
       )}
 
-      {/* Step: Confirm */}
+      {/* Step 6: Confirm */}
       {currentStepKey === 'confirm' && (
         <div className="wizard-step">
           <div className="wizard-step__title">✅ Подтверждение</div>

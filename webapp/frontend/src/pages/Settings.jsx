@@ -16,7 +16,8 @@ export default function Settings() {
 
   useEffect(() => {
     if (profile) {
-      setSpyMode(profile.spy_mode)
+      const isPremium = !!profile.is_premium
+      setSpyMode(isPremium ? profile.spy_mode : false)
     }
   }, [profile])
 

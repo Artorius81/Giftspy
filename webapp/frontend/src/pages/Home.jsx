@@ -77,26 +77,7 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Grid: Side-by-Side Quick Cards mirroring Profile design system */}
-      <div className="profile-grid" style={{ marginBottom: '24px' }}>
-        {/* Targets Card */}
-        <div className="profile-grid-card" onClick={() => navigate('/targets')} style={{ cursor: 'pointer' }}>
-          <span className="profile-grid-card-icon">👥</span>
-          <div className="profile-grid-card-bottom">
-            <span className="profile-grid-card-label">Мои цели (люди)</span>
-            <span className="profile-grid-card-value">{getTargetsText(targetsCount)}</span>
-          </div>
-        </div>
 
-        {/* Balance Card */}
-        <div className="profile-grid-card" onClick={() => navigate('/store')} style={{ cursor: 'pointer' }}>
-          <span className="profile-grid-card-icon">🛍️</span>
-          <div className="profile-grid-card-bottom">
-            <span className="profile-grid-card-label">Баланс поисков</span>
-            <span className="profile-grid-card-value">{profile.is_premium ? 'Безлимит ∞' : `${profile.balance} 🛍️`}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Upcoming Birthdays Card (Mockup Widget matching exact mockup content) */}
       <div className="section-header" style={{ margin: '24px 0 12px' }}>
@@ -117,7 +98,7 @@ export default function Home() {
           className="btn-mockup-cake" 
           onClick={() => navigate('/targets')} 
         >
-          👤 Перейти к целям
+          👤 К друзьям
         </button>
       </div>
 

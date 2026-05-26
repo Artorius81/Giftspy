@@ -4,6 +4,7 @@ import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
 import Targets from './pages/Targets'
 import TargetDetail from './pages/TargetDetail'
+import WishlistDetail from './pages/WishlistDetail'
 import NewCase from './pages/NewCase'
 import Dossier from './pages/Dossier'
 import CaseDetail from './pages/CaseDetail'
@@ -79,7 +80,9 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/targets" element={<Targets />} />
-        <Route path="/targets/:id" element={<TargetDetail />} />
+        <Route path="/targets/my" element={<WishlistDetail />} />
+        <Route path="/targets/:id" element={<WishlistDetail />} />
+        <Route path="/targets/:id/profile" element={<TargetDetail />} />
         <Route path="/new-case" element={<NewCase />} />
         <Route path="/dossier" element={<Dossier />} />
         <Route path="/dossier/:id" element={<CaseDetail />} />

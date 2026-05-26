@@ -236,7 +236,7 @@ export default function Targets() {
         style={{ padding: '14px 18px', marginBottom: '24px' }} 
         onClick={() => {
           triggerHaptic()
-          navigate('/profile/edit')
+          navigate('/targets/my')
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -262,7 +262,18 @@ export default function Targets() {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>Мой вишлист</div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>0 идей</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {(() => {
+                const saved = localStorage.getItem('my_custom_ideas')
+                let count = 0
+                if (saved) {
+                  try { count = JSON.parse(saved).length } catch (e) {}
+                }
+                if (count % 10 === 1 && count % 100 !== 11) return `${count} идея`;
+                if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} идеи`;
+                return `${count} идей`;
+              })()}
+            </div>
           </div>
         </div>
         <div 
@@ -282,7 +293,7 @@ export default function Targets() {
           onClick={(e) => { 
             e.stopPropagation()
             triggerHaptic()
-            navigate('/profile/edit')
+            navigate('/targets/my')
           }}
         >
           ＋
