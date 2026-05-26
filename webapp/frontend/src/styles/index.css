@@ -118,7 +118,7 @@ a { color: var(--link); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
+  padding: calc(24px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -961,12 +961,11 @@ textarea.input { min-height: 80px; resize: vertical; }
   color: var(--text);
 }
 
-/* ---- Chat Header ---- */
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: calc(24px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -2295,7 +2294,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
+  padding: calc(24px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
   background: transparent;
   box-sizing: border-box;
 }
@@ -4122,5 +4121,653 @@ html {
   transform: scale(0.9);
   opacity: 0.8;
 }
+
+/* ================= WISHLIST GIFT DETAILS OVERLAY ================= */
+.wishlist-details-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  padding: calc(20px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 20px 30px 20px;
+  box-sizing: border-box;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+  overflow-y: auto;
+}
+
+.wishlist-details-overlay.show {
+  transform: translateX(0);
+}
+
+.wishlist-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.wishlist-details-header-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+[data-theme="light"] .wishlist-details-header-btn {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.wishlist-details-header-btn:active {
+  transform: scale(0.92);
+}
+
+.wishlist-details-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.wishlist-details-gift-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0 24px 0;
+  height: 140px;
+}
+
+.wishlist-details-gift-glow {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: var(--accent);
+  filter: blur(40px);
+  opacity: 0.18;
+  border-radius: 50%;
+}
+
+.wishlist-details-gift-emoji {
+  font-size: 84px;
+  z-index: 1;
+  animation: floatEmoji 3s ease-in-out infinite;
+}
+
+@keyframes floatEmoji {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+
+.wishlist-details-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+  text-align: left;
+  line-height: 1.25;
+}
+
+/* Card */
+.wishlist-details-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .wishlist-details-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.wishlist-details-grid-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.wishlist-details-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wishlist-details-col:first-child {
+  padding-right: 16px;
+}
+
+.wishlist-details-col:last-child {
+  padding-left: 16px;
+}
+
+.wishlist-details-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .wishlist-details-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.wishlist-details-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  letter-spacing: 0.2px;
+}
+
+.wishlist-details-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Slider Component styling */
+.wishlist-slide-receive {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-theme="light"] .wishlist-slide-receive {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.wishlist-slide-receive__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 16px;
+  background: var(--accent);
+  opacity: 0.15;
+  transition: width 0.05s linear;
+  pointer-events: none;
+}
+
+.wishlist-slide-receive.dragging .wishlist-slide-receive__fill {
+  transition: none;
+}
+
+.wishlist-slide-receive.confirmed .wishlist-slide-receive__fill {
+  width: 100% !important;
+  opacity: 0.22;
+  transition: opacity 0.4s ease;
+}
+
+.wishlist-slide-receive__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.wishlist-slide-receive__label--done {
+  color: var(--accent);
+  opacity: 1 !important;
+  animation: fadeIn 0.3s ease;
+}
+
+.wishlist-slide-receive__thumb {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 2;
+  touch-action: none;
+}
+
+.wishlist-slide-receive.dragging .wishlist-slide-receive__thumb {
+  cursor: grabbing;
+}
+
+.wishlist-slide-receive.confirmed .wishlist-slide-receive__thumb {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.wishlist-slide-receive__check {
+  color: var(--accent-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Center empty nested gifts state */
+.wishlist-details-nested-gifts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: auto 0;
+  opacity: 0.4;
+  gap: 8px;
+}
+
+.wishlist-details-nested-icon {
+  font-size: 24px;
+}
+
+.wishlist-details-nested-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Sticky Bottom Bar */
+.wishlist-details-bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.wishlist-details-add-btn {
+  flex: 1;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  height: 52px;
+  border-radius: 26px;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.wishlist-details-add-btn:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.wishlist-details-more-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+[data-theme="light"] .wishlist-details-more-btn {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+
+.wishlist-details-more-btn:active {
+  transform: scale(0.9);
+  opacity: 0.8;
+}
+
+/* ---- Confetti Animation ---- */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.confetti-particle {
+  position: absolute;
+  will-change: transform;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-spin {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(180deg);
+  }
+}
+
+/* ================= REDESIGNED SETTINGS SCREEN ================= */
+.settings-new-container {
+  display: flex;
+  flex-direction: column;
+  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 120px 16px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.settings-new-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.settings-new-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  flex: 1;
+}
+
+.settings-grid-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.settings-action-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 16px 20px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+[data-theme="light"] .settings-action-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-action-card:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+}
+
+.settings-action-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.settings-action-glow-wrench {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #ffffff;
+  filter: blur(25px);
+  opacity: 0.12;
+  border-radius: 50%;
+}
+
+.settings-action-glow-palette {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: #ff577f;
+  filter: blur(25px);
+  opacity: 0.2;
+  border-radius: 50%;
+}
+
+.settings-action-emoji {
+  font-size: 54px;
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+.settings-action-card:hover .settings-action-emoji {
+  transform: scale(1.1) rotate(6deg);
+}
+
+.settings-action-label {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* Category header */
+.settings-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 12px 6px;
+  text-transform: capitalize;
+}
+
+/* Stacked list */
+.settings-list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.settings-list-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .settings-list-item {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.settings-list-item:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .settings-list-item:active {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.settings-list-icon {
+  font-size: 20px;
+  margin-right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.settings-list-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-list-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-list-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.settings-list-arrow {
+  color: var(--text-secondary);
+  font-size: 18px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+/* Toggle Switch */
+.settings-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+[data-theme="light"] .settings-toggle-btn {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.settings-toggle-btn.active {
+  background: var(--accent);
+}
+
+.settings-toggle-knob {
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.settings-toggle-btn.active .settings-toggle-knob {
+  transform: translateX(20px);
+}
+
+.settings-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sign out pill button */
+.settings-signout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  align-self: center;
+  transition: var(--transition);
+  margin-bottom: 24px;
+  width: 140px;
+}
+
+[data-theme="light"] .settings-signout-btn {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-signout-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* Footer credits */
+.settings-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.35;
+  margin-top: 8px;
+}
+
+.settings-footer-version {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings-footer-copyright {
+  font-size: 11px;
+}
+
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
@@ -25,6 +25,109 @@ function formatRussianBirthday(bdayStr) {
   return bdayStr
 }
 
+/* ── Slide-to-Receive slider component ── */
+function SlideToReceive({ onConfirm, isReceived }) {
+  const trackRef = useRef(null)
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const startX = useRef(0)
+  const thumbSize = 48
+  const padding = 6
+
+  const getMaxX = () => {
+    if (!trackRef.current) return 200
+    return trackRef.current.offsetWidth - thumbSize - padding * 2
+  }
+
+  const progress = Math.min(dragX / (getMaxX() || 1), 1)
+
+  const handleStart = (clientX) => {
+    if (confirmed || isReceived) return
+    startX.current = clientX - dragX
+    setIsDragging(true)
+  }
+
+  const handleMove = useCallback((clientX) => {
+    if (!isDragging || confirmed || isReceived) return
+    const maxX = getMaxX()
+    const x = Math.max(0, Math.min(clientX - startX.current, maxX))
+    setDragX(x)
+  }, [isDragging, confirmed, isReceived])
+
+  const handleEnd = useCallback(() => {
+    if (!isDragging) return
+    setIsDragging(false)
+    const maxX = getMaxX()
+    if (dragX >= maxX * 0.85) {
+      setDragX(maxX)
+      setConfirmed(true)
+      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch {}
+      onConfirm()
+    } else {
+      setDragX(0)
+    }
+  }, [isDragging, dragX, onConfirm])
+
+  // Mouse events
+  useEffect(() => {
+    if (!isDragging) return
+    const onMouseMove = (e) => handleMove(e.clientX)
+    const onMouseUp = () => handleEnd()
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [isDragging, handleMove, handleEnd])
+
+  // Reset or set initial based on isReceived prop
+  useEffect(() => {
+    if (!isReceived) {
+      setConfirmed(false)
+      setDragX(0)
+    } else {
+      setConfirmed(true)
+      const t = setTimeout(() => {
+        const maxX = getMaxX()
+        setDragX(maxX)
+      }, 50)
+      return () => clearTimeout(t)
+    }
+  }, [isReceived])
+
+  return (
+    <div
+      ref={trackRef}
+      className={`wishlist-slide-receive ${isDragging ? 'dragging' : ''} ${confirmed ? 'confirmed' : ''}`}
+    >
+      <div className="wishlist-slide-receive__fill" style={{ width: `${(dragX + thumbSize + padding * 2)}px` }} />
+      <span className="wishlist-slide-receive__label" style={{ opacity: 1 - progress * 1.8 }}>
+        Проведите, чтобы отметить полученным
+      </span>
+      {confirmed && (
+        <span className="wishlist-slide-receive__label wishlist-slide-receive__label--done">
+          ✓ Получено
+        </span>
+      )}
+      <div
+        className="wishlist-slide-receive__thumb"
+        style={{
+          transform: `translateX(${dragX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+        onTouchMove={(e) => handleMove(e.touches[0].clientX)}
+        onTouchEnd={handleEnd}
+        onMouseDown={(e) => handleStart(e.clientX)}
+      >
+        <span className="wishlist-slide-receive__check">✓</span>
+      </div>
+    </div>
+  )
+}
+
 export default function WishlistDetail() {
   const { id } = useParams() // can be a target ID, or 'my'
   const isOwn = id === 'my' || !id
@@ -49,6 +152,9 @@ export default function WishlistDetail() {
 
   // Keyboard active states for Android lifting adjustments
   const [isModalFocused, setIsModalFocused] = useState(false)
+
+  // Track currently active gift details view overlay
+  const [selectedGift, setSelectedGift] = useState(null)
 
   // Fetch target or profile
   const { data: target, loading: tLoading, mutate: mutateTarget } = useData(
@@ -79,6 +185,36 @@ export default function WishlistDetail() {
     } catch (e) {
       console.warn('Haptic feedback not supported:', e)
     }
+  }
+
+  const triggerConfetti = () => {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+
+    const colors = ['#f5576c', '#f093fb', '#6c5ce7', '#a78bfa', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+    for (let i = 0; i < 80; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-particle';
+      const sizeWidth = Math.floor(Math.random() * 8) + 6;
+      const sizeHeight = Math.floor(Math.random() * 12) + 8;
+      p.style.width = `${sizeWidth}px`;
+      p.style.height = `${sizeHeight}px`;
+      p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      p.style.left = `${Math.random() * 100}vw`;
+      p.style.top = `-20px`;
+      p.style.borderRadius = `${Math.random() > 0.5 ? '50%' : '2px'}`;
+      
+      const fallDuration = Math.random() * 1.5 + 2.0;
+      const fallDelay = Math.random() * 0.4;
+      p.style.animation = `confetti-fall ${fallDuration}s linear ${fallDelay}s forwards, confetti-spin ${Math.random() * 1 + 0.5}s linear infinite`;
+      
+      container.appendChild(p);
+    }
+
+    setTimeout(() => {
+      container.remove();
+    }, 4500);
   }
 
   // Toggle Received status for own or friend's wishlist items
@@ -188,7 +324,7 @@ export default function WishlistDetail() {
       <div 
         key={item.id || idx} 
         className="wishlist-grid-card"
-        onClick={() => handleToggleReceived(item.id, isDb)}
+        onClick={() => { triggerHaptic(); setSelectedGift(item); }}
         style={{ cursor: 'pointer' }}
       >
         {/* Delete button for custom local ideas */}
@@ -445,6 +581,139 @@ export default function WishlistDetail() {
             </form>
           </div>
         </>
+      )}
+
+      {/* Selected Gift Details Overlay (Photo 2 design) */}
+      {selectedGift && (
+        <div className="wishlist-details-overlay show">
+          
+          {/* Header action bar */}
+          <div className="wishlist-details-header">
+            <button 
+              className="wishlist-details-header-btn" 
+              onClick={() => setSelectedGift(null)} 
+              aria-label="Назад"
+            >
+              ‹
+            </button>
+            
+            <button 
+              className="wishlist-details-header-btn" 
+              onClick={handleShare}
+              aria-label="Поделиться"
+            >
+              📤
+            </button>
+          </div>
+
+          <div className="wishlist-details-content">
+            
+            {/* Centered giant gift emoji/visual */}
+            <div className="wishlist-details-gift-visual">
+              <div className="wishlist-details-gift-glow"></div>
+              <div className="wishlist-details-gift-emoji">🎁</div>
+            </div>
+
+            {/* Left-aligned gift title */}
+            <h1 className="wishlist-details-title">
+              {selectedGift.description || selectedGift.gift_description}
+            </h1>
+
+            {/* Details Split Card */}
+            <div className="wishlist-details-card">
+              <div className="wishlist-details-grid-info">
+                
+                {/* Left col: Added by */}
+                <div className="wishlist-details-col">
+                  <span className="wishlist-details-label">Добавил(а)</span>
+                  <span className="wishlist-details-value">
+                    {selectedGift.added_by === 'user' ? 'Вы' : (target.name || 'Данил')}
+                  </span>
+                </div>
+                
+                {/* Vertical Divider */}
+                <div className="wishlist-details-divider" />
+                
+                {/* Right col: Date */}
+                <div className="wishlist-details-col">
+                  <span className="wishlist-details-label">Дата</span>
+                  <span className="wishlist-details-value">
+                    {new Date(selectedGift.created_at || Date.now()).toLocaleDateString('ru-RU', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Slider for marking as received */}
+              <div className="wishlist-details-slider-wrapper">
+                <SlideToReceive 
+                  isReceived={
+                    !selectedGift.id.toString().startsWith('custom_') 
+                      ? !!receivedDbItems[selectedGift.id] 
+                      : !!selectedGift.received
+                  }
+                  onConfirm={() => {
+                    const isDb = !selectedGift.id.toString().startsWith('custom_')
+                    const isAlreadyReceived = isDb ? !!receivedDbItems[selectedGift.id] : !!selectedGift.received
+                    
+                    if (!isAlreadyReceived) {
+                      handleToggleReceived(selectedGift.id, isDb)
+                      triggerConfetti()
+                      
+                      // smooth auto-close overlay so user sees the progress completes
+                      setTimeout(() => {
+                        setSelectedGift(null)
+                      }, 1200)
+                    }
+                  }} 
+                />
+              </div>
+            </div>
+
+            {/* Empty state: No nested gifts */}
+            <div className="wishlist-details-nested-gifts">
+              <span className="wishlist-details-nested-icon">🎁</span>
+              <span className="wishlist-details-nested-text">Нет вложенных подарков</span>
+            </div>
+          </div>
+
+          {/* Sticky Bottom Actions */}
+          <div className="wishlist-details-bottom-bar">
+            <button 
+              className="wishlist-details-add-btn" 
+              onClick={() => {
+                triggerHaptic();
+                setSelectedGift(null);
+                setShowAdd(true);
+              }}
+            >
+              ＋ Добавить идею
+            </button>
+            
+            <button 
+              className="wishlist-details-more-btn"
+              onClick={() => {
+                triggerHaptic();
+                const isDb = !selectedGift.id.toString().startsWith('custom_')
+                if (!isDb) {
+                  if (window.confirm('Удалить эту идею подарка?')) {
+                    handleDeleteCustomIdea(selectedGift.id)
+                    setSelectedGift(null)
+                  }
+                } else {
+                  showAlert('Настройки этого подарка хранятся в базе данных 🔒')
+                }
+              }}
+              aria-label="Опции"
+            >
+              •••
+            </button>
+          </div>
+
+        </div>
       )}
 
     </div>

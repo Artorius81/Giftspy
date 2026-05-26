@@ -26,7 +26,21 @@ export default function Settings() {
     localStorage.setItem('giftspy-theme', theme)
   }, [theme])
 
-  const handleToggleSpy = async () => {
+  const triggerHaptic = (style = 'light') => {
+    try {
+      if (style === 'medium') {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium')
+      } else {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+      }
+    } catch (e) {
+      console.warn('Haptic not supported:', e)
+    }
+  }
+
+  const handleToggleSpy = async (e) => {
+    e.stopPropagation()
+    triggerHaptic()
     setToggling(true)
     try {
       const result = await api.toggleSpyMode()
@@ -38,7 +52,14 @@ export default function Settings() {
     setToggling(false)
   }
 
-  if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
+  const handleToggleTheme = () => {
+    triggerHaptic('medium')
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    showAlert(`Активирована ${newTheme === 'dark' ? 'тёмная' : 'светлая'} тема! ${newTheme === 'dark' ? '🌙' : '☀️'}`)
+  }
+
+  if (loading) return <div className="page page-profile-bg"><div className="loading"><div className="spinner" /></div></div>
 
   const isPremium = !!profile?.is_premium
 
@@ -48,89 +69,187 @@ export default function Settings() {
     : null
 
   return (
-    <div className="page">
-      <div className="header">
-        <button className="header__back" onClick={() => navigate(-1)}>
-          <span className="icon">‹</span>
-        </button>
-        <span className="header__title">⚙️ Настройки</span>
-        <div className="header__placeholder" />
-      </div>
+    <div className="page page-profile-bg" style={{ padding: 0 }}>
+      <div className="settings-new-container">
+        
+        {/* Header matching user photo */}
+        <div className="settings-new-header">
+          <button 
+            className="wishlist-header-btn" 
+            onClick={() => navigate(-1)} 
+            style={{ width: 36, height: 36 }}
+            aria-label="Назад"
+          >
+            ‹
+          </button>
+          
+          <h1 className="settings-new-title">Настройки</h1>
+          
+          <div style={{ width: 36 }} /> {/* spacer */}
+        </div>
 
-      {/* Premium Functions */}
-      <div className="section-header">
-        <div className="section-header__title">👑 Премиум</div>
-      </div>
-
-      <div className="settings-card">
-        <div className="settings-row">
-          <div className="settings-row__info">
-            <div className="settings-row__label">🕵️ Шпионский режим</div>
-            <div className="settings-row__desc">
-              {isPremium
-                ? 'Просматривайте переписку и перехватывайте контроль'
-                : 'Доступно с подпиской Премиум'}
+        {/* Top Grid of Actions (Wrench & Palette) */}
+        <div className="settings-grid-actions">
+          
+          {/* Account settings card */}
+          <div 
+            className="settings-action-card"
+            onClick={() => { triggerHaptic(); navigate('/profile/edit'); }}
+          >
+            <div className="settings-action-icon-wrapper">
+              <div className="settings-action-glow-wrench"></div>
+              <span className="settings-action-emoji">🔧</span>
             </div>
+            <div className="settings-action-label">Аккаунт</div>
           </div>
-          <button
-            className={`toggle ${spyMode ? 'active' : ''}`}
-            disabled={!isPremium || toggling}
-            onClick={handleToggleSpy}
+
+          {/* Theme switcher card */}
+          <div 
+            className="settings-action-card"
+            onClick={handleToggleTheme}
           >
-            <span className="toggle__knob" />
-          </button>
+            <div className="settings-action-icon-wrapper">
+              <div className="settings-action-glow-palette"></div>
+              <span className="settings-action-emoji">🎨</span>
+            </div>
+            <div className="settings-action-label">Оформление</div>
+          </div>
+
         </div>
 
-        {isPremium && premiumExpiry && (
-          <div className="settings-row__desc" style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-            ✅ Подписка активна до {premiumExpiry}
-          </div>
-        )}
+        {/* About Category */}
+        <h2 className="settings-section-title">О Giftspy</h2>
 
-        {!isPremium && (
-          <button className="btn btn--primary" style={{ marginTop: 12 }} onClick={() => navigate('/store')}>
-            🛍 Купить Премиум
-          </button>
-        )}
-      </div>
-
-      {/* Theme */}
-      <div className="section-header">
-        <div className="section-header__title">🎨 Оформление</div>
-      </div>
-
-      <div className="settings-card">
-        <div className="settings-row__label" style={{ marginBottom: 12 }}>Тема приложения</div>
-        <div className="theme-switcher">
-          <button
-            className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-            onClick={() => setTheme('dark')}
+        {/* Vertical Stacked Capsule List */}
+        <div className="settings-list-group">
+          
+          {/* Premium Spy Mode setting */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              if (!isPremium) {
+                triggerHaptic();
+                navigate('/store');
+              }
+            }}
           >
-            🌙 Тёмная
-          </button>
-          <button
-            className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-            onClick={() => setTheme('light')}
-          >
-            ☀️ Светлая
-          </button>
-        </div>
-      </div>
-
-      {/* Language */}
-      <div className="section-header">
-        <div className="section-header__title">🌐 Язык</div>
-      </div>
-
-      <div className="settings-card">
-        <div className="settings-row">
-          <div className="settings-row__info">
-            <div className="settings-row__label">Язык интерфейса</div>
-            <div className="settings-row__desc">Русский</div>
+            <div className="settings-list-icon">🕵️</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Шпионский режим</div>
+              <div className="settings-list-subtitle">
+                {isPremium 
+                  ? (premiumExpiry ? `Премиум активен до ${premiumExpiry}` : 'Активен')
+                  : 'Слушайте разговоры и читайте переписку (Премиум)'}
+              </div>
+            </div>
+            
+            <button
+              className={`settings-toggle-btn ${spyMode ? 'active' : ''}`}
+              disabled={!isPremium || toggling}
+              onClick={handleToggleSpy}
+            >
+              <span className="settings-toggle-knob" />
+            </button>
           </div>
-          <span className="badge">🇷🇺 RU</span>
+
+          {/* Terms & Conditions */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              triggerHaptic();
+              showAlert('Пользовательское соглашение: Все подарки на платформе защищены и регулируются правилами сервиса 📜');
+            }}
+          >
+            <div className="settings-list-icon">📄</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Пользовательское соглашение</div>
+            </div>
+            <span className="settings-list-arrow">›</span>
+          </div>
+
+          {/* Privacy Policy */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              triggerHaptic();
+              showAlert('Политика конфиденциальности: Ваши данные надежно зашифрованы и никогда не передаются третьим лицам 🔒');
+            }}
+          >
+            <div className="settings-list-icon">🔒</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Политика конфиденциальности</div>
+            </div>
+            <span className="settings-list-arrow">›</span>
+          </div>
+
+          {/* Contact */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              triggerHaptic();
+              showAlert('Связаться с нами: Напишите в поддержку @giftspy_support_bot для решения любых вопросов ✉️');
+            }}
+          >
+            <div className="settings-list-icon">✉️</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Обратная связь</div>
+            </div>
+            <span className="settings-list-arrow">›</span>
+          </div>
+
+          {/* Join the Community */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              triggerHaptic();
+              showAlert('Канал Giftspy: Присоединяйтесь к нашему Telegram-каналу, чтобы не пропустить обновления! 👥');
+            }}
+          >
+            <div className="settings-list-icon">👥</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Сообщество Giftspy</div>
+            </div>
+            <span className="settings-list-arrow">›</span>
+          </div>
+
+          {/* Give feedback */}
+          <div 
+            className="settings-list-item"
+            onClick={() => {
+              triggerHaptic();
+              showAlert('Оставить отзыв: Нам очень важно ваше мнение! Напишите свои пожелания нашему боту поддержки ⭐');
+            }}
+          >
+            <div className="settings-list-icon">⭐</div>
+            <div className="settings-list-info">
+              <div className="settings-list-title">Оценить приложение</div>
+            </div>
+            <span className="settings-list-arrow">›</span>
+          </div>
+
         </div>
+
+        {/* Exit Button */}
+        <button 
+          className="settings-signout-btn"
+          onClick={() => {
+            triggerHaptic();
+            if (window.confirm('Вы действительно хотите выйти из аккаунта?')) {
+              showAlert('Выход из аккаунта успешно выполнен 🚪');
+            }
+          }}
+        >
+          🚪 Выйти
+        </button>
+
+        {/* Footer Credit Matching photo */}
+        <div className="settings-footer">
+          <div className="settings-footer-version">1.0.0 (1)</div>
+          <div className="settings-footer-copyright">Все права защищены © 2026 Giftspy Inc.</div>
+        </div>
+
       </div>
     </div>
   )
 }
+
