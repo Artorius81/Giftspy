@@ -165,36 +165,103 @@ export default function WishlistDetail() {
   }
 
   const triggerConfetti = () => {
-    const container = document.createElement('div');
-    container.className = 'confetti-container';
-    document.body.appendChild(container);
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '10000';
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const handleResize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    window.addEventListener('resize', handleResize);
 
     const colors = ['#f5576c', '#f093fb', '#6c5ce7', '#a78bfa', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
-    for (let i = 0; i < 80; i++) {
-      const p = document.createElement('div');
-      p.className = 'confetti-particle';
-      const sizeWidth = Math.floor(Math.random() * 8) + 6;
-      const sizeHeight = Math.floor(Math.random() * 12) + 8;
-      p.style.width = `${sizeWidth}px`;
-      p.style.height = `${sizeHeight}px`;
-      p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      p.style.left = `${Math.random() * 100}vw`;
-      p.style.top = `-20px`;
-      p.style.borderRadius = `${Math.random() > 0.5 ? '50%' : '2px'}`;
-      
-      const fallDuration = Math.random() * 1.5 + 2.0;
-      const spinDuration = Math.random() * 1.0 + 0.5;
-      const fallDelay = Math.random() * 0.4;
-      
-      p.style.animationDuration = `${fallDuration}s, ${spinDuration}s`;
-      p.style.animationDelay = `${fallDelay}s, ${fallDelay}s`;
-      
-      container.appendChild(p);
+    const particles = [];
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * -100 - 20,
+        r: Math.random() * 6 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        tilt: Math.random() * 10 - 5,
+        tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+        tiltAngle: Math.random() * Math.PI,
+        rotation: Math.random() * Math.PI,
+        rotationSpeed: Math.random() * 0.05 - 0.025,
+        vx: Math.random() * 4 - 2,
+        vy: Math.random() * 5 + 4,
+        opacity: 1
+      });
     }
 
-    setTimeout(() => {
-      container.remove();
-    }, 4500);
+    let animationId;
+    const startTime = Date.now();
+    const duration = 4000;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        cancelAnimationFrame(animationId);
+        window.removeEventListener('resize', handleResize);
+        canvas.remove();
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      let activeParticles = 0;
+      particles.forEach(p => {
+        p.y += p.vy;
+        p.x += p.vx;
+        p.tiltAngle += p.tiltAngleIncremental;
+        p.tilt = Math.sin(p.tiltAngle) * 12;
+        p.rotation += p.rotationSpeed;
+        p.vx += Math.sin(p.tiltAngle) * 0.05;
+
+        if (elapsed > duration - 1000) {
+          p.opacity = 1 - (elapsed - (duration - 1000)) / 1000;
+        }
+
+        if (p.y < height && p.opacity > 0) {
+          activeParticles++;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+
+          ctx.beginPath();
+          ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r + p.tilt);
+          ctx.restore();
+        }
+      });
+
+      if (activeParticles > 0) {
+        animationId = requestAnimationFrame(animate);
+      } else {
+        window.removeEventListener('resize', handleResize);
+        canvas.remove();
+      }
+    };
+
+    animate();
   }
 
   const loadTarget = async () => {

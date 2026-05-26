@@ -67,54 +67,110 @@ export default function Store() {
   }
 
   return (
-    <div className="page">
-      <div className="header">
-        <button className="header__back" onClick={() => navigate(-1)}>
-          <span className="icon">‹</span>
+    <div className="page store-new-container">
+      
+      {/* Premium Header */}
+      <div className="settings-new-header" style={{ marginBottom: '16px' }}>
+        <button 
+          className="wishlist-header-btn" 
+          onClick={() => navigate(-1)} 
+          style={{ width: 36, height: 36 }}
+          aria-label="Назад"
+        >
+          ‹
         </button>
-        <h1 className="header__title">🛍 Магазин</h1>
-        <div className="header__placeholder" />
+        <h1 className="settings-new-title">🛍️ Магазин Giftspy</h1>
+        <div style={{ width: 36 }} />
       </div>
 
-      <div style={{ marginBottom: 16, padding: '16px', background: 'var(--gradient-card)', border: '1px solid var(--card-border)', borderRadius: 'var(--radius-md)' }}>
-        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>👑 Премиум включает:</div>
-        <ul style={{ fontSize: 13, color: 'var(--text-secondary)', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <li>• Безлимитное количество дел</li>
-          <li>• Шпионский режим (чтение переписок)</li>
-          <li>• Приоритетная обработка дел</li>
+      {/* VIP Premium Perks card */}
+      <div className="store-premium-vip-card">
+        <div className="store-premium-glow-circle" />
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+          <span style={{ fontSize: 32 }} role="img" aria-label="crown">👑</span>
+          <div>
+            <div className="store-vip-title">Преимущества Premium</div>
+            <div className="store-vip-desc">Подключите подписку для безграничных возможностей</div>
+          </div>
+        </div>
+        
+        <ul className="store-vip-list">
+          <li className="store-vip-item">
+            <span className="store-vip-item-icon">🔮</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Безлимитные расследования</b> (без списания баланса)</span>
+          </li>
+          <li className="store-vip-item">
+            <span className="store-vip-item-icon">🕵️‍♂️</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Шпионский режим</b> (просмотр допроса ИИ-детектива)</span>
+          </li>
+          <li className="store-vip-item">
+            <span className="store-vip-item-icon">⚡</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Приоритетная скорость</b> и мгновенные отчеты</span>
+          </li>
         </ul>
       </div>
 
-      {PRODUCTS.map(p => (
-        <div
-          key={p.id}
-          className="card"
-          onClick={() => handleBuy(p.id)}
-          style={{ opacity: buying === p.id ? 0.6 : 1 }}
-        >
-          <div className="card__header">
-            <div className="card__avatar" style={{ fontSize: p.icon.length > 2 ? 18 : 24, padding: p.icon.length > 2 ? '0 4px' : 0 }}>
-              <span style={{ whiteSpace: 'nowrap' }}>{p.icon}</span>
+      {/* Dynamic Products Grid list */}
+      <div className="store-product-grid">
+        {PRODUCTS.map(p => {
+          const isPremium = p.id === 'prem_1'
+          return (
+            <div
+              key={p.id}
+              onClick={() => handleBuy(p.id)}
+              className={`store-product-card ${isPremium ? 'premium-item' : ''}`}
+              style={{
+                opacity: buying === p.id ? 0.6 : 1,
+              }}
+            >
+              {p.badge && (
+                <span 
+                  className="badge" 
+                  style={{ 
+                    position: 'absolute', 
+                    top: 14, 
+                    right: 18, 
+                    background: isPremium ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'var(--gradient-primary)', 
+                    color: '#fff',
+                    fontWeight: 800,
+                    fontSize: '10px',
+                    padding: '3px 8px',
+                    borderRadius: '20px',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  {p.badge}
+                </span>
+              )}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div className="store-product-icon-wrapper">
+                  {p.icon}
+                </div>
+                
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="store-product-title">{p.title}</div>
+                  <div className="store-product-desc">{p.desc}</div>
+                </div>
+              </div>
+              
+              <div className="store-product-footer">
+                <span className="store-product-price-label">Стоимость</span>
+                <button 
+                  className="store-product-buy-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBuy(p.id);
+                  }}
+                >
+                  {buying === p.id ? '⏳ Покупка...' : p.price}
+                </button>
+              </div>
             </div>
-            <div className="card__info">
-              <div className="card__name">{p.title}</div>
-              <div className="card__sub">{p.desc}</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <div style={{
-              fontSize: 18, fontWeight: 700,
-              background: 'var(--gradient-primary)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              {buying === p.id ? '⏳...' : p.price}
-            </div>
-            {p.badge && <span className="badge badge--success">{p.badge}</span>}
-          </div>
-        </div>
-      ))}
+          )
+        })}
+      </div>
     </div>
   )
 }
