@@ -3763,9 +3763,17 @@ html {
   backdrop-filter: blur(10px);
 }
 
-.wishlist-items-grid-2col {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+.wishlist-items-masonry {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.wishlist-masonry-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useData } from '../hooks/useData'
@@ -145,8 +146,25 @@ export default function WishlistDetail() {
   // Keyboard active states for Android lifting adjustments
   const [isModalFocused, setIsModalFocused] = useState(false)
 
-  // Track currently active gift details view overlay
-  const [selectedGift, setSelectedGift] = useState(null)
+  // Track currently active gift details view overlay with smooth transitions
+  const [renderedGift, setRenderedGift] = useState(null)
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false)
+
+  const handleOpenGiftDetails = (gift) => {
+    triggerHaptic()
+    setRenderedGift(gift)
+    setTimeout(() => {
+      setIsOverlayOpen(true)
+    }, 20)
+  }
+
+  const handleCloseGiftDetails = () => {
+    setIsOverlayOpen(false)
+    setTimeout(() => {
+      setRenderedGift(null)
+    }, 350)
+  }
+
 
   // Fetch target or profile
   const { data: target, loading: tLoading, mutate: mutateTarget } = useData(
@@ -369,7 +387,7 @@ export default function WishlistDetail() {
       <div 
         key={item.id || idx} 
         className="wishlist-grid-card"
-        onClick={() => { triggerHaptic(); setSelectedGift(item); }}
+        onClick={() => handleOpenGiftDetails(item)}
         style={{ cursor: 'pointer' }}
       >
         {/* Delete button */}
@@ -411,6 +429,41 @@ export default function WishlistDetail() {
       </div>
     )
   }
+
+  // Collect all elements (Add trigger card + items cards) for distribution in masonry columns
+  const cards = []
+  
+  if (isOwn) {
+    cards.push(
+      <div 
+        key="add-trigger"
+        className="wishlist-grid-card-add-trigger" 
+        onClick={() => { triggerHaptic(); setShowAdd(true); }}
+      >
+        <div className="wishlist-grid-card-add-circle">
+          ＋
+        </div>
+        <div className="wishlist-grid-card-add-label">
+          Добавить идею подарка...
+        </div>
+      </div>
+    )
+  }
+
+  combinedWishlist.forEach((item, idx) => {
+    cards.push(renderWishlistCard(item, idx))
+  })
+
+  // Distribute cards into 2 columns for masonry layout
+  const col1 = []
+  const col2 = []
+  cards.forEach((card, idx) => {
+    if (idx % 2 === 0) {
+      col1.push(card)
+    } else {
+      col2.push(card)
+    }
+  })
 
   return (
     <div className="page page-profile-bg" style={{ paddingBottom: '140px' }}>
@@ -474,37 +527,25 @@ export default function WishlistDetail() {
         )}
       </div>
 
-      {/* Grid of wishlist items */}
-      <div className="wishlist-items-grid-2col">
-        
-        {/* Dynamic "Add a new gift idea" card for Own wishlist (Photo 2) */}
-        {isOwn && (
-          <div 
-            className="wishlist-grid-card-add-trigger" 
-            onClick={() => { triggerHaptic(); setShowAdd(true); }}
-          >
-            <div className="wishlist-grid-card-add-circle">
-              ＋
-            </div>
-            <div className="wishlist-grid-card-add-label">
-              Добавить идею подарка...
-            </div>
+      {/* Grid of wishlist items / Masonry */}
+      {cards.length === 0 ? (
+        <div className="wishlist-empty-state-fullcol">
+          <span style={{ fontSize: '32px' }}>🎁</span>
+          <div style={{ marginTop: '8px', fontWeight: 'bold' }}>Вишлист пуст</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            В вишлисте пока нет идей. Вы можете добавить первую с помощью кнопки внизу!
           </div>
-        )}
-
-        {/* Wishlist Items cards */}
-        {combinedWishlist.length === 0 && !isOwn ? (
-          <div className="wishlist-empty-state-fullcol">
-            <span style={{ fontSize: '32px' }}>🎁</span>
-            <div style={{ marginTop: '8px', fontWeight: 'bold' }}>Вишлист пуст</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              В вишлисте пока нет идей. Вы можете добавить первую с помощью кнопки внизу!
-            </div>
+        </div>
+      ) : (
+        <div className="wishlist-items-masonry">
+          <div className="wishlist-masonry-col">
+            {col1}
           </div>
-        ) : (
-          combinedWishlist.map((item, idx) => renderWishlistCard(item, idx))
-        )}
-      </div>
+          <div className="wishlist-masonry-col">
+            {col2}
+          </div>
+        </div>
+      )}
 
       {/* Sticky Bottom pill button (Photo 2) */}
       <button 
@@ -629,14 +670,14 @@ export default function WishlistDetail() {
       )}
 
       {/* Selected Gift Details Overlay (Photo 2 design) */}
-      {selectedGift && (
-        <div className="wishlist-details-overlay show">
+      {renderedGift && createPortal(
+        <div className={`wishlist-details-overlay ${isOverlayOpen ? 'show' : ''}`}>
           
           {/* Header action bar */}
           <div className="wishlist-details-header">
             <button 
               className="wishlist-details-header-btn" 
-              onClick={() => setSelectedGift(null)} 
+              onClick={handleCloseGiftDetails} 
               aria-label="Назад"
             >
               ‹
@@ -661,7 +702,7 @@ export default function WishlistDetail() {
 
             {/* Left-aligned gift title */}
             <h1 className="wishlist-details-title">
-              {selectedGift.description || selectedGift.gift_description}
+              {renderedGift.description || renderedGift.gift_description}
             </h1>
 
             {/* Details Split Card */}
@@ -672,7 +713,7 @@ export default function WishlistDetail() {
                 <div className="wishlist-details-col">
                   <span className="wishlist-details-label">Добавил(а)</span>
                   <span className="wishlist-details-value">
-                    {selectedGift.added_by === 'user' ? 'Вы' : (target.name || 'Данил')}
+                    {renderedGift.added_by === 'user' ? 'Вы' : (target.name || 'Данил')}
                   </span>
                 </div>
                 
@@ -683,7 +724,7 @@ export default function WishlistDetail() {
                 <div className="wishlist-details-col">
                   <span className="wishlist-details-label">Дата</span>
                   <span className="wishlist-details-value">
-                    {new Date(selectedGift.created_at || Date.now()).toLocaleDateString('ru-RU', { 
+                    {new Date(renderedGift.created_at || Date.now()).toLocaleDateString('ru-RU', { 
                       day: 'numeric', 
                       month: 'long', 
                       year: 'numeric' 
@@ -695,16 +736,16 @@ export default function WishlistDetail() {
               {/* Slider for marking as received */}
               <div className="wishlist-details-slider-wrapper">
                 <SlideToReceive 
-                  isReceived={!!selectedGift.received}
+                  isReceived={!!renderedGift.received}
                   onConfirm={() => {
-                    if (!selectedGift.received) {
-                      handleToggleReceived(selectedGift.id)
+                    if (!renderedGift.received) {
+                      handleToggleReceived(renderedGift.id)
                       triggerConfetti()
                       
                       // smooth auto-close overlay so user sees the progress completes
                       setTimeout(() => {
-                        setSelectedGift(null)
-                      }, 1200)
+                        handleCloseGiftDetails()
+                      }, 1500)
                     }
                   }} 
                 />
@@ -724,7 +765,7 @@ export default function WishlistDetail() {
               className="wishlist-details-add-btn" 
               onClick={() => {
                 triggerHaptic();
-                setSelectedGift(null);
+                handleCloseGiftDetails();
                 setShowAdd(true);
               }}
             >
@@ -736,8 +777,8 @@ export default function WishlistDetail() {
               onClick={() => {
                 triggerHaptic();
                 if (window.confirm('Удалить эту идею подарка?')) {
-                  handleDeleteCustomIdea(selectedGift.id)
-                  setSelectedGift(null)
+                  handleDeleteCustomIdea(renderedGift.id)
+                  handleCloseGiftDetails()
                 }
               }}
               aria-label="Опции"
@@ -746,7 +787,8 @@ export default function WishlistDetail() {
             </button>
           </div>
 
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
