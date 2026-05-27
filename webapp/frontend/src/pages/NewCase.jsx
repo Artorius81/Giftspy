@@ -44,7 +44,7 @@ function SlideToConfirm({ onConfirm, submitting }) {
       setDragX(maxX)
       setConfirmed(true)
       // haptic if available
-      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch {}
+      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch { }
       onConfirm()
     } else {
       setDragX(0)
@@ -139,19 +139,19 @@ export default function NewCase() {
 
   const [step, setStep] = useState(0)
   const [collapsed, setCollapsed] = useState({})
-  
+
   const toggleGroup = (target) => {
     setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
   }
-  
+
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
   const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
   const { data: casesData, loading: cLoading, mutate: mutateCases } = useData('cases', api.getCases)
-  
+
   const targets = targetsData || []
   const personas = personasData || []
   const cases = casesData || []
-  
+
   const [submitting, setSubmitting] = useState(false)
 
   // Typewriter hints for beautiful search bar behavior
@@ -194,7 +194,7 @@ export default function NewCase() {
         if (placeholderText === '') {
           setIsDeleting(false)
           setHintIdx((prev) => (prev + 1) % HINTS.length)
-          timer = setTimeout(() => {}, 500)
+          timer = setTimeout(() => { }, 500)
           return
         }
       }
@@ -232,7 +232,7 @@ export default function NewCase() {
   const triggerHaptic = () => {
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
-    } catch {}
+    } catch { }
   }
 
   const currentStepKey = step > 0 ? STEPS[step - 1] : null
@@ -258,7 +258,7 @@ export default function NewCase() {
         persona: form.persona,
         budget: form.budget || 'Не указан',
       })
-      
+
       // Reset form and return to dashboard
       setForm({
         target: '',
@@ -269,10 +269,10 @@ export default function NewCase() {
       })
       setTargetDisplayName('')
       setStep(0)
-      
+
       const updated = await api.getCases()
       mutateCases(updated)
-      
+
       navigate('/new-case', { replace: true })
     } catch (err) {
       await showAlert(err.message)
@@ -287,9 +287,9 @@ export default function NewCase() {
       {/* Sleek Custom Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         {step > 0 ? (
-          <button 
-            className="wishlist-header-btn" 
-            onClick={() => setStep(step - 1)} 
+          <button
+            className="wishlist-header-btn"
+            onClick={() => setStep(step - 1)}
             style={{ width: 36, height: 36 }}
             aria-label="Назад"
           >
@@ -302,8 +302,8 @@ export default function NewCase() {
           {step === 0 ? 'Детектив' : 'Новое дело'}
         </span>
         {step === 0 ? (
-          <button 
-            className="wishlist-header-btn" 
+          <button
+            className="wishlist-header-btn"
             onClick={() => navigate('/settings')}
             style={{ width: 36, height: 36 }}
             aria-label="Настройки"
@@ -330,14 +330,14 @@ export default function NewCase() {
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {isFocused && (
-            <div 
+            <div
               className="detective-search-focus-backdrop"
               onClick={() => inputRef.current?.blur()}
             />
           )}
 
           {/* Search bar input container */}
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               if (searchInput.trim()) {
@@ -351,8 +351,8 @@ export default function NewCase() {
               <div className="detective-search-suggestions">
                 <div className="detective-search-suggestions-label">Поиск идеального подарка</div>
                 {READY_QUERIES.map((item, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className="detective-search-suggestion-card"
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -373,7 +373,7 @@ export default function NewCase() {
               </div>
             )}
 
-            <div 
+            <div
               className={`detective-search-wrapper ${isFocused ? 'focused' : ''}`}
               onClick={() => inputRef.current?.focus()}
             >
@@ -386,7 +386,7 @@ export default function NewCase() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 onFocus={() => { triggerHaptic(); setIsFocused(true); }}
                 onBlur={() => setIsFocused(false)}
-                placeholder={isFocused ? 'Напишите Шерлоку, какой подарок хотите найти...' : ''}
+                placeholder={isFocused ? 'Напишите детективу, какой подарок хотите найти...' : ''}
               />
               {!isFocused && !searchInput && (
                 <div className="detective-search-placeholder">
@@ -394,8 +394,8 @@ export default function NewCase() {
                 </div>
               )}
               {searchInput.trim() && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="detective-search-go-btn"
                   onMouseDown={(e) => {
                     e.preventDefault();
@@ -469,7 +469,7 @@ export default function NewCase() {
                     }
                   })
                   const sortedGroups = Object.entries(groups)
-                  
+
                   return sortedGroups.map(([target, group]) => {
                     const isExpanded = collapsed[target] === true
                     return (
@@ -661,11 +661,11 @@ export default function NewCase() {
         <div className="wizard-step">
           <div className="wizard-step__title" style={{ marginBottom: '8px' }}>🕵️‍♂️ Выберите детектива</div>
           <div className="wizard-step__desc" style={{ marginBottom: '24px' }}>Каждый детектив имеет свой уникальный метод расследования</div>
-          
+
           <div className="persona-cards-container">
             {personas.map((p, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className={`persona-select-card ${form.persona === p.name ? 'selected' : ''}`}
                 onClick={() => {
                   triggerHaptic();
@@ -679,13 +679,13 @@ export default function NewCase() {
                 <div className="persona-photo-wrapper">
                   <img src={p.photo} alt={p.name} className="persona-card-img" />
                 </div>
-                
+
                 {/* Right side: details */}
                 <div className="persona-card-details">
                   <span className="persona-card-name">{p.name}</span>
                   <span className="persona-card-desc">{p.desc}</span>
                 </div>
-                
+
                 {/* Checkmark overlay for selected item */}
                 {form.persona === p.name && (
                   <div className="persona-card-check">✓</div>
