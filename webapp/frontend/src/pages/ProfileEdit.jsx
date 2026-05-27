@@ -47,6 +47,27 @@ const validateBirthday = (bdayStr) => {
   return false
 }
 
+// Helper to format elapsed time in Russian compact format
+function formatElapsedCompact(dateStr) {
+  if (!dateStr) return '~1д';
+  const created = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - created.getTime()
+  const diffMins = Math.floor(diffMs / (1000 * 60))
+  if (diffMins < 60) return `~${Math.max(1, diffMins)}м`;
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `~${diffHours}ч`;
+  const diffDays = Math.floor(diffHours / 24)
+  return `~${diffDays}д`;
+}
+
+// Helper to format item counts in Russian plural
+function getItemsText(count) {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} предмет`;
+  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} предмета`;
+  return `${count} предметов`;
+}
+
 export default function ProfileEdit() {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState({})
@@ -391,19 +412,34 @@ export default function ProfileEdit() {
         </div>
       </div>
 
-      {/* Карточка списка желаний (Редизайн) */}
-      <div className="profile-wishlist-card" style={{ marginBottom: '100px' }}>
-        <div className="profile-wishlist-card-top" onClick={() => navigate('/targets')}>
-          <div className="profile-wishlist-card-icon-container">
-            ❤️
+      {/* Premium Wishlist Card Widget (mockup design) */}
+      <div className="profile-wishlist-card-premium" style={{ marginBottom: '100px' }}>
+        <div className="profile-wishlist-header-row" onClick={() => navigate('/targets/my')}>
+          <div className="profile-wishlist-sheet-icon">
+            📄<span className="profile-wishlist-heart-badge">❤️</span>
           </div>
-          <div className="profile-wishlist-card-details">
-            <span className="profile-wishlist-card-title">Список желаний</span>
-            <span className="profile-wishlist-card-subtitle">{wishlistSubtitle}</span>
+          <div className="profile-wishlist-header-info">
+            <span className="profile-wishlist-title">Вишлист</span>
+            <span className="profile-wishlist-subtitle">{getItemsText(profile.wishlist?.length || 0)}</span>
           </div>
         </div>
-        <button className="profile-wishlist-card-btn" onClick={() => navigate('/targets')}>
-          <span style={{ fontSize: '18px', marginRight: '6px', fontWeight: 'bold' }}>+</span> Добавить идею
+
+        {profile.wishlist && profile.wishlist.length > 0 && (
+          <div className="profile-wishlist-items-box">
+            {profile.wishlist.map((item, idx) => (
+              <div key={item.id || idx} className="profile-wishlist-item-row" onClick={() => navigate('/targets/my')}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                  <span className="profile-wishlist-item-gift-icon">🎁</span>
+                  <span className="profile-wishlist-item-desc">{item.description || item.gift_description}</span>
+                </div>
+                <span className="profile-wishlist-item-time">{formatElapsedCompact(item.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button className="profile-wishlist-add-idea-btn" onClick={() => navigate('/targets/my')}>
+          ＋ Добавить подарок
         </button>
       </div>
 
