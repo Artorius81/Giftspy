@@ -6,6 +6,12 @@ import { useData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
 
+const READY_QUERIES = [
+  'Винтажные аксессуары для стильных друзей 🕶️',
+  'Подарок для папы, который обожает теннис 🎾',
+  'Что подарить коллеге на день рождения до 5000 руб 🎂'
+]
+
 /* ── Slide-to-confirm component ── */
 function SlideToConfirm({ onConfirm, submitting }) {
   const trackRef = useRef(null)
