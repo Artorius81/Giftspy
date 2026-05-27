@@ -154,6 +154,58 @@ export default function NewCase() {
   
   const [submitting, setSubmitting] = useState(false)
 
+  // Typewriter hints for beautiful search bar behavior
+  const HINTS = [
+    'Подарки на новоселье до 5000 руб...',
+    'Что подарить коллеге на день рождения...',
+    'Беспроводные наушники для бега...',
+    'Стильный кожаный ремень...',
+    'Подарок маме на годовщину...',
+    'Сюрприз подруге на 25 лет...'
+  ]
+
+  const [hintIdx, setHintIdx] = useState(0)
+  const [placeholderText, setPlaceholderText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [typingSpeed, setTypingSpeed] = useState(100)
+  const [searchInput, setSearchInput] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (step !== 0) return
+
+    let timer
+    const currentFullText = HINTS[hintIdx]
+
+    const handleType = () => {
+      if (!isDeleting) {
+        setPlaceholderText(currentFullText.substring(0, placeholderText.length + 1))
+        setTypingSpeed(100)
+
+        if (placeholderText === currentFullText) {
+          timer = setTimeout(() => setIsDeleting(true), 2500)
+          return
+        }
+      } else {
+        setPlaceholderText(currentFullText.substring(0, placeholderText.length - 1))
+        setTypingSpeed(50)
+
+        if (placeholderText === '') {
+          setIsDeleting(false)
+          setHintIdx((prev) => (prev + 1) % HINTS.length)
+          timer = setTimeout(() => {}, 500)
+          return
+        }
+      }
+
+      timer = setTimeout(handleType, typingSpeed)
+    }
+
+    timer = setTimeout(handleType, typingSpeed)
+    return () => clearTimeout(timer)
+  }, [placeholderText, isDeleting, hintIdx, step])
+
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
   const [form, setForm] = useState({
@@ -277,11 +329,53 @@ export default function NewCase() {
       {/* Step 0: Dashboard (Photo 1) */}
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Search bar input placeholder */}
-          <div className="detective-search-box" onClick={() => setStep(1)} style={{ cursor: 'pointer' }}>
-            <span style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>🔍</span>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Подарки на новоселье до 5000 руб...</span>
-          </div>
+          {/* Search bar input container */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchInput.trim()) {
+                triggerHaptic();
+                setForm(f => ({ ...f, context: searchInput.trim() }));
+                setStep(1);
+              }
+            }}
+            className="detective-search-form"
+          >
+            <div 
+              className={`detective-search-wrapper ${isFocused ? 'focused' : ''}`}
+              onClick={() => inputRef.current?.focus()}
+            >
+              <span className="detective-search-icon">🔍</span>
+              <input
+                ref={inputRef}
+                type="text"
+                className="detective-search-input"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onFocus={() => { triggerHaptic(); setIsFocused(true); }}
+                onBlur={() => setIsFocused(false)}
+              />
+              {!isFocused && !searchInput && (
+                <div className="detective-search-placeholder">
+                  {placeholderText}<span className="typewriter-cursor">|</span>
+                </div>
+              )}
+              {searchInput.trim() && (
+                <button 
+                  type="button" 
+                  className="detective-search-go-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerHaptic();
+                    setForm(f => ({ ...f, context: searchInput.trim() }));
+                    setStep(1);
+                  }}
+                >
+                  Найти
+                </button>
+              )}
+            </div>
+          </form>
 
           {/* Sherlock Promo Card */}
           <div className="detective-promo-card">
