@@ -2,23 +2,24 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 
+const FILTER_TAGS = ['Все', 'Скидки 🏷️', 'Популярное 🔥', 'Дешевые 📉', 'Быстрая доставка ⚡']
+
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   
   const urlQuery = searchParams.get('query') || ''
   const [query, setQuery] = useState(urlQuery)
-  const [marketplace, setMarketplace] = useState('yandex') // 'yandex' or 'ozon'
-  const [iframeLoading, setIframeLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState([])
+  const [activeFilter, setActiveFilter] = useState('Все')
   const searchInputRef = useRef(null)
 
-  // Trigger search when query param in URL changes or marketplace changes
-  useEffect(() => {
-    if (urlQuery.trim()) {
-      setQuery(urlQuery)
-      setIframeLoading(true)
-    }
-  }, [urlQuery, marketplace])
+  // Local storage for favorited items
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('search_favorites')
+    return saved ? JSON.parse(saved) : {}
+  })
 
   // Sync Telegram Web App BackButton
   useEffect(() => {
@@ -35,175 +36,292 @@ export default function Search() {
     }
   }, [navigate])
 
+  // Trigger search when query param in URL changes
+  useEffect(() => {
+    if (urlQuery.trim()) {
+      setQuery(urlQuery)
+      fetchProducts(urlQuery)
+    } else {
+      setProducts([])
+    }
+  }, [urlQuery])
+
+  const fetchProducts = async (searchQuery) => {
+    if (!searchQuery.trim()) return
+    setLoading(true)
+    try {
+      const data = await api.searchMarket(searchQuery)
+      setProducts(data || [])
+    } catch (err) {
+      console.error('Failed to fetch search results:', err)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSearchSubmit = (e) => {
     e?.preventDefault()
     if (query.trim()) {
+      triggerHaptic()
       setSearchParams({ query: query.trim() })
     }
   }
 
-  const handleIframeLoad = () => {
-    setIframeLoading(false)
+  const triggerHaptic = () => {
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch (e) {
+      console.warn('Haptic not supported:', e)
+    }
   }
 
-  return (
-    <div className="page search-page animate-fade-in" style={{ paddingBottom: '0px', display: 'flex', flexDirection: 'column', height: '100vh', paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px' }}>
-      {/* Header with search bar */}
-      <div className="header" style={{ padding: '8px 12px', height: 'auto', display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-        <button className="header__back" onClick={() => navigate(-1)} style={{ marginRight: '4px' }}>
-          <span className="icon" style={{ fontSize: '24px' }}>‹</span>
+  const toggleFavorite = (product, e) => {
+    e.stopPropagation()
+    triggerHaptic()
+    const productKey = product.url || product.title
+    const updated = { ...favorites }
+    if (updated[productKey]) {
+      delete updated[productKey]
+    } else {
+      updated[productKey] = {
+        title: product.title,
+        price: product.price,
+        image: product.image,
+        url: product.url,
+        addedAt: Date.now()
+      }
+    }
+    localStorage.setItem('search_favorites', JSON.stringify(updated))
+    setFavorites(updated)
+  }
+
+  const handleCardClick = (product) => {
+    triggerHaptic()
+    const url = product.url
+    if (!url) return
+    
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.openLink(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  }
+
+  // Dynamic store brand parser
+  const detectStore = (url, snippet = '') => {
+    const text = (url + ' ' + snippet).toLowerCase()
+    if (text.includes('ozon') || text.includes('озон')) {
+      return { name: 'Ozon', color: '#005bff', icon: '🔵' }
+    }
+    if (text.includes('joom') || text.includes('джум')) {
+      return { name: 'Джум', color: '#ff3b30', icon: '🔴' }
+    }
+    if (text.includes('wildberries') || text.includes('вайлдберриз')) {
+      return { name: 'Wildberries', color: '#8a2be2', icon: '🟣' }
+    }
+    if (text.includes('aliexpress') || text.includes('алиэкспресс')) {
+      return { name: 'AliExpress', color: '#ff5c00', icon: '🟠' }
+    }
+    return { name: 'Яндекс Маркет', color: '#fc0', icon: '🟡' }
+  }
+
+  // Consistent hash delivery string generator
+  const getDeliveryText = (title) => {
+    const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    if (hash % 3 === 0) return 'Доставка из-за границы'
+    if (hash % 3 === 1) return 'Доставка за 1 день'
+    return 'Бесплатная доставка'
+  }
+
+  const handleFilterClick = (tag) => {
+    triggerHaptic()
+    setActiveFilter(tag)
+    if (tag === 'Все') {
+      fetchProducts(urlQuery)
+    } else {
+      // Modify search or filter existing local items
+      let keyword = ''
+      if (tag.includes('Скидки')) keyword = 'скидки'
+      else if (tag.includes('Популярное')) keyword = 'популярные'
+      else if (tag.includes('Дешевые')) keyword = 'дешевые'
+      else if (tag.includes('быстрая')) keyword = 'быстрая доставка'
+      
+      const refinedQuery = keyword ? `${urlQuery} ${keyword}` : urlQuery
+      fetchProducts(refinedQuery)
+    }
+  }
+
+  // Render a specific product card in the masonry grid
+  const renderProductCard = (product, idx) => {
+    const store = detectStore(product.url, product.description)
+    const isFav = !!favorites[product.url || product.title]
+    const delivery = getDeliveryText(product.title)
+    
+    // Original price strikethrough and percentage
+    const hasOldPrice = !!product.old_price && product.old_price > product.price
+    const discountPercent = hasOldPrice 
+      ? Math.round(((product.old_price - product.price) / product.old_price) * 100) 
+      : 0
+
+    return (
+      <div 
+        key={product.url || idx}
+        className="search-product-card"
+        onClick={() => handleCardClick(product)}
+      >
+        {/* Like/Heart Action Overlay */}
+        <button 
+          className={`search-card-heart ${isFav ? 'active' : ''}`}
+          onClick={(e) => toggleFavorite(product, e)}
+          aria-label="В избранное"
+        >
+          {isFav ? '❤️' : '♡'}
         </button>
-        
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flex: 1, gap: '6px' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="input search-input"
-              style={{
-                width: '100%',
-                padding: '10px 36px 10px 12px',
-                fontSize: '14px',
-                borderRadius: 'var(--radius-md)',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid var(--card-border)',
-                color: 'var(--text)'
-              }}
-              placeholder="Поиск подарка..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  padding: '2px'
-                }}
-              >
-                ×
-              </button>
+
+        {/* Product Image */}
+        <div className="search-card-image-wrapper">
+          <img src={product.image} alt={product.title} className="search-card-image" />
+        </div>
+
+        {/* Info Area */}
+        <div className="search-card-info">
+          {/* Price strip */}
+          <div className="search-card-price-row">
+            <span className="search-card-price">{Math.round(product.price).toLocaleString('ru-RU')} ₽</span>
+            {hasOldPrice && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="search-card-old-price">{Math.round(product.old_price).toLocaleString('ru-RU')} ₽</span>
+                <span className="search-card-discount">-{discountPercent}%</span>
+              </div>
             )}
           </div>
-          <button 
-            type="submit"
-            className="btn btn--primary"
-            style={{
-              width: '42px',
-              height: '42px',
-              padding: '0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'none'
-            }}
-          >
-            🔎
-          </button>
+
+          {/* Product Title */}
+          <div className="search-card-title">{product.title}</div>
+
+          {/* Merchant Brand Info */}
+          <div className="search-card-merchant-row">
+            <span className="search-card-merchant-icon" style={{ background: store.color }}>
+              {store.icon}
+            </span>
+            <span className="search-card-merchant-name">{store.name}</span>
+          </div>
+
+          {/* Delivery tag */}
+          <div className="search-card-delivery">{delivery}</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Distribute real items into columns for masonry layout
+  const col1 = []
+  const col2 = []
+  products.forEach((p, idx) => {
+    if (idx % 2 === 0) {
+      col1.push(renderProductCard(p, idx))
+    } else {
+      col2.push(renderProductCard(p, idx))
+    }
+  })
+
+  // Distribute skeletons for shimmers
+  const skeletonCol1 = [
+    <div key="sk-1" className="search-shimmer-card" style={{ height: '260px' }} />,
+    <div key="sk-2" className="search-shimmer-card" style={{ height: '320px' }} />,
+    <div key="sk-3" className="search-shimmer-card" style={{ height: '280px' }} />
+  ]
+  const skeletonCol2 = [
+    <div key="sk-4" className="search-shimmer-card" style={{ height: '300px' }} />,
+    <div key="sk-5" className="search-shimmer-card" style={{ height: '270px' }} />,
+    <div key="sk-6" className="search-shimmer-card" style={{ height: '310px' }} />
+  ]
+
+  return (
+    <div className="page search-page animate-fade-in" style={{ paddingBottom: '40px' }}>
+      
+      {/* Header bar with Back button and real search input */}
+      <div className="search-header-container">
+        <button 
+          className="search-header-back-btn" 
+          onClick={() => navigate(-1)} 
+          aria-label="Назад"
+        >
+          ‹
+        </button>
+        
+        <form onSubmit={handleSearchSubmit} className="search-header-form">
+          <span className="search-header-icon">🔍</span>
+          <input
+            ref={searchInputRef}
+            type="text"
+            className="search-header-input"
+            placeholder="Поиск подарка..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button
+              type="button"
+              className="search-header-clear-btn"
+              onClick={() => { triggerHaptic(); setQuery(''); searchInputRef.current?.focus(); }}
+            >
+              ✕
+            </button>
+          )}
         </form>
       </div>
 
-      {/* Marketplace Selector Tabs */}
-      <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px 16px', background: 'var(--bg)', flexShrink: 0, borderBottom: '1px solid var(--card-border)' }}>
-        <button
-          onClick={() => setMarketplace('yandex')}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            fontSize: '13px',
-            fontWeight: '700',
-            borderRadius: 'var(--radius-sm)',
-            border: marketplace === 'yandex' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
-            background: marketplace === 'yandex' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
-            color: marketplace === 'yandex' ? 'var(--accent)' : 'var(--text-secondary)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            textAlign: 'center'
-          }}
-        >
-          🇷🇺 Яндекс Маркет
-        </button>
-        <button
-          onClick={() => setMarketplace('ozon')}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            fontSize: '13px',
-            fontWeight: '700',
-            borderRadius: 'var(--radius-sm)',
-            border: marketplace === 'ozon' ? '1px solid var(--accent)' : '1px solid var(--card-border)',
-            background: marketplace === 'ozon' ? 'rgba(108, 92, 231, 0.12)' : 'rgba(255,255,255,0.02)',
-            color: marketplace === 'ozon' ? 'var(--accent)' : 'var(--text-secondary)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            textAlign: 'center'
-          }}
-        >
-          🔵 Ozon
-        </button>
+      {/* Swipeable dynamic filters tag row */}
+      <div className="search-filters-row">
+        {FILTER_TAGS.map(tag => (
+          <button
+            key={tag}
+            className={`search-filter-tag ${activeFilter === tag ? 'active' : ''}`}
+            onClick={() => handleFilterClick(tag)}
+          >
+            {tag}
+          </button>
+        ))}
       </div>
 
-      {/* Main content container */}
-      <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', overflow: 'hidden' }}>
-        {urlQuery ? (
-          <div style={{ position: 'relative', width: '100%', flex: 1, overflow: 'hidden' }}>
-            {iframeLoading && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#0a0a0c', // Matches premium dark mode of the app
-                zIndex: 10
-              }}>
-                <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', marginBottom: '16px' }} />
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                  Подключаемся к {marketplace === 'yandex' ? 'Яндекс Маркету' : 'Ozon'}...
-                </div>
-              </div>
-            )}
-            <iframe
-              src={`/api/market/webview?marketplace=${marketplace}&query=${encodeURIComponent(urlQuery)}`}
-              title="Marketplace Webview"
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                background: 'var(--bg)'
-              }}
-              onLoad={handleIframeLoad}
-            />
+      {/* Content Area */}
+      {loading ? (
+        /* Shimmer Grid layout */
+        <div className="search-products-masonry">
+          <div className="search-masonry-col">
+            {skeletonCol1}
           </div>
-        ) : (
-          /* Empty state / Prompt to search */
-          <div style={{ padding: '0 16px', marginTop: '40px', flex: 1 }}>
-            <div className="empty-state" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '56px', marginBottom: '20px' }}>🎁</div>
-              <div className="empty-state__title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text)' }}>
-                Ищите подарки напрямую
-              </div>
-              <div className="empty-state__desc" style={{ maxWidth: '280px', margin: '10px auto 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                Введите название товара или категорию выше, и мы откроем маркетплейс прямо внутри приложения через безопасное соединение.
-              </div>
-            </div>
+          <div className="search-masonry-col">
+            {skeletonCol2}
           </div>
-        )}
-      </div>
+        </div>
+      ) : products.length === 0 ? (
+        /* Empty State */
+        <div className="search-empty-state-container">
+          <span className="search-empty-icon">🎁</span>
+          <div className="search-empty-title">
+            {urlQuery ? 'Ничего не найдено' : 'Ищите подарки'}
+          </div>
+          <div className="search-empty-desc">
+            {urlQuery 
+              ? 'Попробуйте изменить запрос или поискать другое название товара.' 
+              : 'Введите название товара или категорию подарка выше, чтобы начать мгновенный поиск.'}
+          </div>
+        </div>
+      ) : (
+        /* Staggered Pinterest Masonry Grid results */
+        <div className="search-products-masonry">
+          <div className="search-masonry-col">
+            {col1}
+          </div>
+          <div className="search-masonry-col">
+            {col2}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

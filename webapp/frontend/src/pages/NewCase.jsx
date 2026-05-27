@@ -335,8 +335,7 @@ export default function NewCase() {
               e.preventDefault();
               if (searchInput.trim()) {
                 triggerHaptic();
-                setForm(f => ({ ...f, context: searchInput.trim() }));
-                setStep(1);
+                navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
               }
             }}
             className="detective-search-form"
@@ -367,8 +366,7 @@ export default function NewCase() {
                   onClick={(e) => {
                     e.stopPropagation();
                     triggerHaptic();
-                    setForm(f => ({ ...f, context: searchInput.trim() }));
-                    setStep(1);
+                    navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
                   }}
                 >
                   Найти
