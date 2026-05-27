@@ -7,9 +7,8 @@ import { showAlert } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
 
 const READY_QUERIES = [
-  'Винтажные аксессуары для стильных друзей 🕶️',
-  'Подарок для папы, который обожает теннис 🎾',
-  'Что подарить коллеге на день рождения до 5000 руб 🎂'
+  { text: 'Gift for dad who likes tennis', hasIcon: true },
+  { text: 'Vintage-style accessories for trendy friends', hasIcon: false }
 ]
 
 /* ── Slide-to-confirm component ── */
@@ -355,7 +354,7 @@ export default function NewCase() {
           >
             {isFocused && (
               <div className="detective-search-suggestions">
-                <div className="detective-search-suggestions-label">Поиск идеального подарка</div>
+                <div className="detective-search-suggestions-label-pill">Search for the perfect gift</div>
                 {READY_QUERIES.map((item, idx) => (
                   <div
                     key={idx}
@@ -363,17 +362,18 @@ export default function NewCase() {
                     onMouseDown={(e) => {
                       e.preventDefault();
                       triggerHaptic();
-                      setSearchInput(item);
-                      navigate(`/search?query=${encodeURIComponent(item)}`);
+                      setSearchInput(item.text);
+                      navigate(`/search?query=${encodeURIComponent(item.text)}`);
                     }}
                     onTouchStart={(e) => {
                       e.preventDefault();
                       triggerHaptic();
-                      setSearchInput(item);
-                      navigate(`/search?query=${encodeURIComponent(item)}`);
+                      setSearchInput(item.text);
+                      navigate(`/search?query=${encodeURIComponent(item.text)}`);
                     }}
                   >
-                    {item}
+                    {item.hasIcon && <span className="detective-search-suggestion-icon">🔍</span>}
+                    {item.text}
                   </div>
                 ))}
               </div>
@@ -383,7 +383,7 @@ export default function NewCase() {
               className={`detective-search-wrapper ${isFocused ? 'focused' : ''}`}
               onClick={() => inputRef.current?.focus()}
             >
-              <span className="detective-search-icon">🔍</span>
+              {!isFocused && <span className="detective-search-icon">🔍</span>}
               <input
                 ref={inputRef}
                 type="text"
@@ -392,7 +392,7 @@ export default function NewCase() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 onFocus={() => { triggerHaptic(); setIsFocused(true); }}
                 onBlur={() => setIsFocused(false)}
-                placeholder={isFocused ? 'Напишите детективу, какой подарок хотите найти...' : ''}
+                placeholder={isFocused ? 'Tell Sherlock the gift you want to find...' : ''}
               />
               {!isFocused && !searchInput && (
                 <div className="detective-search-placeholder">

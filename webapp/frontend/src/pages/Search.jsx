@@ -123,6 +123,24 @@ export default function Search() {
     if (text.includes('aliexpress') || text.includes('алиэкспресс')) {
       return { name: 'AliExpress', color: '#ff5c00', icon: '🟠' }
     }
+    if (text.includes('dns-shop.ru') || text.includes(' днс ') || text.includes('днс-шоп')) {
+      return { name: 'DNS', color: '#ff7300', icon: '🟠' }
+    }
+    if (text.includes('citilink.ru') || text.includes('ситилинк')) {
+      return { name: 'Ситилинк', color: '#f58220', icon: '🟠' }
+    }
+    if (text.includes('mvideo.ru') || text.includes('м.видео') || text.includes('мвидео')) {
+      return { name: 'М.Видео', color: '#e30613', icon: '🔴' }
+    }
+    if (text.includes('eldorado.ru') || text.includes('эльдорадо')) {
+      return { name: 'Эльдорадо', color: '#78b82a', icon: '🟢' }
+    }
+    if (text.includes('vseinstrumenti.ru') || text.includes('всеинструменты')) {
+      return { name: 'ВсеИнструменты', color: '#ff5000', icon: '🔴' }
+    }
+    if (text.includes('megamarket.ru') || text.includes('мегамаркет')) {
+      return { name: 'Мегамаркет', color: '#a628eb', icon: '🟣' }
+    }
     return { name: 'Яндекс Маркет', color: '#fc0', icon: '🟡' }
   }
 

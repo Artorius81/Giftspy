@@ -168,10 +168,13 @@ def extract_json_ld_from_html(html: str) -> dict | None:
 
 def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
     """
-    Search Yandex Search API v2 for market product pages.
+    Search Yandex Search API v2 for general product pages (Yandex Products).
     Supports 'page' parameter for infinite scroll pagination.
     """
-    search_query = f"{query} site:market.yandex.ru"
+    if "site:" in query:
+        search_query = query
+    else:
+        search_query = query
     
     url = "https://searchapi.api.cloud.yandex.net/v2/web/search"
     headers = {

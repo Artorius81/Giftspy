@@ -3609,10 +3609,10 @@ html {
   align-items: center;
   width: 100%;
   height: 56px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  padding: 0 16px;
+  padding: 0 20px;
   box-sizing: border-box;
   box-shadow: var(--shadow-sm);
   transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3625,14 +3625,15 @@ html {
 }
 
 .detective-search-wrapper.focused {
-  border-color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 16px rgba(108, 92, 231, 0.15);
+  box-shadow: none;
 }
 
 [data-theme="light"] .detective-search-wrapper.focused {
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 16px rgba(108, 92, 231, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 }
 
 .detective-search-icon {
@@ -3655,13 +3656,14 @@ html {
   font-weight: 600;
   padding: 0;
   outline: none;
+  text-align: center;
 }
 
 .detective-search-placeholder {
   position: absolute;
-  left: 46px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   font-size: 15px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -3670,9 +3672,10 @@ html {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 70px);
+  max-width: calc(100% - 48px);
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .typewriter-cursor {
@@ -6224,37 +6227,54 @@ html {
 }
 
 .detective-search-suggestions {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   animation: slideUpSuggestions 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15) both;
+  z-index: 101;
 }
 
-.detective-search-suggestions-label {
-  font-size: 13px;
-  font-weight: 750;
+.detective-search-suggestions-label-pill {
+  display: inline-flex;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 700;
   color: var(--text-secondary);
-  opacity: 0.7;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-left: 4px;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+[data-theme="light"] .detective-search-suggestions-label-pill {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
 .detective-search-suggestion-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 16px 20px;
-  border-radius: 18px;
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
   color: var(--text);
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
 }
 
 [data-theme="light"] .detective-search-suggestion-card {
@@ -6265,12 +6285,19 @@ html {
 .detective-search-suggestion-card:active {
   transform: scale(0.97);
   background: rgba(255, 255, 255, 0.09);
-  border-color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 [data-theme="light"] .detective-search-suggestion-card:active {
   background: rgba(0, 0, 0, 0.06);
-  border-color: var(--accent);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.detective-search-suggestion-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 @keyframes slideUpSuggestions {
