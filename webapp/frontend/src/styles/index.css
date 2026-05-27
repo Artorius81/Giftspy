@@ -5622,3 +5622,113 @@ html {
   opacity: 0.95;
 }
 
+/* ================= PREMIUM DETECTIVE SELECTOR WIDGET ================= */
+.persona-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.persona-select-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  cursor: pointer;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: cardCascadeEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-theme="light"] .persona-select-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.persona-select-card:active {
+  transform: scale(0.975) !important;
+  filter: brightness(0.9) !important;
+}
+
+.persona-select-card.selected {
+  border-color: var(--accent);
+  background: linear-gradient(145deg, rgba(108, 92, 231, 0.08) 0%, rgba(167, 139, 250, 0.04) 100%);
+  box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
+}
+
+[data-theme="light"] .persona-select-card.selected {
+  background: linear-gradient(145deg, rgba(108, 92, 231, 0.05) 0%, rgba(167, 139, 250, 0.02) 100%);
+}
+
+.persona-photo-wrapper {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--card-border);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.persona-select-card.selected .persona-photo-wrapper {
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.persona-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.persona-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.persona-card-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.persona-card-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.persona-card-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  animation: popCheck 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes popCheck {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+

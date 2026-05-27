@@ -152,14 +152,7 @@ export default function NewCase() {
   const personas = personasData || []
   const cases = casesData || []
   
-  const [personaIdx, setPersonaIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
-
-  // Touch tracking for carousel
-  const touchStartX = useRef(0)
-  const touchEndX = useRef(0)
-  const carouselRef = useRef(null)
-  const isAnimating = useRef(false)
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
@@ -180,10 +173,15 @@ export default function NewCase() {
       }
     }
   }, [targetsData, searchParams])
-
   useEffect(() => {
     if (searchParams.get('target')) setStep(2) // go directly to holiday step (step 2)
   }, [searchParams])
+
+  const triggerHaptic = () => {
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light')
+    } catch {}
+  }
 
   const currentStepKey = step > 0 ? STEPS[step - 1] : null
 
@@ -230,30 +228,7 @@ export default function NewCase() {
     setSubmitting(false)
   }
 
-  // Carousel navigation with animation
-  const goToPersona = useCallback((newIdx) => {
-    if (isAnimating.current || newIdx < 0 || newIdx >= personas.length || newIdx === personaIdx) return
-    isAnimating.current = true
-    setPersonaIdx(newIdx)
-    setTimeout(() => { isAnimating.current = false }, 350)
-  }, [personaIdx, personas.length])
 
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  const handleTouchEnd = (e) => {
-    touchEndX.current = e.changedTouches[0].clientX
-    const diff = touchStartX.current - touchEndX.current
-    const threshold = 50
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0 && personaIdx < personas.length - 1) {
-        goToPersona(personaIdx + 1)
-      } else if (diff < 0 && personaIdx > 0) {
-        goToPersona(personaIdx - 1)
-      }
-    }
-  }
 
   return (
     <div className="page" style={{ paddingBottom: '120px' }}>
@@ -553,42 +528,38 @@ export default function NewCase() {
       {/* Step 4: Persona */}
       {currentStepKey === 'persona' && personas.length > 0 && (
         <div className="wizard-step">
-          <div className="wizard-step__title">🕵️‍♂️ Выберите детектива</div>
-          <div
-            className="persona-touch-carousel"
-            ref={carouselRef}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              className="persona-track"
-              style={{
-                transform: `translateX(-${personaIdx * 100}%)`,
-                transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            >
-              {personas.map((p, idx) => (
-                <div key={idx} className="persona-slide">
-                  <img src={p.photo} alt={p.name} className="persona-carousel__img" />
-                  <div className="persona-carousel__name">{p.name}</div>
-                  <div className="persona-carousel__desc">{p.desc}</div>
-                  <button
-                    className="btn btn--primary"
-                    onClick={() => { setForm({ ...form, persona: p.name }); setStep(5) }}
-                  >
-                    ✅ Выбрать
-                  </button>
+          <div className="wizard-step__title" style={{ marginBottom: '8px' }}>🕵️‍♂️ Выберите детектива</div>
+          <div className="wizard-step__desc" style={{ marginBottom: '24px' }}>Каждый детектив имеет свой уникальный метод расследования</div>
+          
+          <div className="persona-cards-container">
+            {personas.map((p, idx) => (
+              <div 
+                key={idx} 
+                className={`persona-select-card ${form.persona === p.name ? 'selected' : ''}`}
+                onClick={() => {
+                  triggerHaptic();
+                  setForm({ ...form, persona: p.name });
+                  setTimeout(() => {
+                    setStep(5);
+                  }, 180);
+                }}
+              >
+                {/* Left side: circular detective photo */}
+                <div className="persona-photo-wrapper">
+                  <img src={p.photo} alt={p.name} className="persona-card-img" />
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="persona-swipe-dots">
-            {personas.map((_, idx) => (
-              <div
-                key={idx}
-                className={`swipe-dot ${idx === personaIdx ? 'active' : ''}`}
-                onClick={() => goToPersona(idx)}
-              />
+                
+                {/* Right side: details */}
+                <div className="persona-card-details">
+                  <span className="persona-card-name">{p.name}</span>
+                  <span className="persona-card-desc">{p.desc}</span>
+                </div>
+                
+                {/* Checkmark overlay for selected item */}
+                {form.persona === p.name && (
+                  <div className="persona-card-check">✓</div>
+                )}
+              </div>
             ))}
           </div>
         </div>
