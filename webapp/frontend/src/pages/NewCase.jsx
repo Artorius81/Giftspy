@@ -329,6 +329,13 @@ export default function NewCase() {
       {/* Step 0: Dashboard (Photo 1) */}
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {isFocused && (
+            <div 
+              className="detective-search-focus-backdrop"
+              onClick={() => inputRef.current?.blur()}
+            />
+          )}
+
           {/* Search bar input container */}
           <form 
             onSubmit={(e) => {
@@ -338,8 +345,34 @@ export default function NewCase() {
                 navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
               }
             }}
-            className="detective-search-form"
+            className={`detective-search-form ${isFocused ? 'focused-active' : ''}`}
           >
+            {isFocused && (
+              <div className="detective-search-suggestions">
+                <div className="detective-search-suggestions-label">Поиск идеального подарка</div>
+                {READY_QUERIES.map((item, idx) => (
+                  <div 
+                    key={idx} 
+                    className="detective-search-suggestion-card"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      triggerHaptic();
+                      setSearchInput(item);
+                      navigate(`/search?query=${encodeURIComponent(item)}`);
+                    }}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      triggerHaptic();
+                      setSearchInput(item);
+                      navigate(`/search?query=${encodeURIComponent(item)}`);
+                    }}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div 
               className={`detective-search-wrapper ${isFocused ? 'focused' : ''}`}
               onClick={() => inputRef.current?.focus()}
@@ -353,6 +386,7 @@ export default function NewCase() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 onFocus={() => { triggerHaptic(); setIsFocused(true); }}
                 onBlur={() => setIsFocused(false)}
+                placeholder={isFocused ? 'Напишите Шерлоку, какой подарок хотите найти...' : ''}
               />
               {!isFocused && !searchInput && (
                 <div className="detective-search-placeholder">
@@ -363,8 +397,13 @@ export default function NewCase() {
                 <button 
                   type="button" 
                   className="detective-search-go-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    triggerHaptic();
+                    navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
+                  }}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
                     triggerHaptic();
                     navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
                   }}
