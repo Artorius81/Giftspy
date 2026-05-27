@@ -25,9 +25,16 @@ def get_proxies() -> dict | None:
         }
     return None
 
+PROXY_IS_WORKING = True
+
 def make_request(method: str, url: str, **kwargs) -> requests.Response:
     """Make requests call with configured proxy, and automatically fallback to direct connection if it fails."""
+    global PROXY_IS_WORKING
+    
     proxies = kwargs.pop("proxies", get_proxies())
+    if not PROXY_IS_WORKING:
+        proxies = None
+        
     try:
         if method.lower() == "post":
             return requests.post(url, proxies=proxies, **kwargs)
@@ -35,7 +42,8 @@ def make_request(method: str, url: str, **kwargs) -> requests.Response:
             return requests.get(url, proxies=proxies, **kwargs)
     except Exception as e:
         if proxies:
-            logger.warning(f"Request failed with proxy, retrying direct connection for {url}: {e}")
+            logger.warning(f"Request failed with proxy, retrying direct connection and disabling proxy for future calls for {url}: {e}")
+            PROXY_IS_WORKING = False
             if method.lower() == "post":
                 return requests.post(url, proxies=None, **kwargs)
             else:
@@ -89,38 +97,8 @@ def parse_price_from_text(text: str) -> float | None:
     return None
 
 def get_fallback_image(title: str) -> str:
-    """Return a beautiful, high-quality themed product image based on the title keywords."""
-    title_lower = title.lower()
-    
-    mappings = [
-        (["кофемолка", "кофеварка", "кофемашина", "кофе", "coffee"], "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=300&auto=format&fit=crop"),
-        (["телефон", "смартфон", "phone", "iphone", "samsung"], "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=300&auto=format&fit=crop"),
-        (["часы", "watch", "apple watch"], "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=300&auto=format&fit=crop"),
-        (["духи", "парфюм", "perfume", "туалетная вода"], "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=300&auto=format&fit=crop"),
-        (["наушники", "headphones", "airpods"], "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=300&auto=format&fit=crop"),
-        (["книга", "книги", "book", "books"], "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=300&auto=format&fit=crop"),
-        (["сумка", "рюкзак", "bag", "backpack", "портфель"], "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=300&auto=format&fit=crop"),
-        (["чай", "tea"], "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=300&auto=format&fit=crop"),
-        (["шоколад", "конфеты", "сладости", "chocolate", "candy"], "https://images.unsplash.com/photo-1548907040-4d42b52125e0?q=80&w=300&auto=format&fit=crop"),
-        (["цветы", "букет", "flowers", "bouquet"], "https://images.unsplash.com/photo-1561181286-d3fee7d55364?q=80&w=300&auto=format&fit=crop"),
-        (["игрушка", "мишка", "плюшевый", "toy", "teddy"], "https://images.unsplash.com/photo-1559251606-c623743a6d76?q=80&w=300&auto=format&fit=crop"),
-        (["косметика", "крем", "сыворотка", "маска", "cosmetics", "skincare"], "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=300&auto=format&fit=crop"),
-        (["клавиатура", "мышь", "keyboard", "mouse"], "https://images.unsplash.com/photo-1587829741301-dc798b83add3?q=80&w=300&auto=format&fit=crop"),
-        (["кружка", "чашка", "бокал", "cup", "mug"], "https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?q=80&w=300&auto=format&fit=crop"),
-        (["кольцо", "браслет", "серьги", "украшение", "серебро", "золото", "jewelry"], "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=300&auto=format&fit=crop"),
-        (["одежда", "футболка", "худи", "носки", "clothing", "t-shirt"], "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=300&auto=format&fit=crop"),
-        (["вино", "шампанское", "бокал", "wine", "alcohol"], "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=300&auto=format&fit=crop"),
-        (["свеча", "свечи", "candle"], "https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=300&auto=format&fit=crop"),
-        (["джойстик", "геймпад", "игра", "gamepad", "playstation", "xbox", "gaming"], "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=300&auto=format&fit=crop"),
-        (["инструмент", "набор инструментов", "отвертка", "drill", "tools"], "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=300&auto=format&fit=crop"),
-        (["спорт", "фитнес", "гантели", "коврик", "sport", "fitness"], "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=300&auto=format&fit=crop")
-    ]
-    
-    for keywords, img_url in mappings:
-        if any(kw in title_lower for kw in keywords):
-            return img_url
-            
-    # Default high-quality gift package image
+    """Return a generic fallback gift image when no real product image is parsed."""
+    # Removed all Unsplash theme category mappings as requested
     return "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=300&auto=format&fit=crop"
 
 def extract_json_ld_from_html(html: str) -> dict | None:
@@ -168,13 +146,10 @@ def extract_json_ld_from_html(html: str) -> dict | None:
 
 def fetch_yandex_search_results(query: str, page: int = 0) -> list[dict]:
     """
-    Search Yandex Search API v2 for general product pages (Yandex Products).
+    Search Yandex Search API v2 for market product pages.
     Supports 'page' parameter for infinite scroll pagination.
     """
-    if "site:" in query:
-        search_query = query
-    else:
-        search_query = query
+    search_query = f"{query} site:market.yandex.ru"
     
     url = "https://searchapi.api.cloud.yandex.net/v2/web/search"
     headers = {
