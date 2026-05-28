@@ -6320,11 +6320,11 @@ html {
 .persona-carousel-track-wrapper {
   position: relative;
   width: 100%;
-  max-width: 480px;
-  height: 380px;
+  max-width: 100%;
+  height: 280px;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
 }
 
@@ -6333,17 +6333,17 @@ html {
   left: 50%;
   display: flex;
   align-items: center;
-  transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
 .persona-carousel-slide {
-  flex: 0 0 250px;
-  margin: 0 16px;
-  transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
-  opacity: 0.35;
-  transform: scale(0.88);
-  filter: blur(1.5px) grayscale(35%);
+  flex: 0 0 180px;
+  margin: 0 12px;
+  transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.5;
+  transform: scale(0.85);
+  filter: blur(0.8px) grayscale(15%);
   cursor: pointer;
   pointer-events: auto;
 }
@@ -6351,7 +6351,7 @@ html {
 /* Active centered slide */
 .persona-carousel-slide.active {
   opacity: 1;
-  transform: scale(1.05);
+  transform: scale(1.08);
   filter: none;
   cursor: default;
 }
@@ -6360,14 +6360,14 @@ html {
 .persona-carousel-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 24px;
-  width: 250px;
-  height: 340px;
+  border-radius: 28px;
+  width: 180px;
+  height: 240px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
   position: relative;
   box-sizing: border-box;
-  transition: all 0.4s ease;
+  transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -6382,7 +6382,7 @@ html {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.65s ease;
 }
 
 .persona-carousel-slide.active .persona-carousel-photo {

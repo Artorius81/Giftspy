@@ -196,13 +196,12 @@ export default function NewCase() {
   const handleSwipe = () => {
     if (personas.length === 0) return
     const diff = touchStartX.current - touchEndX.current
-    if (diff > 50) {
-      triggerHaptic()
+    const threshold = 60
+    if (diff > threshold) {
       const newIdx = (activePersonaIdx + 1) % personas.length
       setActivePersonaIdx(newIdx)
       setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
-    } else if (diff < -50) {
-      triggerHaptic()
+    } else if (diff < -threshold) {
       const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
       setActivePersonaIdx(newIdx)
       setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
@@ -212,20 +211,6 @@ export default function NewCase() {
   const renderCarousel = () => (
     <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
       <div className="persona-carousel-container">
-        <button
-          type="button"
-          className="carousel-btn prev"
-          onClick={() => {
-            triggerHaptic();
-            const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length;
-            setActivePersonaIdx(newIdx);
-            setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
-          }}
-          aria-label="Предыдущий детектив"
-        >
-          ‹
-        </button>
-
         <div 
           className="persona-carousel-track-wrapper"
           onTouchStart={handleTouchStart} 
@@ -234,7 +219,7 @@ export default function NewCase() {
           <div
             className="persona-carousel-track"
             style={{
-              transform: `translateX(calc(-141px - (${activePersonaIdx} * 282px)))`
+              transform: `translateX(calc(-102px - (${activePersonaIdx} * 204px)))`
             }}
           >
             {personas.map((p, idx) => {
@@ -244,7 +229,6 @@ export default function NewCase() {
                   key={idx}
                   className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
                   onClick={() => {
-                    triggerHaptic();
                     setActivePersonaIdx(idx);
                     setForm(prev => ({ ...prev, persona: p.name }));
                   }}
@@ -258,27 +242,12 @@ export default function NewCase() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="carousel-btn next"
-          onClick={() => {
-            triggerHaptic();
-            const newIdx = (activePersonaIdx + 1) % personas.length;
-            setActivePersonaIdx(newIdx);
-            setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
-          }}
-          aria-label="Следующий детектив"
-        >
-          ›
-        </button>
-
         <div className="carousel-dots">
           {personas.map((_, idx) => (
             <div
               key={idx}
               className={`carousel-dot ${idx === activePersonaIdx ? 'active' : ''}`}
               onClick={() => {
-                triggerHaptic();
                 setActivePersonaIdx(idx);
                 setForm(prev => ({ ...prev, persona: personas[idx].name }));
               }}
@@ -292,15 +261,6 @@ export default function NewCase() {
           <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.5px' }}>
             {personas[activePersonaIdx].name}
           </h2>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
-            <span style={{ fontWeight: '800', color: '#f59e0b' }}>⭐ 5.0</span>
-            <span>•</span>
-            <span style={{ display: 'flex', gap: '4px' }}>
-              {personas[activePersonaIdx].emojis ? personas[activePersonaIdx].emojis.split(',').slice(0, 4).map((emoji, i) => (
-                <span key={i} style={{ fontSize: '14px' }}>{emoji.trim()}</span>
-              )) : '🕵️‍♂️ 🔍 📝'}
-            </span>
-          </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
             {personas[activePersonaIdx].desc}
           </p>
