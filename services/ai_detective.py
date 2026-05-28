@@ -59,7 +59,7 @@ class AIDetectiveService:
             api_key=config.OPENROUTER_API_KEY,
             http_options={"api_version": "v1beta", "base_url": "https://api.proxyapi.ru/google/"},
         )
-        self.model = "gemini-3.1-flash-lite-preview"
+        self.model = "gemini-3.5-flash"
         
     async def create_new_chat(self, holiday, context, persona, budget):
          personas = await db.get_personas()
