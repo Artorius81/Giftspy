@@ -156,7 +156,6 @@ export default function NewCase() {
 
   const [submitting, setSubmitting] = useState(false)
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
-  const [dragOffset, setDragOffset] = useState(0)
   const [isDraggingTrack, setIsDraggingTrack] = useState(false)
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
@@ -183,67 +182,114 @@ export default function NewCase() {
     }
   }, [personas, form.persona])
 
+  // Preload all detective images inside the browser cache for instant rendering
+  useEffect(() => {
+    if (personas.length > 0) {
+      personas.forEach(p => {
+        if (p.photo) {
+          const img = new Image()
+          img.src = p.photo
+        }
+      })
+    }
+  }, [personas])
+
   const touchStartX = useRef(0)
+  const dragOffsetRef = useRef(0)
+  const trackRef = useRef(null)
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
+    dragOffsetRef.current = 0
     setIsDraggingTrack(true)
+    if (trackRef.current) {
+      trackRef.current.style.transition = 'none'
+    }
   }
 
   const handleTouchMove = (e) => {
-    if (!isDraggingTrack) return
+    if (!isDraggingTrack || !touchStartX.current) return
     const currentX = e.touches[0].clientX
     const diff = currentX - touchStartX.current
-    setDragOffset(diff)
+    dragOffsetRef.current = diff
+    
+    // Smooth 120fps hardware-accelerated direct DOM updates
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(calc(-78px - (${activePersonaIdx} * 156px) + ${diff}px))`
+    }
   }
 
   const handleTouchEnd = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
     
-    const threshold = 60
+    const threshold = 50
+    const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     
-    if (dragOffset > threshold) {
+    if (offset > threshold) {
       // Swipe right -> go to previous
       newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
-    } else if (dragOffset < -threshold) {
+    } else if (offset < -threshold) {
       // Swipe left -> go to next
       newIdx = (activePersonaIdx + 1) % personas.length
     }
     
     setActivePersonaIdx(newIdx)
     setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
-    setDragOffset(0)
+    
+    // Apply smooth snapping directly to DOM
+    if (trackRef.current) {
+      trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
+      trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
+    }
+    
+    dragOffsetRef.current = 0
+    touchStartX.current = 0
   }
 
   const handleMouseDown = (e) => {
     touchStartX.current = e.clientX
+    dragOffsetRef.current = 0
     setIsDraggingTrack(true)
+    if (trackRef.current) {
+      trackRef.current.style.transition = 'none'
+    }
   }
 
   const handleMouseMove = (e) => {
-    if (!isDraggingTrack) return
+    if (!isDraggingTrack || !touchStartX.current) return
     const diff = e.clientX - touchStartX.current
-    setDragOffset(diff)
+    dragOffsetRef.current = diff
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(calc(-78px - (${activePersonaIdx} * 156px) + ${diff}px))`
+    }
   }
 
   const handleMouseUpOrLeave = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
     
-    const threshold = 60
+    const threshold = 50
+    const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     
-    if (dragOffset > threshold) {
+    if (offset > threshold) {
       newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
-    } else if (dragOffset < -threshold) {
+    } else if (offset < -threshold) {
       newIdx = (activePersonaIdx + 1) % personas.length
     }
     
     setActivePersonaIdx(newIdx)
     setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
-    setDragOffset(0)
+    
+    if (trackRef.current) {
+      trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
+      trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
+    }
+    
+    dragOffsetRef.current = 0
+    touchStartX.current = 0
   }
 
   const renderCarousel = () => (
@@ -261,9 +307,10 @@ export default function NewCase() {
           style={{ cursor: isDraggingTrack ? 'grabbing' : 'grab' }}
         >
           <div
+            ref={trackRef}
             className="persona-carousel-track"
             style={{
-              transform: `translateX(calc(-102px - (${activePersonaIdx} * 204px) + ${dragOffset}px))`,
+              transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
               transition: isDraggingTrack ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
@@ -279,7 +326,7 @@ export default function NewCase() {
                   }}
                 >
                   <div className="persona-carousel-card">
-                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" />
+                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" />
                   </div>
                 </div>
               );

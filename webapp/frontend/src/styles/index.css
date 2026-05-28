@@ -6321,7 +6321,7 @@ html {
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 280px;
+  height: 220px;
   display: flex;
   align-items: center;
   overflow: visible;
@@ -6338,14 +6338,15 @@ html {
 }
 
 .persona-carousel-slide {
-  flex: 0 0 180px;
-  margin: 0 12px;
+  flex: 0 0 140px;
+  margin: 0 8px;
   transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0.5;
   transform: scale(0.85);
   filter: blur(0.8px) grayscale(15%);
   cursor: pointer;
   pointer-events: auto;
+  will-change: transform, opacity;
 }
 
 /* Active centered slide */
@@ -6360,9 +6361,9 @@ html {
 .persona-carousel-card {
   background: transparent;
   border: none;
-  border-radius: 28px;
-  width: 180px;
-  height: 240px;
+  border-radius: 20px;
+  width: 140px;
+  height: 185px;
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
@@ -6370,6 +6371,9 @@ html {
   padding: 0;
   display: flex;
   flex-direction: column;
+  transform: translateZ(0); /* Hardware accelerated WebKit clip fix */
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Safari WebKit clip fix */
+  will-change: transform;
 }
 
 .persona-carousel-slide.active .persona-carousel-card {
