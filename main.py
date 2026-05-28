@@ -394,7 +394,7 @@ async def main():
     asyncio.create_task(background_tasks_worker(bot, client))
     asyncio.create_task(start_webapp_server())
 
-    await client.start(phone=config.USER_PHONE)
+    await client.start(phone=config.USER_PHONE)  # type: ignore
     logging.info("🕵️‍♂️ Агент на связи!")
 
     import sys
@@ -402,6 +402,7 @@ async def main():
 
     try:
         logging.info("🤖 Бот-Менеджер запущен!")
+        await bot.delete_webhook(drop_pending_updates=True)
         await dp.start_polling(bot)
     finally:
         await client.disconnect()
