@@ -6,10 +6,7 @@ import { useData } from '../hooks/useData'
 import { showAlert } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
 
-const READY_QUERIES = [
-  { text: 'Gift for dad who likes tennis', hasIcon: true },
-  { text: 'Vintage-style accessories for trendy friends', hasIcon: false }
-]
+
 
 /* ── Slide-to-confirm component ── */
 function SlideToConfirm({ onConfirm, submitting }) {
@@ -159,57 +156,7 @@ export default function NewCase() {
 
   const [submitting, setSubmitting] = useState(false)
 
-  // Typewriter hints for beautiful search bar behavior
-  const HINTS = [
-    'Подарки на новоселье до 5000 руб...',
-    'Что подарить коллеге на день рождения...',
-    'Беспроводные наушники для бега...',
-    'Стильный кожаный ремень...',
-    'Подарок маме на годовщину...',
-    'Сюрприз подруге на 25 лет...'
-  ]
 
-  const [hintIdx, setHintIdx] = useState(0)
-  const [placeholderText, setPlaceholderText] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [typingSpeed, setTypingSpeed] = useState(100)
-  const [searchInput, setSearchInput] = useState('')
-  const [isFocused, setIsFocused] = useState(false)
-  const inputRef = useRef(null)
-
-  useEffect(() => {
-    if (step !== 0) return
-
-    let timer
-    const currentFullText = HINTS[hintIdx]
-
-    const handleType = () => {
-      if (!isDeleting) {
-        setPlaceholderText(currentFullText.substring(0, placeholderText.length + 1))
-        setTypingSpeed(100)
-
-        if (placeholderText === currentFullText) {
-          timer = setTimeout(() => setIsDeleting(true), 2500)
-          return
-        }
-      } else {
-        setPlaceholderText(currentFullText.substring(0, placeholderText.length - 1))
-        setTypingSpeed(50)
-
-        if (placeholderText === '') {
-          setIsDeleting(false)
-          setHintIdx((prev) => (prev + 1) % HINTS.length)
-          timer = setTimeout(() => { }, 500)
-          return
-        }
-      }
-
-      timer = setTimeout(handleType, typingSpeed)
-    }
-
-    timer = setTimeout(handleType, typingSpeed)
-    return () => clearTimeout(timer)
-  }, [placeholderText, isDeleting, hintIdx, step])
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
@@ -334,91 +281,6 @@ export default function NewCase() {
       {/* Step 0: Dashboard (Photo 1) */}
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {isFocused && (
-            <div
-              className="detective-search-focus-backdrop"
-              onClick={() => inputRef.current?.blur()}
-            />
-          )}
-
-          {/* Search bar input container */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (searchInput.trim()) {
-                triggerHaptic();
-                navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
-              }
-            }}
-            className={`detective-search-form ${isFocused ? 'focused-active' : ''}`}
-          >
-            {isFocused && (
-              <div className="detective-search-suggestions">
-                <div className="detective-search-suggestions-label-pill">Search for the perfect gift</div>
-                {READY_QUERIES.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="detective-search-suggestion-card"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      triggerHaptic();
-                      setSearchInput(item.text);
-                      navigate(`/search?query=${encodeURIComponent(item.text)}`);
-                    }}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      triggerHaptic();
-                      setSearchInput(item.text);
-                      navigate(`/search?query=${encodeURIComponent(item.text)}`);
-                    }}
-                  >
-                    {item.hasIcon && <span className="detective-search-suggestion-icon">🔍</span>}
-                    {item.text}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div
-              className={`detective-search-wrapper ${isFocused ? 'focused' : ''}`}
-              onClick={() => inputRef.current?.focus()}
-            >
-              {!isFocused && <span className="detective-search-icon">🔍</span>}
-              <input
-                ref={inputRef}
-                type="text"
-                className="detective-search-input"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onFocus={() => { triggerHaptic(); setIsFocused(true); }}
-                onBlur={() => setIsFocused(false)}
-                placeholder={isFocused ? 'Tell Sherlock the gift you want to find...' : ''}
-              />
-              {!isFocused && !searchInput && (
-                <div className="detective-search-placeholder">
-                  {placeholderText}<span className="typewriter-cursor">|</span>
-                </div>
-              )}
-              {searchInput.trim() && (
-                <button
-                  type="button"
-                  className="detective-search-go-btn"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    triggerHaptic();
-                    navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
-                  }}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    triggerHaptic();
-                    navigate(`/search?query=${encodeURIComponent(searchInput.trim())}`);
-                  }}
-                >
-                  Найти
-                </button>
-              )}
-            </div>
-          </form>
 
           {/* Sherlock Promo Card */}
           <div className="detective-promo-card">

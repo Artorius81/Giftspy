@@ -15,8 +15,6 @@ from pydantic import BaseModel
 
 from database import db
 from webapp.auth import get_user_id_from_init_data
-from webapp.services.yandex_market import get_yandex_market_suggestions
-from webapp.services.webview import fetch_and_process_market_page
 
 app = FastAPI(title="Giftspy Mini App API")
 
@@ -697,57 +695,6 @@ async def yookassa_webhook(request: Request):
         logging.error(f"Failed to notify user {user_id}: {e}")
 
     return {"ok": True}
-
-
-# ================= YANDEX MARKET SEARCH =================
-
-@app.get("/api/market/search")
-async def search_yandex_market_endpoint(query: str, page: int = 0, user_id: int = Depends(get_current_user)):
-    """Search Yandex Market for products by name."""
-    if not query or len(query.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Search query is too short")
-    try:
-        # Run synchronous suggestions fetch in a thread pool to avoid blocking the async event loop
-        loop = asyncio.get_event_loop()
-        suggestions = await loop.run_in_executor(None, get_yandex_market_suggestions, query, page)
-        return suggestions
-    except Exception as e:
-        logging.error(f"Error in search_yandex_market_endpoint: {e}")
-        raise HTTPException(status_code=500, detail="Search failed")
-
-
-@app.get("/api/market/webview", response_class=HTMLResponse)
-async def market_webview_endpoint(
-    request: Request,
-    response: Response,
-    query: Optional[str] = None,
-    url: Optional[str] = None,
-    marketplace: str = "yandex"
-):
-    """
-    Returns proxied Yandex Market or Ozon mobile search results or product page HTML.
-    Does not require Telegram authentication since it is rendered inside an iframe,
-    but can accept query / url / marketplace as input.
-    """
-    param = url if url else query
-    if not param:
-        raise HTTPException(status_code=400, detail="Must provide 'query' or 'url' parameter")
-    try:
-        # Run sync function in thread pool with cookie forwarding
-        loop = asyncio.get_event_loop()
-        html_content, resp_cookies = await loop.run_in_executor(
-            None, fetch_and_process_market_page, param, marketplace, dict(request.cookies)
-        )
-        
-        # Forward returned cookies back to client browser
-        for name, value in resp_cookies.items():
-            response.set_cookie(key=name, value=value, path="/")
-            
-        return HTMLResponse(content=html_content)
-    except Exception as e:
-        logging.error(f"Error in market_webview_endpoint: {e}")
-        raise HTTPException(status_code=500, detail="Webview proxy failed")
-
 
 
 # ================= STARTUP =================

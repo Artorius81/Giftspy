@@ -11,7 +11,6 @@ import CaseDetail from './pages/CaseDetail'
 import Store from './pages/Store'
 import Settings from './pages/Settings'
 import ProfileEdit from './pages/ProfileEdit'
-import Search from './pages/Search'
 import PopupProvider from './components/PopupProvider'
 import './styles/snackbar.css'
 
@@ -89,7 +88,6 @@ function AppContent() {
         <Route path="/store" element={<Store />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile/edit" element={<ProfileEdit />} />
-        <Route path="/search" element={<Search />} />
       </Routes>
       {showNav && <BottomNav />}
       <PopupProvider />
