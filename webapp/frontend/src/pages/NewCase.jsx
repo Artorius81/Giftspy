@@ -85,7 +85,7 @@ function SlideToConfirm({ onConfirm, submitting }) {
 
       {/* label */}
       <span className="slide-confirm__label" style={{ opacity: 1 - progress * 1.8 }}>
-        {submitting ? '⏳ Отправка...' : '🚀 Начать расследование'}
+        {submitting ? '⏳ Отправка...' : 'Начать расследование'}
       </span>
 
       {/* confirmed label */}
@@ -363,15 +363,11 @@ export default function NewCase() {
       )}
 
       <div style={{ 
-        position: 'fixed', 
-        bottom: '86px', 
-        left: '50%', 
-        transform: 'translateX(-50%)', 
-        width: 'calc(100% - 32px)', 
+        width: '100%', 
         maxWidth: '320px', 
-        zIndex: 90,
         background: 'transparent',
-        padding: '8px 0'
+        padding: '8px 0',
+        marginTop: '8px'
       }}>
         <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
       </div>
