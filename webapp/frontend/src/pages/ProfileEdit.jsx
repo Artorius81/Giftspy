@@ -292,16 +292,16 @@ export default function ProfileEdit() {
         {/* Карточка Баланса */}
         <div
           className="profile-order-card"
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, padding: '14px 18px' }}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, padding: '14px 18px', gap: 12 }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 22 }}>🔍</span>
-            <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>🔍</span>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Баланс</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Используется для отправки Детектива</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'normal', wordBreak: 'break-word' }}>Используется для отправки Детектива</div>
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--accent)' }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--accent)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {profile.is_premium ? 'Безлимит 👑' : `${profile.balance || 0} шт.`}
           </div>
         </div>
