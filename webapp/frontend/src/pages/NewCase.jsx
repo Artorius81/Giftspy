@@ -155,6 +155,20 @@ export default function NewCase() {
   const cases = casesData || []
 
   const [submitting, setSubmitting] = useState(false)
+  const [activePersonaIdx, setActivePersonaIdx] = useState(0)
+
+  // Sync activePersonaIdx with selected persona in form
+  useEffect(() => {
+    if (personas.length > 0) {
+      const idx = personas.findIndex(p => p.name === form.persona)
+      if (idx !== -1) {
+        setActivePersonaIdx(idx)
+      } else {
+        setActivePersonaIdx(0)
+        setForm(prev => ({ ...prev, persona: personas[0].name }))
+      }
+    }
+  }, [personas, form.persona])
 
 
 
@@ -238,7 +252,16 @@ export default function NewCase() {
     <div className="page" style={{ paddingBottom: '120px' }}>
       {/* Sleek Custom Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
-        {step > 0 ? (
+        {step === 0 ? (
+          <button
+            className="wishlist-header-btn"
+            onClick={() => { triggerHaptic(); setStep(1); }}
+            style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700' }}
+            aria-label="Новое расследование"
+          >
+            ＋
+          </button>
+        ) : step > 0 ? (
           <button
             className="wishlist-header-btn"
             onClick={() => setStep(step - 1)}
@@ -282,29 +305,54 @@ export default function NewCase() {
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-          {/* Sherlock Promo Card */}
-          <div className="detective-promo-card">
-            <div className="detective-promo-title-row">
-              <span style={{ fontSize: '22px' }}>🔒</span>
-              <span className="detective-promo-title">Не хотите спрашивать напрямую?</span>
+          {/* Sherlock Promo Card - Conditional Render */}
+          {cases.length === 0 && (
+            <div className="detective-promo-card">
+              <div className="detective-promo-title-row">
+                <span style={{ fontSize: '22px' }}>🔒</span>
+                <span className="detective-promo-title">Не хотите спрашивать напрямую?</span>
+              </div>
+              <div className="detective-promo-desc">
+                Пусть Детектив пообщается с кем-то за вас и выяснит, что они хотят получить в подарок.
+              </div>
+              <div className="detective-promo-actions">
+                <button className="btn-send-detective" onClick={() => setStep(1)}>
+                  Отправить Детектива
+                </button>
+                <button className="btn-refresh-history" onClick={handleRefresh} aria-label="Обновить">
+                  ↻
+                </button>
+              </div>
             </div>
-            <div className="detective-promo-desc">
-              Пусть Детектив пообщается с кем-то за вас и выяснит, что они хотят получить в подарок.
-            </div>
-            <div className="detective-promo-actions">
-              <button className="btn-send-detective" onClick={() => setStep(1)}>
-                Отправить Детектива
-              </button>
-              <button className="btn-refresh-history" onClick={handleRefresh} aria-label="Обновить">
-                ↻
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* History Header Section */}
-          <div className="history-section-header">
-            <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>☰</span>
-            <span className="history-section-title">История поисков</span>
+          <div className="history-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>☰</span>
+              <span className="history-section-title">История поисков</span>
+            </div>
+            <button
+              className="btn-refresh-history"
+              onClick={handleRefresh}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: 'var(--text)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                transition: 'var(--transition)'
+              }}
+              aria-label="Обновить"
+            >
+              ↻
+            </button>
           </div>
 
           {/* History List */}
@@ -526,41 +574,96 @@ export default function NewCase() {
 
       {/* Step 4: Persona */}
       {currentStepKey === 'persona' && personas.length > 0 && (
-        <div className="wizard-step">
-          <div className="wizard-step__title" style={{ marginBottom: '8px' }}>🕵️‍♂️ Выберите детектива</div>
-          <div className="wizard-step__desc" style={{ marginBottom: '24px' }}>Каждый детектив имеет свой уникальный метод расследования</div>
+        <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="wizard-step__title" style={{ marginBottom: '8px', textAlign: 'center' }}>🕵️‍♂️ Выберите детектива</div>
+          <div className="wizard-step__desc" style={{ marginBottom: '16px', textAlign: 'center' }}>Каждый детектив имеет свой уникальный метод расследования</div>
 
-          <div className="persona-cards-container">
-            {personas.map((p, idx) => (
+          <div className="persona-carousel-container">
+            {/* Navigation arrows */}
+            <button
+              type="button"
+              className="carousel-btn prev"
+              onClick={() => {
+                triggerHaptic();
+                const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length;
+                setActivePersonaIdx(newIdx);
+                setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
+              }}
+              aria-label="Предыдущий детектив"
+            >
+              ‹
+            </button>
+
+            <div className="persona-carousel-track-wrapper">
               <div
-                key={idx}
-                className={`persona-select-card ${form.persona === p.name ? 'selected' : ''}`}
-                onClick={() => {
-                  triggerHaptic();
-                  setForm({ ...form, persona: p.name });
-                  setTimeout(() => {
-                    setStep(5);
-                  }, 180);
+                className="persona-carousel-track"
+                style={{
+                  transform: `translateX(calc(-156px - (${activePersonaIdx} * 312px)))`
                 }}
               >
-                {/* Left side: circular detective photo */}
-                <div className="persona-photo-wrapper">
-                  <img src={p.photo} alt={p.name} className="persona-card-img" />
-                </div>
-
-                {/* Right side: details */}
-                <div className="persona-card-details">
-                  <span className="persona-card-name">{p.name}</span>
-                  <span className="persona-card-desc">{p.desc}</span>
-                </div>
-
-                {/* Checkmark overlay for selected item */}
-                {form.persona === p.name && (
-                  <div className="persona-card-check">✓</div>
-                )}
+                {personas.map((p, idx) => {
+                  const isActive = idx === activePersonaIdx;
+                  return (
+                    <div
+                      key={idx}
+                      className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
+                      onClick={() => {
+                        triggerHaptic();
+                        setActivePersonaIdx(idx);
+                        setForm(prev => ({ ...prev, persona: p.name }));
+                      }}
+                    >
+                      <div className="persona-carousel-card">
+                        <img src={p.photo} alt={p.name} className="persona-carousel-photo" />
+                        <div className="persona-carousel-name">{p.name}</div>
+                        <div className="persona-carousel-desc">{p.desc}</div>
+                        {isActive && (
+                          <div className="persona-carousel-active-badge">✓ Выбран</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
+
+            <button
+              type="button"
+              className="carousel-btn next"
+              onClick={() => {
+                triggerHaptic();
+                const newIdx = (activePersonaIdx + 1) % personas.length;
+                setActivePersonaIdx(newIdx);
+                setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
+              }}
+              aria-label="Следующий детектив"
+            >
+              ›
+            </button>
+
+            {/* Pagination dots */}
+            <div className="carousel-dots">
+              {personas.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`carousel-dot ${idx === activePersonaIdx ? 'active' : ''}`}
+                  onClick={() => {
+                    triggerHaptic();
+                    setActivePersonaIdx(idx);
+                    setForm(prev => ({ ...prev, persona: personas[idx].name }));
+                  }}
+                />
+              ))}
+            </div>
           </div>
+
+          <button
+            className="btn btn--primary"
+            onClick={() => setStep(5)}
+            style={{ marginTop: 24, maxWidth: '280px' }}
+          >
+            Далее →
+          </button>
         </div>
       )}
 
