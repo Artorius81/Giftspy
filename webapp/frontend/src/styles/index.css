@@ -6310,7 +6310,7 @@ html {
   position: relative;
   width: 100%;
   overflow: hidden;
-  padding: 16px 0 24px 0;
+  padding: 16px 0 16px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6338,7 +6338,7 @@ html {
 }
 
 .persona-carousel-slide {
-  flex: 0 0 280px;
+  flex: 0 0 250px;
   margin: 0 16px;
   transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
   opacity: 0.35;
@@ -6356,47 +6356,37 @@ html {
   cursor: default;
 }
 
-/* Dimmed card style */
+/* Vertical rectangular movie poster card style */
 .persona-carousel-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 24px;
-  padding: 24px;
+  width: 250px;
   height: 340px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  overflow: hidden;
   box-shadow: var(--shadow-md);
   position: relative;
   box-sizing: border-box;
   transition: all 0.4s ease;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .persona-carousel-slide.active .persona-carousel-card {
   border-color: var(--accent);
   box-shadow: var(--shadow-glow), var(--shadow-md);
-  background: var(--gradient-card);
 }
 
 .persona-carousel-photo {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 3px solid rgba(255, 255, 255, 0.08);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 16px;
-  transition: border-color 0.3s, transform 0.4s ease;
-}
-
-[data-theme="light"] .persona-carousel-photo {
-  border-color: rgba(0, 0, 0, 0.05);
+  transition: transform 0.4s ease;
 }
 
 .persona-carousel-slide.active .persona-carousel-photo {
-  border-color: var(--accent);
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .persona-carousel-name {

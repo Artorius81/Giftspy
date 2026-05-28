@@ -133,7 +133,7 @@ const BUDGET_OPTIONS = [
   'До 10 000 ₽', 'До 30 000 ₽', 'Неограничен'
 ]
 
-const STEPS = ['target', 'holiday', 'context', 'persona', 'budget', 'confirm']
+const STEPS = ['target', 'holiday', 'context', 'budget', 'confirm']
 
 export default function NewCase() {
   const navigate = useNavigate()
@@ -181,6 +181,138 @@ export default function NewCase() {
     }
   }, [personas, form.persona])
 
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX
+    handleSwipe()
+  }
+
+  const handleSwipe = () => {
+    if (personas.length === 0) return
+    const diff = touchStartX.current - touchEndX.current
+    if (diff > 50) {
+      triggerHaptic()
+      const newIdx = (activePersonaIdx + 1) % personas.length
+      setActivePersonaIdx(newIdx)
+      setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    } else if (diff < -50) {
+      triggerHaptic()
+      const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
+      setActivePersonaIdx(newIdx)
+      setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    }
+  }
+
+  const renderCarousel = () => (
+    <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
+      <div className="persona-carousel-container">
+        <button
+          type="button"
+          className="carousel-btn prev"
+          onClick={() => {
+            triggerHaptic();
+            const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length;
+            setActivePersonaIdx(newIdx);
+            setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
+          }}
+          aria-label="Предыдущий детектив"
+        >
+          ‹
+        </button>
+
+        <div 
+          className="persona-carousel-track-wrapper"
+          onTouchStart={handleTouchStart} 
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            className="persona-carousel-track"
+            style={{
+              transform: `translateX(calc(-141px - (${activePersonaIdx} * 282px)))`
+            }}
+          >
+            {personas.map((p, idx) => {
+              const isActive = idx === activePersonaIdx;
+              return (
+                <div
+                  key={idx}
+                  className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    triggerHaptic();
+                    setActivePersonaIdx(idx);
+                    setForm(prev => ({ ...prev, persona: p.name }));
+                  }}
+                >
+                  <div className="persona-carousel-card">
+                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="carousel-btn next"
+          onClick={() => {
+            triggerHaptic();
+            const newIdx = (activePersonaIdx + 1) % personas.length;
+            setActivePersonaIdx(newIdx);
+            setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
+          }}
+          aria-label="Следующий детектив"
+        >
+          ›
+        </button>
+
+        <div className="carousel-dots">
+          {personas.map((_, idx) => (
+            <div
+              key={idx}
+              className={`carousel-dot ${idx === activePersonaIdx ? 'active' : ''}`}
+              onClick={() => {
+                triggerHaptic();
+                setActivePersonaIdx(idx);
+                setForm(prev => ({ ...prev, persona: personas[idx].name }));
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {personas[activePersonaIdx] && (
+        <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.5px' }}>
+            {personas[activePersonaIdx].name}
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            <span style={{ fontWeight: '800', color: '#f59e0b' }}>⭐ 5.0</span>
+            <span>•</span>
+            <span style={{ display: 'flex', gap: '4px' }}>
+              {personas[activePersonaIdx].emojis ? personas[activePersonaIdx].emojis.split(',').slice(0, 4).map((emoji, i) => (
+                <span key={i} style={{ fontSize: '14px' }}>{emoji.trim()}</span>
+              )) : '🕵️‍♂️ 🔍 📝'}
+            </span>
+          </div>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
+            {personas[activePersonaIdx].desc}
+          </p>
+        </div>
+      )}
+
+      <div style={{ width: '100%', maxWidth: '320px', marginTop: '8px' }}>
+        <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     if (targetsData) {
       const preselected = searchParams.get('target')
@@ -200,7 +332,7 @@ export default function NewCase() {
     } catch { }
   }
 
-  const currentStepKey = step > 0 ? STEPS[step - 1] : null
+  const currentStepKey = step >= 2 ? STEPS[step - 2] : null
 
   const hasCustomHoliday = form.holiday && !HOLIDAY_OPTIONS.includes(form.holiday) && form.holiday !== 'Без повода'
 
@@ -252,18 +384,28 @@ export default function NewCase() {
       {/* Sleek Custom Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         {step === 0 ? (
-          <button
-            className="wishlist-header-btn"
-            onClick={() => { triggerHaptic(); setStep(1); }}
-            style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700' }}
-            aria-label="Новое расследование"
-          >
-            ＋
-          </button>
+          cases.length > 0 ? (
+            <button
+              className="wishlist-header-btn"
+              onClick={() => { triggerHaptic(); setStep(1); }}
+              style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700' }}
+              aria-label="Новое расследование"
+            >
+              ＋
+            </button>
+          ) : (
+            <div style={{ width: 36 }} />
+          )
         ) : step > 0 ? (
           <button
             className="wishlist-header-btn"
-            onClick={() => setStep(step - 1)}
+            onClick={() => {
+              if (step === 2 && cases.length === 0) {
+                setStep(0);
+              } else {
+                setStep(step - 1);
+              }
+            }}
             style={{ width: 36, height: 36 }}
             aria-label="Назад"
           >
@@ -286,183 +428,164 @@ export default function NewCase() {
           </button>
         ) : (
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
-            {step}/{STEPS.length}
+            {step >= 2 ? `${step - 1}/${STEPS.length}` : ''}
           </div>
         )}
       </div>
 
       {/* Progress (only visible when in wizard) */}
-      {step > 0 && (
+      {step >= 2 && (
         <div className="wizard-progress">
           {STEPS.map((s, i) => (
-            <div key={s} className={`wizard-dot ${i === (step - 1) ? 'active' : i < (step - 1) ? 'done' : ''}`} />
+            <div key={s} className={`wizard-dot ${i === (step - 2) ? 'active' : i < (step - 2) ? 'done' : ''}`} />
           ))}
         </div>
       )}
 
-      {/* Step 0: Dashboard (Photo 1) */}
+      {/* Step 0: Dashboard */}
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* 3D Touch Detective Carousel */}
+          {renderCarousel()}
 
-          {/* Sherlock Promo Card - Conditional Render */}
-          {cases.length === 0 && (
-            <div className="detective-promo-card">
-              <div className="detective-promo-title-row">
-                <span style={{ fontSize: '22px' }}>🔒</span>
-                <span className="detective-promo-title">Не хотите спрашивать напрямую?</span>
-              </div>
-              <div className="detective-promo-desc">
-                Пусть Детектив пообщается с кем-то за вас и выяснит, что они хотят получить в подарок.
-              </div>
-              <div className="detective-promo-actions">
-                <button className="btn-send-detective" onClick={() => setStep(1)}>
-                  Отправить Детектива
-                </button>
-                <button className="btn-refresh-history" onClick={handleRefresh} aria-label="Обновить">
+          {/* Search History (rendered below the carousel if cases exist) */}
+          {cases.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', marginTop: '10px' }}>
+              {/* History Header Section */}
+              <div className="history-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>☰</span>
+                  <span className="history-section-title">История поисков</span>
+                </div>
+                <button
+                  className="btn-refresh-history"
+                  onClick={handleRefresh}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    transition: 'var(--transition)'
+                  }}
+                  aria-label="Обновить"
+                >
                   ↻
                 </button>
               </div>
+
+              {/* History List */}
+              <div className="history-list-container">
+                {cLoading ? (
+                  <div className="loading" style={{ padding: '20px 0' }}><div className="spinner" /></div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {(() => {
+                      const groups = {}
+                      cases.forEach(c => {
+                        const targetKey = c.target
+                        if (!groups[targetKey]) {
+                          groups[targetKey] = {
+                            display: c.display_name,
+                            target_photo: c.target_photo,
+                            target_db_id: c.target_db_id,
+                            cases: [],
+                            hasActive: false
+                          }
+                        }
+                        groups[targetKey].cases.push(c)
+                        if (['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) {
+                          groups[targetKey].hasActive = true
+                        }
+                      })
+                      const sortedGroups = Object.entries(groups)
+
+                      return sortedGroups.map(([target, group]) => {
+                        const isExpanded = collapsed[target] === true
+                        return (
+                          <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
+                            {/* Target Card in Profile Style */}
+                            <div
+                              className="profile-order-card"
+                              style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                              onClick={() => toggleGroup(target)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {group.target_photo ? <img src={group.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : getTargetEmoji(group.target_db_id || 0)}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{group.display}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{target}</div>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {group.hasActive && <span className="status-dot status-dot--active" style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />}
+                                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
+                                <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)', display: 'inline-block', transform: isExpanded ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▾</span>
+                              </div>
+                            </div>
+
+                            {/* Cases List */}
+                            <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ display: isExpanded ? 'block' : 'none' }}>
+                              <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
+                                {group.cases.map(c => {
+                                  const st = STATUS[c.status] || STATUS.error
+                                  return (
+                                    <div
+                                      key={c.id}
+                                      className="profile-order-card"
+                                      style={{
+                                        padding: '12px 16px',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--card-border)',
+                                        borderRadius: '12px',
+                                        marginLeft: '8px',
+                                        marginBottom: 0,
+                                        cursor: 'pointer'
+                                      }}
+                                      onClick={() => navigate(`/dossier/${c.id}`)}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                                        <div className="card__avatar" style={{ width: 32, height: 32, fontSize: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                          {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
+                                        </div>
+                                        <div style={{ minWidth: 0, flex: 1 }}>
+                                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            Дело №{c.id}
+                                            {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
+                                          </div>
+                                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
+                                            {st.label}
+                                            {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {c.has_report && <span className="badge badge--success" style={{ padding: '2px 6px', fontSize: 10 }}>📋</span>}
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
           )}
-
-          {/* History Header Section */}
-          <div className="history-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '16px', color: 'var(--text-secondary)' }}>☰</span>
-              <span className="history-section-title">История поисков</span>
-            </div>
-            <button
-              className="btn-refresh-history"
-              onClick={handleRefresh}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                color: 'var(--text)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                transition: 'var(--transition)'
-              }}
-              aria-label="Обновить"
-            >
-              ↻
-            </button>
-          </div>
-
-          {/* History List */}
-          <div className="history-list-container">
-            {cLoading ? (
-              <div className="loading" style={{ padding: '20px 0' }}><div className="spinner" /></div>
-            ) : cases.length === 0 ? (
-              <div className="history-empty-state">
-                <span className="history-empty-icon">🔍</span>
-                <span className="history-empty-text">Пока нет поисков Детектива.</span>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {(() => {
-                  const groups = {}
-                  cases.forEach(c => {
-                    const targetKey = c.target
-                    if (!groups[targetKey]) {
-                      groups[targetKey] = {
-                        display: c.display_name,
-                        target_photo: c.target_photo,
-                        target_db_id: c.target_db_id,
-                        cases: [],
-                        hasActive: false
-                      }
-                    }
-                    groups[targetKey].cases.push(c)
-                    if (['pending', 'started', 'in_progress', 'manual_mode'].includes(c.status)) {
-                      groups[targetKey].hasActive = true
-                    }
-                  })
-                  const sortedGroups = Object.entries(groups)
-
-                  return sortedGroups.map(([target, group]) => {
-                    const isExpanded = collapsed[target] === true
-                    return (
-                      <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
-                        {/* Target Card in Profile Style */}
-                        <div
-                          className="profile-order-card"
-                          style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                          onClick={() => toggleGroup(target)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div className="card__avatar" style={{ width: 40, height: 40, fontSize: 20, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {group.target_photo ? <img src={group.target_photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : getTargetEmoji(group.target_db_id || 0)}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{group.display}</div>
-                              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{target}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {group.hasActive && <span className="status-dot status-dot--active" style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />}
-                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{group.cases.length} дел</span>
-                            <span className={`collapse-arrow ${!isExpanded ? 'collapsed' : ''}`} style={{ fontSize: 18, color: 'var(--text-secondary)', display: 'inline-block', transform: isExpanded ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>▾</span>
-                          </div>
-                        </div>
-
-                        {/* Cases List */}
-                        <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ display: isExpanded ? 'block' : 'none' }}>
-                          <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
-                            {group.cases.map(c => {
-                              const st = STATUS[c.status] || STATUS.error
-                              return (
-                                <div
-                                  key={c.id}
-                                  className="profile-order-card"
-                                  style={{
-                                    padding: '12px 16px',
-                                    background: 'var(--bg-secondary)',
-                                    border: '1px solid var(--card-border)',
-                                    borderRadius: '12px',
-                                    marginLeft: '8px',
-                                    marginBottom: 0,
-                                    cursor: 'pointer'
-                                  }}
-                                  onClick={() => navigate(`/dossier/${c.id}`)}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                                    <div className="card__avatar" style={{ width: 32, height: 32, fontSize: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                      {(c.status === 'done' || c.status === 'delivered') ? '🎁' : st.icon}
-                                    </div>
-                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        Дело №{c.id}
-                                        {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
-                                      </div>
-                                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
-                                        {st.label}
-                                        {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    {c.has_report && <span className="badge badge--success" style={{ padding: '2px 6px', fontSize: 10 }}>📋</span>}
-                                    <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                })()}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
@@ -509,7 +632,7 @@ export default function NewCase() {
               onChange={e => setForm({ ...form, target: e.target.value })}
             />
           </div>
-          <button className="btn btn--primary" disabled={!form.target} onClick={() => setStep(2)}>
+          <button className="btn btn--primary" disabled={!form.target} onClick={() => setStep(3)}>
             Далее →
           </button>
         </div>
@@ -525,7 +648,7 @@ export default function NewCase() {
               <div
                 key={h}
                 className={`option-item ${form.holiday === h ? 'selected' : ''}`}
-                onClick={() => { setForm({ ...form, holiday: h }); setStep(3) }}
+                onClick={() => { setForm({ ...form, holiday: h }); setStep(4) }}
               >
                 {h}
               </div>
@@ -540,11 +663,11 @@ export default function NewCase() {
             />
           </div>
           {hasCustomHoliday ? (
-            <button className="btn btn--primary" onClick={() => setStep(3)}>
+            <button className="btn btn--primary" onClick={() => setStep(4)}>
               Далее →
             </button>
           ) : (
-            <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(3) }}>
+            <button className="btn btn--secondary" onClick={() => { setForm({ ...form, holiday: 'Без повода' }); setStep(4) }}>
               ⏩ Пропустить
             </button>
           )}
@@ -565,103 +688,8 @@ export default function NewCase() {
               onChange={e => setForm({ ...form, context: e.target.value })}
             />
           </div>
-          <button className="btn btn--primary" onClick={() => setStep(4)}>
+          <button className="btn btn--primary" onClick={() => setStep(5)}>
             {form.context ? 'Далее →' : '⏩ Пропустить'}
-          </button>
-        </div>
-      )}
-
-      {/* Step 4: Persona */}
-      {currentStepKey === 'persona' && personas.length > 0 && (
-        <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div className="wizard-step__title" style={{ marginBottom: '8px', textAlign: 'center' }}>🕵️‍♂️ Выберите детектива</div>
-          <div className="wizard-step__desc" style={{ marginBottom: '16px', textAlign: 'center' }}>Каждый детектив имеет свой уникальный метод расследования</div>
-
-          <div className="persona-carousel-container">
-            {/* Navigation arrows */}
-            <button
-              type="button"
-              className="carousel-btn prev"
-              onClick={() => {
-                triggerHaptic();
-                const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length;
-                setActivePersonaIdx(newIdx);
-                setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
-              }}
-              aria-label="Предыдущий детектив"
-            >
-              ‹
-            </button>
-
-            <div className="persona-carousel-track-wrapper">
-              <div
-                className="persona-carousel-track"
-                style={{
-                  transform: `translateX(calc(-156px - (${activePersonaIdx} * 312px)))`
-                }}
-              >
-                {personas.map((p, idx) => {
-                  const isActive = idx === activePersonaIdx;
-                  return (
-                    <div
-                      key={idx}
-                      className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        triggerHaptic();
-                        setActivePersonaIdx(idx);
-                        setForm(prev => ({ ...prev, persona: p.name }));
-                      }}
-                    >
-                      <div className="persona-carousel-card">
-                        <img src={p.photo} alt={p.name} className="persona-carousel-photo" />
-                        <div className="persona-carousel-name">{p.name}</div>
-                        <div className="persona-carousel-desc">{p.desc}</div>
-                        {isActive && (
-                          <div className="persona-carousel-active-badge">✓ Выбран</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="carousel-btn next"
-              onClick={() => {
-                triggerHaptic();
-                const newIdx = (activePersonaIdx + 1) % personas.length;
-                setActivePersonaIdx(newIdx);
-                setForm(prev => ({ ...prev, persona: personas[newIdx].name }));
-              }}
-              aria-label="Следующий детектив"
-            >
-              ›
-            </button>
-
-            {/* Pagination dots */}
-            <div className="carousel-dots">
-              {personas.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`carousel-dot ${idx === activePersonaIdx ? 'active' : ''}`}
-                  onClick={() => {
-                    triggerHaptic();
-                    setActivePersonaIdx(idx);
-                    setForm(prev => ({ ...prev, persona: personas[idx].name }));
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            className="btn btn--primary"
-            onClick={() => setStep(5)}
-            style={{ marginTop: 24, maxWidth: '280px' }}
-          >
-            Далее →
           </button>
         </div>
       )}
