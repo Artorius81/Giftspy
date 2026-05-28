@@ -6358,13 +6358,12 @@ html {
 
 /* Vertical rectangular movie poster card style */
 .persona-carousel-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: transparent;
+  border: none;
   border-radius: 28px;
   width: 180px;
   height: 240px;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
   position: relative;
   box-sizing: border-box;
   transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
@@ -6374,8 +6373,8 @@ html {
 }
 
 .persona-carousel-slide.active .persona-carousel-card {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-glow), var(--shadow-md);
+  border: none;
+  box-shadow: none;
 }
 
 .persona-carousel-photo {
@@ -6386,7 +6385,7 @@ html {
 }
 
 .persona-carousel-slide.active .persona-carousel-photo {
-  transform: scale(1.02);
+  transform: scale(1.08);
 }
 
 .persona-carousel-name {

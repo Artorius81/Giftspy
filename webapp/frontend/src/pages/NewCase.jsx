@@ -155,6 +155,9 @@ export default function NewCase() {
   const cases = casesData || []
 
   const [submitting, setSubmitting] = useState(false)
+  const [activePersonaIdx, setActivePersonaIdx] = useState(0)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDraggingTrack, setIsDraggingTrack] = useState(false)
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
@@ -166,8 +169,6 @@ export default function NewCase() {
     budget: '',
   })
 
-  const [activePersonaIdx, setActivePersonaIdx] = useState(0)
-
   // Sync activePersonaIdx with selected persona in form
   useEffect(() => {
     if (personas.length > 0) {
@@ -175,37 +176,74 @@ export default function NewCase() {
       if (idx !== -1) {
         setActivePersonaIdx(idx)
       } else {
-        setActivePersonaIdx(0)
-        setForm(prev => ({ ...prev, persona: personas[0].name }))
+        const middleIdx = Math.floor(personas.length / 2)
+        setActivePersonaIdx(middleIdx)
+        setForm(prev => ({ ...prev, persona: personas[middleIdx].name }))
       }
     }
   }, [personas, form.persona])
 
   const touchStartX = useRef(0)
-  const touchEndX = useRef(0)
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
+    setIsDraggingTrack(true)
   }
 
-  const handleTouchEnd = (e) => {
-    touchEndX.current = e.changedTouches[0].clientX
-    handleSwipe()
+  const handleTouchMove = (e) => {
+    if (!isDraggingTrack) return
+    const currentX = e.touches[0].clientX
+    const diff = currentX - touchStartX.current
+    setDragOffset(diff)
   }
 
-  const handleSwipe = () => {
-    if (personas.length === 0) return
-    const diff = touchStartX.current - touchEndX.current
+  const handleTouchEnd = () => {
+    if (!isDraggingTrack) return
+    setIsDraggingTrack(false)
+    
     const threshold = 60
-    if (diff > threshold) {
-      const newIdx = (activePersonaIdx + 1) % personas.length
-      setActivePersonaIdx(newIdx)
-      setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
-    } else if (diff < -threshold) {
-      const newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
-      setActivePersonaIdx(newIdx)
-      setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    let newIdx = activePersonaIdx
+    
+    if (dragOffset > threshold) {
+      // Swipe right -> go to previous
+      newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
+    } else if (dragOffset < -threshold) {
+      // Swipe left -> go to next
+      newIdx = (activePersonaIdx + 1) % personas.length
     }
+    
+    setActivePersonaIdx(newIdx)
+    setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    setDragOffset(0)
+  }
+
+  const handleMouseDown = (e) => {
+    touchStartX.current = e.clientX
+    setIsDraggingTrack(true)
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDraggingTrack) return
+    const diff = e.clientX - touchStartX.current
+    setDragOffset(diff)
+  }
+
+  const handleMouseUpOrLeave = () => {
+    if (!isDraggingTrack) return
+    setIsDraggingTrack(false)
+    
+    const threshold = 60
+    let newIdx = activePersonaIdx
+    
+    if (dragOffset > threshold) {
+      newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
+    } else if (dragOffset < -threshold) {
+      newIdx = (activePersonaIdx + 1) % personas.length
+    }
+    
+    setActivePersonaIdx(newIdx)
+    setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    setDragOffset(0)
   }
 
   const renderCarousel = () => (
@@ -214,12 +252,19 @@ export default function NewCase() {
         <div 
           className="persona-carousel-track-wrapper"
           onTouchStart={handleTouchStart} 
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
+          style={{ cursor: isDraggingTrack ? 'grabbing' : 'grab' }}
         >
           <div
             className="persona-carousel-track"
             style={{
-              transform: `translateX(calc(-102px - (${activePersonaIdx} * 204px)))`
+              transform: `translateX(calc(-102px - (${activePersonaIdx} * 204px) + ${dragOffset}px))`,
+              transition: isDraggingTrack ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
             {personas.map((p, idx) => {
