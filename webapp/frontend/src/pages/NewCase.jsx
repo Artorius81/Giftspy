@@ -182,13 +182,16 @@ export default function NewCase() {
     }
   }, [personas, form.persona])
 
+  const preloadedImagesRef = useRef([])
+
   // Preload all detective images inside the browser cache for instant rendering
   useEffect(() => {
-    if (personas.length > 0) {
+    if (personas.length > 0 && preloadedImagesRef.current.length === 0) {
       personas.forEach(p => {
         if (p.photo) {
           const img = new Image()
           img.src = p.photo
+          preloadedImagesRef.current.push(img) // Prevent garbage collection on iOS Safari!
         }
       })
     }
@@ -326,7 +329,7 @@ export default function NewCase() {
                   }}
                 >
                   <div className="persona-carousel-card">
-                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" />
+                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
                   </div>
                 </div>
               );
@@ -350,7 +353,7 @@ export default function NewCase() {
 
       {personas[activePersonaIdx] && (
         <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.5px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
             {personas[activePersonaIdx].name}
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
@@ -359,7 +362,17 @@ export default function NewCase() {
         </div>
       )}
 
-      <div style={{ width: '100%', maxWidth: '320px', marginTop: '8px' }}>
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '86px', 
+        left: '50%', 
+        transform: 'translateX(-50%)', 
+        width: 'calc(100% - 32px)', 
+        maxWidth: '320px', 
+        zIndex: 90,
+        background: 'transparent',
+        padding: '8px 0'
+      }}>
         <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
       </div>
     </div>

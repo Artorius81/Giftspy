@@ -6308,7 +6308,9 @@ html {
 /* ================= PREMIUM DETECTIVE CAROUSEL ================= */
 .persona-carousel-container {
   position: relative;
-  width: 100%;
+  width: calc(100% + 32px); /* Compensate for 16px page padding left/right */
+  margin-left: -16px;
+  margin-right: -16px;
   overflow: hidden;
   padding: 16px 0 16px 0;
   display: flex;
@@ -6326,6 +6328,10 @@ html {
   align-items: center;
   overflow: visible;
   box-sizing: border-box;
+  touch-action: pan-y; /* Unblocks smooth iOS swiping, prevents default browser conflict */
+  -webkit-user-drag: none; /* Prevents iOS Safari image ghost dragging */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .persona-carousel-track {
