@@ -69,7 +69,7 @@ export default function CaseDetail() {
     try {
       await api.deleteCase(id)
       api.getCases().then(c => mutateData('cases', c)).catch(() => {})
-      navigate('/dossier', { replace: true })
+      navigate('/new-case', { replace: true })
     } catch (e) {
       await showAlert(e.message)
     }

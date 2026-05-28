@@ -173,10 +173,14 @@ export default function NewCase() {
     if (personas.length > 0) {
       const idx = personas.findIndex(p => p.name === form.persona)
       if (idx !== -1) {
-        setActivePersonaIdx(idx)
+        const targetIdx = personas.length + idx
+        if (activePersonaIdx % personas.length !== idx) {
+          setActivePersonaIdx(targetIdx)
+        }
       } else {
         const middleIdx = Math.floor(personas.length / 2)
-        setActivePersonaIdx(middleIdx)
+        const targetIdx = personas.length + middleIdx
+        setActivePersonaIdx(targetIdx)
         setForm(prev => ({ ...prev, persona: personas[middleIdx].name }))
       }
     }
@@ -229,22 +233,47 @@ export default function NewCase() {
     const threshold = 50
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
+    const N = personas.length
     
     if (offset > threshold) {
       // Swipe right -> go to previous
-      newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
+      newIdx = activePersonaIdx - 1
     } else if (offset < -threshold) {
       // Swipe left -> go to next
-      newIdx = (activePersonaIdx + 1) % personas.length
+      newIdx = activePersonaIdx + 1
     }
     
     setActivePersonaIdx(newIdx)
-    setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    const activePersona = personas[((newIdx % N) + N) % N]
+    setForm(prev => ({ ...prev, persona: activePersona.name }))
     
     // Apply smooth snapping directly to DOM
     if (trackRef.current) {
       trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
       trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
+    }
+    
+    // Seamless infinite scroll wrapping
+    if (newIdx < N) {
+      setTimeout(() => {
+        if (trackRef.current) {
+          trackRef.current.style.transition = 'none'
+          const resetIdx = newIdx + N
+          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
+          trackRef.current.offsetHeight // force reflow
+          setActivePersonaIdx(resetIdx)
+        }
+      }, 650)
+    } else if (newIdx >= 2 * N) {
+      setTimeout(() => {
+        if (trackRef.current) {
+          trackRef.current.style.transition = 'none'
+          const resetIdx = newIdx - N
+          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
+          trackRef.current.offsetHeight // force reflow
+          setActivePersonaIdx(resetIdx)
+        }
+      }, 650)
     }
     
     dragOffsetRef.current = 0
@@ -276,103 +305,120 @@ export default function NewCase() {
     const threshold = 50
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
+    const N = personas.length
     
     if (offset > threshold) {
-      newIdx = (activePersonaIdx - 1 + personas.length) % personas.length
+      newIdx = activePersonaIdx - 1
     } else if (offset < -threshold) {
-      newIdx = (activePersonaIdx + 1) % personas.length
+      newIdx = activePersonaIdx + 1
     }
     
     setActivePersonaIdx(newIdx)
-    setForm(prev => ({ ...prev, persona: personas[newIdx].name }))
+    const activePersona = personas[((newIdx % N) + N) % N]
+    setForm(prev => ({ ...prev, persona: activePersona.name }))
     
     if (trackRef.current) {
       trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
       trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
     }
     
+    // Seamless infinite scroll wrapping
+    if (newIdx < N) {
+      setTimeout(() => {
+        if (trackRef.current) {
+          trackRef.current.style.transition = 'none'
+          const resetIdx = newIdx + N
+          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
+          trackRef.current.offsetHeight // force reflow
+          setActivePersonaIdx(resetIdx)
+        }
+      }, 650)
+    } else if (newIdx >= 2 * N) {
+      setTimeout(() => {
+        if (trackRef.current) {
+          trackRef.current.style.transition = 'none'
+          const resetIdx = newIdx - N
+          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
+          trackRef.current.offsetHeight // force reflow
+          setActivePersonaIdx(resetIdx)
+        }
+      }, 650)
+    }
+    
     dragOffsetRef.current = 0
     touchStartX.current = 0
   }
 
-  const renderCarousel = () => (
-    <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
-      <div className="persona-carousel-container">
-        <div 
-          className="persona-carousel-track-wrapper"
-          onTouchStart={handleTouchStart} 
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUpOrLeave}
-          onMouseLeave={handleMouseUpOrLeave}
-          style={{ cursor: isDraggingTrack ? 'grabbing' : 'grab' }}
-        >
-          <div
-            ref={trackRef}
-            className="persona-carousel-track"
-            style={{
-              transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
-              transition: isDraggingTrack ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
+  const renderCarousel = () => {
+    const N = personas.length
+    const extendedPersonas = N > 0 ? [...personas, ...personas, ...personas] : []
+    
+    return (
+      <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
+        <div className="persona-carousel-container">
+          <div 
+            className="persona-carousel-track-wrapper"
+            onTouchStart={handleTouchStart} 
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            style={{ cursor: isDraggingTrack ? 'grabbing' : 'grab' }}
           >
-            {personas.map((p, idx) => {
-              const isActive = idx === activePersonaIdx;
-              return (
-                <div
-                  key={idx}
-                  className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    setActivePersonaIdx(idx);
-                    setForm(prev => ({ ...prev, persona: p.name }));
-                  }}
-                >
-                  <div className="persona-carousel-card">
-                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
+            <div
+              ref={trackRef}
+              className="persona-carousel-track"
+              style={{
+                transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
+                transition: isDraggingTrack ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+            >
+              {extendedPersonas.map((p, idx) => {
+                const isActive = idx === activePersonaIdx;
+                return (
+                  <div
+                    key={idx}
+                    className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
+                    onClick={() => {
+                      setActivePersonaIdx(idx);
+                      setForm(prev => ({ ...prev, persona: p.name }));
+                    }}
+                  >
+                    <div className="persona-carousel-card">
+                      <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="carousel-dots">
-          {personas.map((_, idx) => (
-            <div
-              key={idx}
-              className={`carousel-dot ${idx === activePersonaIdx ? 'active' : ''}`}
-              onClick={() => {
-                setActivePersonaIdx(idx);
-                setForm(prev => ({ ...prev, persona: personas[idx].name }));
-              }}
-            />
-          ))}
+        {personas[activePersonaIdx % N] && (
+          <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
+              {personas[activePersonaIdx % N].name}
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
+              {personas[activePersonaIdx % N].desc}
+            </p>
+          </div>
+        )}
+
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '320px', 
+          background: 'transparent',
+          padding: '8px 0',
+          marginTop: '8px'
+        }}>
+          <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
         </div>
       </div>
-
-      {personas[activePersonaIdx] && (
-        <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
-            {personas[activePersonaIdx].name}
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
-            {personas[activePersonaIdx].desc}
-          </p>
-        </div>
-      )}
-
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '320px', 
-        background: 'transparent',
-        padding: '8px 0',
-        marginTop: '8px'
-      }}>
-        <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
-      </div>
-    </div>
-  );
+    );
+  };
 
   useEffect(() => {
     if (targetsData) {
@@ -445,23 +491,12 @@ export default function NewCase() {
       {/* Sleek Custom Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         {step === 0 ? (
-          cases.length > 0 ? (
-            <button
-              className="wishlist-header-btn"
-              onClick={() => { triggerHaptic(); setStep(1); }}
-              style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700' }}
-              aria-label="Новое расследование"
-            >
-              ＋
-            </button>
-          ) : (
-            <div style={{ width: 36 }} />
-          )
+          <div style={{ width: 36 }} />
         ) : step > 0 ? (
           <button
             className="wishlist-header-btn"
             onClick={() => {
-              if (step === 2 && cases.length === 0) {
+              if (step === 2) {
                 setStep(0);
               } else {
                 setStep(step - 1);
