@@ -155,6 +155,17 @@ export default function NewCase() {
   const cases = casesData || []
 
   const [submitting, setSubmitting] = useState(false)
+
+  const [targetDisplayName, setTargetDisplayName] = useState('')
+
+  const [form, setForm] = useState({
+    target: searchParams.get('target') || '',
+    holiday: '',
+    context: '',
+    persona: '',
+    budget: '',
+  })
+
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
 
   // Sync activePersonaIdx with selected persona in form
@@ -169,18 +180,6 @@ export default function NewCase() {
       }
     }
   }, [personas, form.persona])
-
-
-
-  const [targetDisplayName, setTargetDisplayName] = useState('')
-
-  const [form, setForm] = useState({
-    target: searchParams.get('target') || '',
-    holiday: '',
-    context: '',
-    persona: '',
-    budget: '',
-  })
 
   useEffect(() => {
     if (targetsData) {
