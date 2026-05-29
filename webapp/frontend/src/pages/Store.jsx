@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { mutateData } from '../hooks/useData'
@@ -33,18 +33,75 @@ const PRODUCTS = [
 export default function Store() {
   const navigate = useNavigate()
   const [buying, setBuying] = useState(null)
+  const [initialProfile, setInitialProfile] = useState(null)
+  const isPollingRef = useRef(false)
 
-  // Refresh profile when user returns from payment page
+  // Cache initial profile when mounting
   useEffect(() => {
+    api.getProfile().then(p => {
+      setInitialProfile(p)
+    }).catch(console.error)
+  }, [])
+
+  // Poll for updates upon return and notify user
+  useEffect(() => {
+    let timer = null
+    let attempts = 0
+    const maxAttempts = 5
+
+    const checkStatus = async () => {
+      try {
+        const newProfile = await api.getProfile()
+        mutateData('profile', newProfile)
+        
+        if (initialProfile) {
+          if (newProfile.is_premium && !initialProfile.is_premium) {
+            await showAlert('👑 Поздравляем! Премиум успешно активирован!')
+            setInitialProfile(newProfile)
+            isPollingRef.current = false
+            return true
+          }
+          if (newProfile.balance > initialProfile.balance) {
+            const diff = newProfile.balance - initialProfile.balance
+            await showAlert(`🎉 Баланс успешно пополнен! Добавлено расследований: ${diff}`)
+            setInitialProfile(newProfile)
+            isPollingRef.current = false
+            return true
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      return false
+    }
+
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        api.getProfile().then(data => mutateData('profile', data)).catch(() => {})
-        api.getBalance().then(data => mutateData('balance', data)).catch(() => {})
+      if (document.visibilityState === 'visible' && !isPollingRef.current) {
+        isPollingRef.current = true
+        attempts = 0
+        
+        const poll = async () => {
+          const success = await checkStatus()
+          if (success) return
+          
+          attempts++
+          if (attempts < maxAttempts && isPollingRef.current) {
+            timer = setTimeout(poll, 3000)
+          } else {
+            isPollingRef.current = false
+          }
+        }
+        
+        poll()
       }
     }
+
     document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      if (timer) clearTimeout(timer)
+    }
+  }, [initialProfile])
 
   const handleBuy = async (productId) => {
     if (buying) return
@@ -67,7 +124,7 @@ export default function Store() {
   }
 
   return (
-    <div className="page store-new-container">
+    <div className="page page-profile-bg store-new-container">
       
       {/* Premium Header */}
       <div className="settings-new-header" style={{ marginBottom: '16px' }}>

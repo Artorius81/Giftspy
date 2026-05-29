@@ -73,11 +73,11 @@ export default function Home() {
 
   const loading = pLoading || cLoading || tLoading
 
-  if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
+  if (loading) return <div className="page page-profile-bg"><div className="loading"><div className="spinner" /></div></div>
 
   if (!profile) {
     return (
-      <div className="page">
+      <div className="page page-profile-bg">
         <div className="empty-state">
           <div className="empty-state__icon">🔒</div>
           <div className="empty-state__title">Не удалось загрузить профиль</div>
@@ -130,7 +130,7 @@ export default function Home() {
       {/* Centered Premium Header with Greeting & No Header Buttons */}
       <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
-          {getGreeting()}
+          Поиск идеального подарка
         </h1>
       </div>
 

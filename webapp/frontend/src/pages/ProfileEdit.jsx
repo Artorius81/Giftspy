@@ -312,6 +312,7 @@ export default function ProfileEdit() {
             className="profile-order-card"
             style={{
               display: 'flex',
+              justifyContent: 'flex-start',
               alignItems: 'center',
               gap: 14,
               margin: 0,

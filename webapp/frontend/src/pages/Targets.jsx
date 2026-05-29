@@ -308,7 +308,7 @@ export default function Targets() {
         <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-0.3px' }}>
           Ваши друзья
         </h2>
-        <div className="tab-filter-bar">
+        <div className="tab-filter-bar" style={{ marginBottom: 0 }}>
           <button 
             className={`tab-filter-btn ${activeTab === 'friends' ? 'active' : ''}`} 
             onClick={() => {

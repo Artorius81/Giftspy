@@ -6489,3 +6489,22 @@ html {
   animation: fadeIn 0.3s ease;
 }
 
+/* ================= FIXED BOTTOM SHEET FOR MOBILE KEYBOARD AND NAV OVERLAPS ================= */
+
+/* Prevent background scrolling when bottom sheet backdrop is active */
+body:has(.bottom-sheet-backdrop),
+body:has(.profile-sheet-backdrop) {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Hide Bottom Nav Bar completely when any bottom sheet is open */
+body:has(.bottom-sheet) .bottom-nav,
+body:has(.profile-sheet) .bottom-nav,
+body:has(.bottom-sheet-backdrop) .bottom-nav,
+body:has(.profile-sheet-backdrop) .bottom-nav {
+  display: none !important;
+}
+

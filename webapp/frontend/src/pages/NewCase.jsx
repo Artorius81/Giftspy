@@ -157,6 +157,7 @@ export default function NewCase() {
   const [submitting, setSubmitting] = useState(false)
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
   const [isDraggingTrack, setIsDraggingTrack] = useState(false)
+  const [transitionEnabled, setTransitionEnabled] = useState(true)
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
@@ -164,9 +165,16 @@ export default function NewCase() {
     target: searchParams.get('target') || '',
     holiday: '',
     context: '',
-    persona: '',
+    persona: localStorage.getItem('last_selected_persona') || '',
     budget: '',
   })
+
+  // Persist chosen persona
+  useEffect(() => {
+    if (form.persona) {
+      localStorage.setItem('last_selected_persona', form.persona)
+    }
+  }, [form.persona])
 
   // Sync activePersonaIdx with selected persona in form
   useEffect(() => {
@@ -178,10 +186,18 @@ export default function NewCase() {
           setActivePersonaIdx(targetIdx)
         }
       } else {
-        const middleIdx = Math.floor(personas.length / 2)
-        const targetIdx = personas.length + middleIdx
-        setActivePersonaIdx(targetIdx)
-        setForm(prev => ({ ...prev, persona: personas[middleIdx].name }))
+        const savedPersona = localStorage.getItem('last_selected_persona')
+        const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
+        if (savedIdx !== -1) {
+          const targetIdx = personas.length + savedIdx
+          setActivePersonaIdx(targetIdx)
+          setForm(prev => ({ ...prev, persona: savedPersona }))
+        } else {
+          const middleIdx = Math.floor(personas.length / 2)
+          const targetIdx = personas.length + middleIdx
+          setActivePersonaIdx(targetIdx)
+          setForm(prev => ({ ...prev, persona: personas[middleIdx].name }))
+        }
       }
     }
   }, [personas, form.persona])
@@ -209,9 +225,6 @@ export default function NewCase() {
     touchStartX.current = e.touches[0].clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
-    if (trackRef.current) {
-      trackRef.current.style.transition = 'none'
-    }
   }
 
   const handleTouchMove = (e) => {
@@ -247,32 +260,30 @@ export default function NewCase() {
     const activePersona = personas[((newIdx % N) + N) % N]
     setForm(prev => ({ ...prev, persona: activePersona.name }))
     
-    // Apply smooth snapping directly to DOM
+    // Clear manual drag overrides to let React take over the snapping transition cleanly
     if (trackRef.current) {
-      trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
-      trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
+      trackRef.current.style.transform = ''
+      trackRef.current.style.transition = ''
     }
     
     // Seamless infinite scroll wrapping
     if (newIdx < N) {
       setTimeout(() => {
-        if (trackRef.current) {
-          trackRef.current.style.transition = 'none'
-          const resetIdx = newIdx + N
-          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
-          trackRef.current.offsetHeight // force reflow
-          setActivePersonaIdx(resetIdx)
-        }
+        setTransitionEnabled(false)
+        const resetIdx = newIdx + N
+        setActivePersonaIdx(resetIdx)
+        setTimeout(() => {
+          setTransitionEnabled(true)
+        }, 50)
       }, 650)
     } else if (newIdx >= 2 * N) {
       setTimeout(() => {
-        if (trackRef.current) {
-          trackRef.current.style.transition = 'none'
-          const resetIdx = newIdx - N
-          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
-          trackRef.current.offsetHeight // force reflow
-          setActivePersonaIdx(resetIdx)
-        }
+        setTransitionEnabled(false)
+        const resetIdx = newIdx - N
+        setActivePersonaIdx(resetIdx)
+        setTimeout(() => {
+          setTransitionEnabled(true)
+        }, 50)
       }, 650)
     }
     
@@ -284,9 +295,6 @@ export default function NewCase() {
     touchStartX.current = e.clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
-    if (trackRef.current) {
-      trackRef.current.style.transition = 'none'
-    }
   }
 
   const handleMouseMove = (e) => {
@@ -317,31 +325,30 @@ export default function NewCase() {
     const activePersona = personas[((newIdx % N) + N) % N]
     setForm(prev => ({ ...prev, persona: activePersona.name }))
     
+    // Clear manual drag overrides to let React take over the snapping transition cleanly
     if (trackRef.current) {
-      trackRef.current.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
-      trackRef.current.style.transform = `translateX(calc(-78px - (${newIdx} * 156px)))`
+      trackRef.current.style.transform = ''
+      trackRef.current.style.transition = ''
     }
     
     // Seamless infinite scroll wrapping
     if (newIdx < N) {
       setTimeout(() => {
-        if (trackRef.current) {
-          trackRef.current.style.transition = 'none'
-          const resetIdx = newIdx + N
-          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
-          trackRef.current.offsetHeight // force reflow
-          setActivePersonaIdx(resetIdx)
-        }
+        setTransitionEnabled(false)
+        const resetIdx = newIdx + N
+        setActivePersonaIdx(resetIdx)
+        setTimeout(() => {
+          setTransitionEnabled(true)
+        }, 50)
       }, 650)
     } else if (newIdx >= 2 * N) {
       setTimeout(() => {
-        if (trackRef.current) {
-          trackRef.current.style.transition = 'none'
-          const resetIdx = newIdx - N
-          trackRef.current.style.transform = `translateX(calc(-78px - (${resetIdx} * 156px)))`
-          trackRef.current.offsetHeight // force reflow
-          setActivePersonaIdx(resetIdx)
-        }
+        setTransitionEnabled(false)
+        const resetIdx = newIdx - N
+        setActivePersonaIdx(resetIdx)
+        setTimeout(() => {
+          setTransitionEnabled(true)
+        }, 50)
       }, 650)
     }
     
@@ -372,7 +379,7 @@ export default function NewCase() {
               className="persona-carousel-track"
               style={{
                 transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
-                transition: isDraggingTrack ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
+                transition: (!transitionEnabled || isDraggingTrack) ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             >
               {extendedPersonas.map((p, idx) => {
@@ -468,7 +475,7 @@ export default function NewCase() {
         target: '',
         holiday: '',
         context: '',
-        persona: '',
+        persona: localStorage.getItem('last_selected_persona') || '',
         budget: '',
       })
       setTargetDisplayName('')
@@ -487,7 +494,7 @@ export default function NewCase() {
 
 
   return (
-    <div className="page" style={{ paddingBottom: '120px' }}>
+    <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       {/* Sleek Custom Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
         {step === 0 ? (
@@ -514,14 +521,7 @@ export default function NewCase() {
           {step === 0 ? 'Детектив' : 'Новое дело'}
         </span>
         {step === 0 ? (
-          <button
-            className="wishlist-header-btn"
-            onClick={() => navigate('/settings')}
-            style={{ width: 36, height: 36 }}
-            aria-label="Настройки"
-          >
-            ⚙️
-          </button>
+          <div style={{ width: 36 }} />
         ) : (
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
             {step >= 2 ? `${step - 1}/${STEPS.length}` : ''}
@@ -658,7 +658,7 @@ export default function NewCase() {
                                             {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
                                           </div>
                                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot === 'done' ? '#22c55e' : st.dot === 'pending' ? '#f59e0b' : '#3b82f6', display: 'inline-block' }} />
+                                            <span className={`status-dot status-dot--${st.dot}`} style={{ width: 6, height: 6, borderRadius: '50%', display: 'inline-block' }} />
                                             {st.label}
                                             {c.created_at && <span>· {timeAgo(c.created_at)}</span>}
                                           </div>

@@ -34,7 +34,7 @@ export default function Dossier() {
     setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
   }
 
-  if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
+  if (loading) return <div className="page page-profile-bg"><div className="loading"><div className="spinner" /></div></div>
 
   // Group by target
   const grouped = {}
@@ -51,7 +51,7 @@ export default function Dossier() {
   })
 
   return (
-    <div className="page">
+    <div className="page page-profile-bg">
       <div className="header">
         <button className="header__back" onClick={() => navigate(-1)}>
           <span className="icon">‹</span>

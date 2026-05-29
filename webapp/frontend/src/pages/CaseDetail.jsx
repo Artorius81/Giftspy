@@ -34,8 +34,8 @@ export default function CaseDetail() {
     return () => clearInterval(pollRef.current)
   }, [id])
 
-  if (loading) return <div className="page"><div className="loading"><div className="spinner" /></div></div>
-  if (!caseData) return <div className="page"><div className="empty-state"><div className="empty-state__title">Дело не найдено</div></div></div>
+  if (loading) return <div className="page page-profile-bg"><div className="loading"><div className="spinner" /></div></div>
+  if (!caseData) return <div className="page page-profile-bg"><div className="empty-state"><div className="empty-state__title">Дело не найдено</div></div></div>
 
   const isActive = ['pending', 'started', 'in_progress', 'manual_mode'].includes(caseData.status)
   const isClosed = ['done', 'delivered', 'cancelled', 'error'].includes(caseData.status)
@@ -77,7 +77,7 @@ export default function CaseDetail() {
   }
 
   return (
-    <div className="page case-detail-page">
+    <div className="page page-profile-bg case-detail-page">
       <div className="chat-header">
         <button className="chat-header__btn" onClick={() => tabIndex === 1 ? setTabIndex(0) : navigate(-1)}>
           <span className="icon">‹</span>
@@ -137,7 +137,7 @@ export default function CaseDetail() {
           {caseData.report && (
             <>
               <div className="section-header">
-                <div className="section-header__title">🎁 Отчёт детектива</div>
+                <div className="section-header__title">🎁 Отчёт о проделанной работе</div>
               </div>
               <div className="report-block">{caseData.report}</div>
             </>

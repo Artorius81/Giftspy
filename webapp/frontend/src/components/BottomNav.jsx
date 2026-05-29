@@ -3,7 +3,7 @@ import api from '../api'
 import { useData } from '../hooks/useData'
 
 const tabs = [
-  { path: '/', icon: '🏠', label: 'Главная' },
+  { path: '/', icon: '🏠', label: 'Поиск' },
   { path: '/new-case', icon: '🕵️', label: 'Детектив' },
   { path: '/targets', icon: '❤️', label: 'Вишлист' },
 ]
