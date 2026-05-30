@@ -186,8 +186,9 @@ export default function Settings() {
             
             <div className="settings-account-profile-info">
               <div className="settings-account-profile-name">{profile?.nickname || 'Пользователь'}</div>
-              <div className="settings-account-profile-phone">
-                {profile?.username ? `@${profile.username}` : `+573150981777`}
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <div>ID: {profile?.user_id || tgUser.id || 'Не указан'}</div>
+                <div>Телефон: {tgUser.phone_number || tgUser.phone || (profile?.username ? `@${profile.username}` : 'Не указан')}</div>
               </div>
             </div>
             

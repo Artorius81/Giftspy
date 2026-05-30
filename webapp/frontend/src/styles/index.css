@@ -3176,16 +3176,16 @@ html {
 }
 
 .tab-filter-btn {
-  border-radius: 20px;
-  padding: 6px 14px;
+  border-radius: 12px;
+  padding: 4px 10px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
   transition: var(--transition);
 }
@@ -6495,9 +6495,7 @@ html {
 body:has(.bottom-sheet-backdrop),
 body:has(.profile-sheet-backdrop) {
   overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  height: 100% !important;
+  height: 100vh !important;
 }
 
 /* Hide Bottom Nav Bar completely when any bottom sheet is open */
@@ -6506,5 +6504,26 @@ body:has(.profile-sheet) .bottom-nav,
 body:has(.bottom-sheet-backdrop) .bottom-nav,
 body:has(.profile-sheet-backdrop) .bottom-nav {
   display: none !important;
+}
+
+/* Override scale effect on specific history target cards */
+.profile-order-card.no-active-scale:active {
+  transform: none !important;
+}
+
+/* Smooth expandable content grid-based height transition */
+.expandable-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+}
+
+.expandable-content.expanded {
+  grid-template-rows: 1fr;
+}
+
+.expandable-inner {
+  min-height: 0;
 }
 

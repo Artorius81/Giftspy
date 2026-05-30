@@ -304,7 +304,7 @@ export default function Targets() {
       </div>
 
       {/* Filter Tabs & "Your friends" Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-0.3px' }}>
           Ваши друзья
         </h2>

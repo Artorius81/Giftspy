@@ -608,7 +608,7 @@ export default function NewCase() {
                           <div key={target} style={{ display: 'flex', flexDirection: 'column' }}>
                             {/* Target Card in Profile Style */}
                             <div
-                              className="profile-order-card"
+                              className="profile-order-card no-active-scale"
                               style={{ marginBottom: isExpanded ? 6 : 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                               onClick={() => toggleGroup(target)}
                             >
@@ -629,7 +629,7 @@ export default function NewCase() {
                             </div>
 
                             {/* Cases List */}
-                            <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`} style={{ display: isExpanded ? 'block' : 'none' }}>
+                            <div className={`expandable-content ${isExpanded ? 'expanded' : ''}`}>
                               <div className="expandable-inner" style={{ paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6, marginBottom: 6 }}>
                                 {group.cases.map(c => {
                                   const st = STATUS[c.status] || STATUS.error

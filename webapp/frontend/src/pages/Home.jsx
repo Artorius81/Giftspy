@@ -130,7 +130,7 @@ export default function Home() {
       {/* Centered Premium Header with Greeting & No Header Buttons */}
       <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
-          Поиск идеального подарка
+          {getGreeting()}
         </h1>
       </div>
 
