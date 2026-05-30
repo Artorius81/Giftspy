@@ -896,6 +896,62 @@ async def refund_balance(user_id, amount=1):
     )
 
 
+# ================= GRANULAR NOTIFICATIONS =================
+
+async def get_all_targets_with_birthdays():
+    """Возвращает все цели с непустым днем рождения."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('targets')
+            .select('id, owner_id, name, identifier, birthday')
+            .not_.is_('birthday', 'null')
+            .execute()
+    )
+    return [(r['id'], r['owner_id'], r['name'] or r['identifier'], r['birthday']) for r in result.data]
+
+
+async def get_user_notifications(user_id):
+    """Возвращает словарь настроек уведомлений пользователя."""
+    await _ensure_user(user_id)
+    try:
+        result = await asyncio.to_thread(
+            lambda: _client.table('users')
+                .select('notify_birthdays, notify_dialogue, notify_reports')
+                .eq('id', user_id)
+                .execute()
+        )
+        row = result.data[0] if result.data else {}
+        bday = row.get('notify_birthdays')
+        dial = row.get('notify_dialogue')
+        rep = row.get('notify_reports')
+        
+        return {
+            "notify_birthdays": True if bday is None else bool(bday),
+            "notify_dialogue": True if dial is None else bool(dial),
+            "notify_reports": True if rep is None else bool(rep)
+        }
+    except Exception as e:
+        logging.error(f"Error fetching notifications: {e}")
+        return {
+            "notify_birthdays": True,
+            "notify_dialogue": True,
+            "notify_reports": True
+        }
+
+
+async def update_user_notifications(user_id, field, value):
+    """Обновляет статус конкретного типа уведомлений пользователя."""
+    await _ensure_user(user_id)
+    allowed = ('notify_birthdays', 'notify_dialogue', 'notify_reports')
+    if field not in allowed:
+        return
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({field: bool(value)})
+            .eq('id', user_id)
+            .execute()
+    )
+
+
 # ================= DETECTIVES (PERSONAS) =================
 
 async def get_personas():

@@ -69,6 +69,12 @@ class ProfileUpdate(BaseModel):
     description: Optional[str] = None
 
 
+class NotificationsUpdate(BaseModel):
+    notify_birthdays: Optional[bool] = None
+    notify_dialogue: Optional[bool] = None
+    notify_reports: Optional[bool] = None
+
+
 class CaseCreate(BaseModel):
     target: str
     holiday: str = "Без повода"
@@ -89,6 +95,7 @@ class WishlistItemCreate(BaseModel):
 @app.get("/api/profile")
 async def get_profile(user_id: int = Depends(get_current_user)):
     balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    notif = await db.get_user_notifications(user_id)
     
     # Compute is_premium based on date check
     is_premium = False
@@ -114,6 +121,9 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "description": description,
         "photo": photo,
         "phone": None,
+        "notify_birthdays": notif["notify_birthdays"],
+        "notify_dialogue": notif["notify_dialogue"],
+        "notify_reports": notif["notify_reports"],
         "self_target_id": self_target_id,
         "wishlist": [
             {
@@ -143,6 +153,17 @@ async def update_profile(data: ProfileUpdate, user_id: int = Depends(get_current
     if data.description is not None:
         desc = data.description.strip()[:200]
         await db.update_user_field(user_id, 'description', desc or None)
+    return {"ok": True}
+
+
+@app.put("/api/profile/notifications")
+async def update_notifications(data: NotificationsUpdate, user_id: int = Depends(get_current_user)):
+    if data.notify_birthdays is not None:
+        await db.update_user_notifications(user_id, 'notify_birthdays', data.notify_birthdays)
+    if data.notify_dialogue is not None:
+        await db.update_user_notifications(user_id, 'notify_dialogue', data.notify_dialogue)
+    if data.notify_reports is not None:
+        await db.update_user_notifications(user_id, 'notify_reports', data.notify_reports)
     return {"ok": True}
 
 

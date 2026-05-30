@@ -153,6 +153,100 @@ export default function Settings() {
     )
   }
 
+  // 3. ЭКРАН НАСТРОЕК УВЕДОМЛЕНИЙ (Notifications Screen)
+  if (settingsScreen === 'notifications') {
+    const handleToggleNotification = async (field, currentValue) => {
+      triggerHaptic()
+      const newValue = !currentValue
+      try {
+        await api.updateNotifications({ [field]: newValue })
+        if (profile) mutate({ ...profile, [field]: newValue })
+      } catch (e) {
+        await showAlert(e.message)
+      }
+    }
+
+    return (
+      <div className="page page-profile-bg" style={{ padding: 0 }}>
+        <div className="settings-new-container">
+          
+          <div className="settings-new-header">
+            <button 
+              className="wishlist-header-btn" 
+              onClick={() => setSettingsScreen('main')} 
+              style={{ width: 36, height: 36 }}
+              aria-label="Назад"
+            >
+              ‹
+            </button>
+            <h1 className="settings-new-title">Уведомления</h1>
+            <div style={{ width: 36 }} />
+          </div>
+
+          <h2 className="settings-section-title">Каналы уведомлений</h2>
+          <div className="settings-list-group">
+            
+            {/* Дни рождения */}
+            <div 
+              className="settings-list-item"
+              onClick={() => handleToggleNotification('notify_birthdays', profile?.notify_birthdays !== false)}
+            >
+              <div className="settings-list-icon">🎁</div>
+              <div className="settings-list-info">
+                <div className="settings-list-title">Дни рождения</div>
+                <div className="settings-list-subtitle">Напоминания о приближающихся праздниках близких</div>
+              </div>
+              <button
+                className={`settings-toggle-btn ${profile?.notify_birthdays !== false ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); handleToggleNotification('notify_birthdays', profile?.notify_birthdays !== false); }}
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+
+            {/* Ход расследования */}
+            <div 
+              className="settings-list-item"
+              onClick={() => handleToggleNotification('notify_dialogue', profile?.notify_dialogue !== false)}
+            >
+              <div className="settings-list-icon">💬</div>
+              <div className="settings-list-info">
+                <div className="settings-list-title">Ход расследования</div>
+                <div className="settings-list-subtitle">Оповещения в чате о репликах цели и ответах детектива</div>
+              </div>
+              <button
+                className={`settings-toggle-btn ${profile?.notify_dialogue !== false ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); handleToggleNotification('notify_dialogue', profile?.notify_dialogue !== false); }}
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+
+            {/* Отчеты */}
+            <div 
+              className="settings-list-item"
+              onClick={() => handleToggleNotification('notify_reports', profile?.notify_reports !== false)}
+            >
+              <div className="settings-list-icon">📂</div>
+              <div className="settings-list-info">
+                <div className="settings-list-title">Результаты расследований</div>
+                <div className="settings-list-subtitle">Получение готовых досье и отчетов о вишлистах целей</div>
+              </div>
+              <button
+                className={`settings-toggle-btn ${profile?.notify_reports !== false ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); handleToggleNotification('notify_reports', profile?.notify_reports !== false); }}
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    )
+  }
+
   // 2. ЭКРАН НАСТРОЕК АККАУНТА (Account Screen с переносом Шпионского режима и заглушками)
   if (settingsScreen === 'account') {
     return (
@@ -292,6 +386,18 @@ export default function Settings() {
               <span className="settings-action-emoji">🔧</span>
             </div>
             <div className="settings-action-label">Аккаунт</div>
+          </div>
+
+          {/* Уведомления */}
+          <div 
+            className="settings-action-card"
+            onClick={() => { triggerHaptic(); setSettingsScreen('notifications'); }}
+          >
+            <div className="settings-action-icon-wrapper">
+              <div className="settings-action-glow-palette" style={{ background: 'radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%)' }}></div>
+              <span className="settings-action-emoji">🔔</span>
+            </div>
+            <div className="settings-action-label">Уведомления</div>
           </div>
 
           {/* Оформление */}

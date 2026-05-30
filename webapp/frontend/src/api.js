@@ -78,6 +78,9 @@ const api = {
     method: 'PUT', body: JSON.stringify(data)
   }),
   uploadProfilePhoto: (file) => requestFile('/api/profile/photo', file),
+  updateNotifications: (data) => request('/api/profile/notifications', {
+    method: 'PUT', body: JSON.stringify(data)
+  }),
 
   // Targets
   getTargets: () => request('/api/targets'),

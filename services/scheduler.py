@@ -42,10 +42,42 @@ async def resolve_target(client: TelegramClient, target: str):
     return None
 
 
+def days_until_birthday(bday_str):
+    """Рассчитывает количество дней до следующего дня рождения цели."""
+    if not bday_str:
+        return None
+    try:
+        # Поддержка форматов DD.MM.YYYY, DD.MM, YYYY-MM-DD и DD-MM-YYYY
+        if '.' in bday_str:
+            parts = bday_str.split('.')
+            day = int(parts[0])
+            month = int(parts[1])
+        elif '-' in bday_str:
+            parts = bday_str.split('-')
+            if len(parts[0]) == 4: # YYYY-MM-DD
+                day = int(parts[2])
+                month = int(parts[1])
+            else: # DD-MM-YYYY
+                day = int(parts[0])
+                month = int(parts[1])
+        else:
+            return None
+
+        from datetime import date
+        today = date.today()
+        bday_this_year = date(today.year, month, day)
+        if bday_this_year < today:
+            bday_this_year = date(today.year + 1, month, day)
+        return (bday_this_year - today).days
+    except Exception:
+        return None
+
+
 async def background_tasks_worker(bot: Bot, client: TelegramClient):
     """Фоновая задача: проверяет БД на новые статусы и новые дела"""
     logging.info("🔄 Фоновые службы уведомлений и сканера запущены...")
     ai_service = AIDetectiveService()
+    last_birthday_check_date = None
 
     while True:
         try:
@@ -54,11 +86,14 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                 started_cases = await db.get_started_cases()
                 for case in started_cases:
                     case_id, customer_id, target = case
-                    await bot.send_message(
-                        chat_id=customer_id,
-                        text=f"🔵 **СТАТУС ОБНОВЛЕН**\nДетектив успешно вышел на связь с {target} и начал допрос! 🕵️‍♂️",
-                        parse_mode="Markdown"
-                    )
+                    # Check status update / dialogue notification settings
+                    notif = await db.get_user_notifications(customer_id)
+                    if notif.get('notify_dialogue', True):
+                        await bot.send_message(
+                            chat_id=customer_id,
+                            text=f"🔵 **СТАТУС ОБНОВЛЕН**\nДетектив успешно вышел на связь с {target} и начал допрос! 🕵️‍♂️",
+                            parse_mode="Markdown"
+                        )
                     await db.update_case_status(case_id, 'in_progress')
             except Exception as e:
                 logging.error(f"Error in started cases: {e}")
@@ -87,9 +122,12 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                         ]
                     )
                     
-                    await bot.send_message(chat_id=customer_id, text=msg, parse_mode="HTML", reply_markup=rate_kb)
+                    # Check case report notification settings
+                    notif = await db.get_user_notifications(customer_id)
+                    if notif.get('notify_reports', True):
+                        await bot.send_message(chat_id=customer_id, text=msg, parse_mode="HTML", reply_markup=rate_kb)
                     await db.mark_case_delivered(case_id)
-                    logging.info(f"✅ Отчет по делу №{case_id} отправлен заказчику!")
+                    logging.info(f"✅ Отчет по делу №{case_id} обработан/отправлен заказчику!")
             except Exception as e:
                 logging.error(f"Error in done cases: {e}")
 
@@ -172,6 +210,44 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                     logging.info(f"🔔 Напоминание #{reminder_id} отправлено пользователю {customer_id}")
             except Exception as e:
                 logging.error(f"Error in reminders: {e}")
+
+            # 5. Проверка дней рождения (раз в сутки)
+            from datetime import date
+            today_str = date.today().isoformat()
+            if last_birthday_check_date != today_str:
+                try:
+                    targets = await db.get_all_targets_with_birthdays()
+                    for t_id, owner_id, target_name, birthday in targets:
+                        # Skip if special record 'self' (user's own birthday is handled in profile edit)
+                        if target_name == "Мой вишлист" or t_id == -1:
+                            continue
+                        days = days_until_birthday(birthday)
+                        if days is not None:
+                            # Verify notification preferences
+                            notif = await db.get_user_notifications(owner_id)
+                            if notif.get('notify_birthdays', True):
+                                if days == 3:
+                                    await bot.send_message(
+                                        chat_id=owner_id,
+                                        text=f"🎁 **БЛИЖАЙШИЙ ДЕНЬ РОЖДЕНИЯ**\n\n"
+                                             f"Через 3 дня (уже {birthday}!) день рождения у вашего близкого: **{target_name}**! 🎉\n\n"
+                                             f"Пора запустить расследование для поиска идеального подарка! 🕵️‍♂️",
+                                        parse_mode="Markdown"
+                                    )
+                                    logging.info(f"🎁 Отправлен пуш о дне рождения {target_name} пользователю {owner_id}")
+                                elif days == 0:
+                                    await bot.send_message(
+                                        chat_id=owner_id,
+                                        text=f"🎂 **ДЕНЬ РОЖДЕНИЯ СЕГОДНЯ!**\n\n"
+                                             f"Сегодня день рождения празднует **{target_name}**! 🎉🥳\n\n"
+                                             f"Надеемся, вы успели приготовить подарок! Если нет — детектив всегда готов прийти на помощь! 🕵️‍♂️",
+                                        parse_mode="Markdown"
+                                    )
+                                    logging.info(f"🎂 Отправлен пуш о дне рождения сегодня {target_name} пользователю {owner_id}")
+                    last_birthday_check_date = today_str
+                    logging.info(f"✅ Проверка дней рождения успешно завершена для даты: {today_str}")
+                except Exception as e:
+                    logging.error(f"Error in birthday check worker: {e}")
 
         except Exception as e:
             logging.error(f"Критическая ошибка в фоновых задачах: {e}")

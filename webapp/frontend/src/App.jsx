@@ -12,6 +12,7 @@ import Store from './pages/Store'
 import Settings from './pages/Settings'
 import ProfileEdit from './pages/ProfileEdit'
 import PopupProvider from './components/PopupProvider'
+import InAppNotificationProvider from './components/InAppNotificationProvider'
 import './styles/snackbar.css'
 
 // Main tab routes where BottomNav should be visible
@@ -98,7 +99,9 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <InAppNotificationProvider>
+        <AppContent />
+      </InAppNotificationProvider>
     </BrowserRouter>
   )
 }
