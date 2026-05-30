@@ -285,8 +285,8 @@ export default function Settings() {
 
           {/* Плашка пользователя */}
           <div 
-            className="settings-account-profile-capsule" 
-            onClick={() => { triggerHaptic(); navigate('/profile/edit'); }}
+            className="settings-account-profile-capsule no-active-scale" 
+            style={{ cursor: 'default', transform: 'none' }}
           >
             <div className="settings-account-profile-avatar">
               {profile?.photo && profile?.photo !== 'None' ? (
@@ -303,8 +303,6 @@ export default function Settings() {
                 <div>Телефон: {profile?.phone || tgUser.phone_number || tgUser.phone || 'Не указан'}</div>
               </div>
             </div>
-            
-            <span className="settings-list-arrow">›</span>
           </div>
 
           <h2 className="settings-section-title">Премиум функции</h2>

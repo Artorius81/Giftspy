@@ -141,9 +141,8 @@ const STEPS = ['detective', 'target', 'holiday', 'context', 'budget', 'confirm']
 const AI_MODELS = [
   { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'По умолчанию. Быстрая и лаконичная базовая модель Google.' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: '🧠', desc: 'Флагман OpenAI. Превосходная логика, глубокий анализ и точность роли.' },
-  { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', icon: '🎨', desc: 'Флагман Anthropic. Невероятно живой язык и художественный отыгрыш роли.' },
+  { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', icon: '👑', desc: 'Премиум Anthropic. Невероятно глубокий контекст, мощный анализ эмоций и безупречный детективный интеллект.' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный и сбалансированный ИИ от OpenAI.' },
-  { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', icon: '⚡️', desc: 'Сверхбыстрый и точный компактный ИИ от Anthropic.' },
 ]
 
 export default function NewCase() {

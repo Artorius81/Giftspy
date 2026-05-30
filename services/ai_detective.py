@@ -237,9 +237,32 @@ class AIDetectiveService:
 
     def _call_gemini(self, chat_context: dict) -> str:
         model = chat_context.get("model", self.model)
-        if model.startswith("gemini"):
+        try:
+            if model.startswith("gemini"):
+                response = self.client.models.generate_content(
+                    model=model,
+                    contents=chat_context["messages"],
+                    config=types.GenerateContentConfig(
+                        system_instruction=chat_context["system"],
+                        temperature=0.8,
+                    )
+                )
+                return response.text
+            else:
+                openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+                response = self.openai_client.chat.completions.create(
+                    model=model,
+                    messages=openai_msgs,
+                    temperature=0.8,
+                )
+                return response.choices[0].message.content
+        except Exception as e:
+            logging.error(f"AI Call failed for model {model}: {e}. Attempting fallback to gemini-3.5-flash...")
+            if model == "gemini-3.5-flash":
+                raise e
+            # Seamless fallback to default Gemini model
             response = self.client.models.generate_content(
-                model=model,
+                model="gemini-3.5-flash",
                 contents=chat_context["messages"],
                 config=types.GenerateContentConfig(
                     system_instruction=chat_context["system"],
@@ -247,12 +270,4 @@ class AIDetectiveService:
                 )
             )
             return response.text
-        else:
-            openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
-            response = self.openai_client.chat.completions.create(
-                model=model,
-                messages=openai_msgs,
-                temperature=0.8,
-            )
-            return response.choices[0].message.content
 
