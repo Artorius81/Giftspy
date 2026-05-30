@@ -220,6 +220,9 @@ export default function NewCase() {
     }
   }, [personas])
 
+  const touchStartX = useRef(0)
+  const dragOffsetRef = useRef(0)
+
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
     dragOffsetRef.current = 0
@@ -371,8 +374,73 @@ export default function NewCase() {
           </div>
         </div>
 
+        {/* Navigation Buttons and Pagination Dots */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '12px', marginBottom: '8px' }}>
+          <button
+            onClick={() => selectPersonaIndex(activePersonaIdx - 1)}
+            style={{
+              padding: '8px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              width: '36px',
+              height: '36px',
+              transition: 'var(--transition)'
+            }}
+          >
+            ‹
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {personas.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => selectPersonaIndex(index)}
+                style={{
+                  height: '6px',
+                  borderRadius: '999px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  width: activePersonaIdx === index ? '18px' : '6px',
+                  background: activePersonaIdx === index ? 'var(--accent)' : 'var(--card-border)'
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => selectPersonaIndex(activePersonaIdx + 1)}
+            style={{
+              padding: '8px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              width: '36px',
+              height: '36px',
+              transition: 'var(--transition)'
+            }}
+          >
+            ›
+          </button>
+        </div>
+
         {personas[activePersonaIdx] && (
-          <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
+          <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '12px', padding: '0 8px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
               {personas[activePersonaIdx].name}
             </h2>
@@ -387,9 +455,22 @@ export default function NewCase() {
           maxWidth: '320px', 
           background: 'transparent',
           padding: '8px 0',
-          marginTop: '8px'
+          marginTop: '4px'
         }}>
-          <SlideToConfirm onConfirm={() => { triggerHaptic(); setStep(2); }} submitting={false} />
+          <button
+            className="btn btn--primary"
+            onClick={() => { triggerHaptic(); setStep(2); }}
+            style={{
+              width: '100%',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            🔍 Начать расследование
+          </button>
         </div>
       </div>
     );
