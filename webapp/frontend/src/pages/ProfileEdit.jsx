@@ -228,7 +228,8 @@ export default function ProfileEdit() {
   const wishlistSubtitle = `${targetsCount} ${targetsCount === 1 ? 'идея' : targetsCount > 1 && targetsCount < 5 ? 'идеи' : 'идей'}`
 
   return (
-    <div className="page page-profile-bg">
+    <>
+      <div className="page page-profile-bg">
       {/* Шапка профиля — Убраны сторонние кнопки */}
       <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)' }}>Профиль</h1>
@@ -443,58 +444,57 @@ export default function ProfileEdit() {
           ＋ Добавить подарок
         </button>
       </div>
+    </div>
 
-      {/* iOS-Style Bottom Sheet форма редактирования */}
-{
-  showEditModal && (
-    <>
-      <div className="bottom-sheet-backdrop" onClick={() => setShowEditModal(false)} />
-      <div className="bottom-sheet">
-        <div className="bottom-sheet-header">
-          <span className="bottom-sheet-title">Редактировать профиль</span>
-          <button className="bottom-sheet-close" onClick={() => setShowEditModal(false)}>✕</button>
+    {/* iOS-Style Bottom Sheet форма редактирования */}
+    {showEditModal && (
+      <>
+        <div className="bottom-sheet-backdrop" onClick={() => setShowEditModal(false)} />
+        <div className="bottom-sheet">
+          <div className="bottom-sheet-header">
+            <span className="bottom-sheet-title">Редактировать профиль</span>
+            <button className="bottom-sheet-close" onClick={() => setShowEditModal(false)}>✕</button>
+          </div>
+
+          <form onSubmit={handleSave}>
+            <div className="input-group">
+              <label>👤 Имя / Никнейм</label>
+              <input
+                className="input"
+                placeholder="Как вас зовут?"
+                maxLength={32}
+                value={form.nickname}
+                onChange={e => setForm({ ...form, nickname: e.target.value })}
+              />
+              <span className="input-hint">{form.nickname.length}/32</span>
+            </div>
+
+            <div className="input-group">
+              <label>🎂 День рождения</label>
+              <input
+                className="input"
+                placeholder="ДД.ММ.ГГГГ"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.birthday}
+                onChange={e => {
+                  let v = e.target.value.replace(/[^\d.]/g, '')
+                  const digits = v.replace(/\./g, '')
+                  if (digits.length >= 4) v = digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4, 8)
+                  else if (digits.length >= 2) v = digits.slice(0, 2) + '.' + digits.slice(2)
+                  else v = digits
+                  setForm({ ...form, birthday: v })
+                }}
+              />
+            </div>
+
+            <button className="btn btn--primary" type="submit" disabled={saving} style={{ marginTop: 8 }}>
+              {saving ? '⏳ Сохранение...' : '✅ Сохранить'}
+            </button>
+          </form>
         </div>
-
-        <form onSubmit={handleSave}>
-          <div className="input-group">
-            <label>👤 Имя / Никнейм</label>
-            <input
-              className="input"
-              placeholder="Как вас зовут?"
-              maxLength={32}
-              value={form.nickname}
-              onChange={e => setForm({ ...form, nickname: e.target.value })}
-            />
-            <span className="input-hint">{form.nickname.length}/32</span>
-          </div>
-
-          <div className="input-group">
-            <label>🎂 День рождения</label>
-            <input
-              className="input"
-              placeholder="ДД.ММ.ГГГГ"
-              inputMode="numeric"
-              maxLength={10}
-              value={form.birthday}
-              onChange={e => {
-                let v = e.target.value.replace(/[^\d.]/g, '')
-                const digits = v.replace(/\./g, '')
-                if (digits.length >= 4) v = digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4, 8)
-                else if (digits.length >= 2) v = digits.slice(0, 2) + '.' + digits.slice(2)
-                else v = digits
-                setForm({ ...form, birthday: v })
-              }}
-            />
-          </div>
-
-          <button className="btn btn--primary" type="submit" disabled={saving} style={{ marginTop: 8 }}>
-            {saving ? '⏳ Сохранение...' : '✅ Сохранить'}
-          </button>
-        </form>
-      </div>
-    </>
-  )
-}
-    </div >
+      </>
+    )}
+  </>
   )
 }

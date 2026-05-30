@@ -158,6 +158,7 @@ export default function NewCase() {
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
   const [isDraggingTrack, setIsDraggingTrack] = useState(false)
   const [transitionEnabled, setTransitionEnabled] = useState(true)
+  const isSwipingLocked = useRef(false)
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
@@ -222,6 +223,7 @@ export default function NewCase() {
   const trackRef = useRef(null)
 
   const handleTouchStart = (e) => {
+    if (isSwipingLocked.current) return
     touchStartX.current = e.touches[0].clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
@@ -242,6 +244,11 @@ export default function NewCase() {
   const handleTouchEnd = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
+    
+    isSwipingLocked.current = true
+    setTimeout(() => {
+      isSwipingLocked.current = false
+    }, 700)
     
     const threshold = 50
     const offset = dragOffsetRef.current
@@ -292,6 +299,7 @@ export default function NewCase() {
   }
 
   const handleMouseDown = (e) => {
+    if (isSwipingLocked.current) return
     touchStartX.current = e.clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
@@ -309,6 +317,11 @@ export default function NewCase() {
   const handleMouseUpOrLeave = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
+    
+    isSwipingLocked.current = true
+    setTimeout(() => {
+      isSwipingLocked.current = false
+    }, 700)
     
     const threshold = 50
     const offset = dragOffsetRef.current
@@ -389,6 +402,11 @@ export default function NewCase() {
                     key={idx}
                     className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
                     onClick={() => {
+                      if (isSwipingLocked.current) return
+                      isSwipingLocked.current = true
+                      setTimeout(() => {
+                        isSwipingLocked.current = false
+                      }, 700)
                       setActivePersonaIdx(idx);
                       setForm(prev => ({ ...prev, persona: p.name }));
                     }}

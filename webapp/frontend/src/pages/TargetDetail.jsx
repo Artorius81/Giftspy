@@ -237,7 +237,8 @@ export default function TargetDetail() {
   }
 
   return (
-    <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
+    <>
+      <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       
       {/* Sleek Russian Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
@@ -408,8 +409,7 @@ export default function TargetDetail() {
           </div>
         </div>
       </div>
-
-
+    </div>
 
       {/* Edit Friend Modal bottom sheet */}
       {editing && (
@@ -558,7 +558,6 @@ export default function TargetDetail() {
           </div>
         </>
       )}
-
-    </div>
+    </>
   )
 }

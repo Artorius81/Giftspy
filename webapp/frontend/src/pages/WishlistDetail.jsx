@@ -466,7 +466,8 @@ export default function WishlistDetail() {
   })
 
   return (
-    <div className="page page-profile-bg" style={{ paddingBottom: '140px' }}>
+    <>
+      <div className="page page-profile-bg" style={{ paddingBottom: '140px' }}>
       
       {/* Header action bar (Photo 2) */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
@@ -554,6 +555,7 @@ export default function WishlistDetail() {
       >
         ＋ Добавить подарок
       </button>
+    </div>
 
       {/* Custom design Photo 3 Bottom Sheet for adding item */}
       {showAdd && (
@@ -790,7 +792,6 @@ export default function WishlistDetail() {
         </div>,
         document.body
       )}
-
-    </div>
+    </>
   )
 }

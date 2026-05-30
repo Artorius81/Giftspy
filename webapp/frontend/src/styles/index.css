@@ -6511,19 +6511,14 @@ body:has(.profile-sheet-backdrop) .bottom-nav {
   transform: none !important;
 }
 
-/* Smooth expandable content grid-based height transition */
+/* Smooth expandable content max-height transition for collapse/expand */
 .expandable-content {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  max-height: 0;
   overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .expandable-content.expanded {
-  grid-template-rows: 1fr;
-}
-
-.expandable-inner {
-  min-height: 0;
+  max-height: 1000px;
 }
 

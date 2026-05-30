@@ -10,6 +10,7 @@ const CUTE_EMOJIS = ['🐰', '🦊', '🐼', '🐨', '🐱', '🐹', '🐯', '�
 export default function Settings() {
   const navigate = useNavigate()
   const { data: profile, loading, mutate } = useData('profile', api.getProfile)
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {}
   
   const [spyMode, setSpyMode] = useState(false)
   const [toggling, setToggling] = useState(false)

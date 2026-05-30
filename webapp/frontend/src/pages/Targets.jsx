@@ -182,7 +182,8 @@ export default function Targets() {
   }
 
   return (
-    <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
+    <>
+      <div className="page page-profile-bg" style={{ paddingBottom: '120px' }}>
       
       {/* Sleek Mockup Header (Photo 1) */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
@@ -377,6 +378,7 @@ export default function Targets() {
           </>
         )}
       </div>
+    </div>
 
       {/* iOS-Style modal bottom sheet for adding a new friend */}
       {showAdd && (
@@ -453,7 +455,6 @@ export default function Targets() {
           </div>
         </>
       )}
-
-    </div>
+    </>
   )
 }
