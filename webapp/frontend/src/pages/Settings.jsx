@@ -323,29 +323,7 @@ export default function Settings() {
               </button>
             </div>
 
-            {/* Будущая премиум-функция 1 */}
-            <div className="settings-list-item" style={{ opacity: 0.65, cursor: 'default' }}>
-              <div className="settings-list-icon">🚀</div>
-              <div className="settings-list-info">
-                <div className="settings-list-title">Супер-Детектив (Скоро)</div>
-                <div className="settings-list-subtitle">Автоматический сбор подсказок искусственным интеллектом</div>
-              </div>
-              <button className="settings-toggle-btn" disabled>
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
 
-            {/* Будущая премиум-функция 2 */}
-            <div className="settings-list-item" style={{ opacity: 0.65, cursor: 'default' }}>
-              <div className="settings-list-icon">🎁</div>
-              <div className="settings-list-info">
-                <div className="settings-list-title">Умные рекомендации (Скоро)</div>
-                <div className="settings-list-subtitle">Генерация подарков на основе характера цели</div>
-              </div>
-              <button className="settings-toggle-btn" disabled>
-                <span className="settings-toggle-knob" />
-              </button>
-            </div>
 
           </div>
 

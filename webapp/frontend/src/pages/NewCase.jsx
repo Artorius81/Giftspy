@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
-import { showAlert } from '../utils/popup'
+import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
 
 
@@ -152,6 +152,7 @@ export default function NewCase() {
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
   const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
   const { data: casesData, loading: cLoading, mutate: mutateCases } = useData('cases', api.getCases)
+  const { data: profile } = useData('profile', api.getProfile)
 
   const targets = targetsData || []
   const personas = personasData || []
@@ -188,7 +189,7 @@ export default function NewCase() {
     if (personas.length > 0) {
       const idx = personas.findIndex(p => p.name === form.persona)
       let targetIdx = idx !== -1 ? idx : -1
-      
+
       if (targetIdx === -1) {
         const savedPersona = localStorage.getItem('last_selected_persona')
         const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
@@ -198,7 +199,7 @@ export default function NewCase() {
           targetIdx = 0
         }
       }
-      
+
       if (activePersonaIdx !== targetIdx) {
         setActivePersonaIdx(targetIdx)
       }
@@ -241,7 +242,7 @@ export default function NewCase() {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
     setDragOffset(0)
-    
+
     const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
@@ -254,7 +255,7 @@ export default function NewCase() {
       }
       selectPersonaIndex(newIdx)
     }
-    
+
     dragOffsetRef.current = 0
     touchStartX.current = 0
   }
@@ -276,7 +277,7 @@ export default function NewCase() {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
     setDragOffset(0)
-    
+
     const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
@@ -289,7 +290,7 @@ export default function NewCase() {
       }
       selectPersonaIndex(newIdx)
     }
-    
+
     dragOffsetRef.current = 0
     touchStartX.current = 0
   }
@@ -304,20 +305,20 @@ export default function NewCase() {
 
   const renderCarousel = () => {
     const N = personas.length
-    
+
     return (
       <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
         <div className="persona-carousel-container" style={{ width: '100%', overflow: 'hidden' }}>
-          <div 
+          <div
             className="persona-carousel-track-wrapper"
-            onTouchStart={handleTouchStart} 
+            onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
             onMouseLeave={handleMouseUpOrLeave}
-            style={{ 
+            style={{
               cursor: isDraggingTrack ? 'grabbing' : 'grab',
               position: 'relative',
               width: '100%',
@@ -340,9 +341,10 @@ export default function NewCase() {
               const zIndex = 10 - Math.abs(offset);
               const scale = isActive ? 1.08 : 0.82;
               const opacity = isVisible ? (isActive ? 1 : 0.5) : 0;
-              
+
               const shiftX = offset * 115 + dragOffset;
-              
+              const isPremiumLocked = p.name !== 'Виктор Блэк' && !profile?.is_premium;
+
               return (
                 <div
                   key={idx}
@@ -367,6 +369,21 @@ export default function NewCase() {
                 >
                   <div className="persona-carousel-card">
                     <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
+                    {isPremiumLocked && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0, 0, 0, 0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '32px',
+                        color: '#ffd700',
+                        backdropFilter: 'blur(1px)'
+                      }}>
+                        👑
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -450,16 +467,30 @@ export default function NewCase() {
           </div>
         )}
 
-        <div style={{ 
-          width: '100%', 
-          maxWidth: '320px', 
+        <div style={{
+          width: '100%',
+          maxWidth: '320px',
           background: 'transparent',
           padding: '8px 0',
           marginTop: '4px'
         }}>
           <button
             className="btn btn--primary"
-            onClick={() => { triggerHaptic(); setStep(2); }}
+            onClick={async () => {
+              const activePersona = personas[activePersonaIdx];
+              const isLocked = activePersona && activePersona.name !== 'Виктор Блэк' && !profile?.is_premium;
+              if (isLocked) {
+                const confirmUnlock = await showConfirm(
+                  `👑 Детектив ${activePersona.name} доступен только с премиум подпиской!\n\nХотите перейти в магазин, чтобы активировать премиум?`
+                );
+                if (confirmUnlock) {
+                  navigate('/store');
+                }
+                return;
+              }
+              triggerHaptic();
+              setStep(2);
+            }}
             style={{
               width: '100%',
               margin: 0,
