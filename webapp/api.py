@@ -109,6 +109,8 @@ async def get_profile(user_id: int = Depends(get_current_user)):
     self_target_id = await db.get_or_create_self_target(user_id)
     wishlist = await db.get_wishlist_grouped(self_target_id)
     
+    model_selector_enabled = await db.get_user_model_selector_enabled(user_id)
+    
     return {
         "user_id": user_id,
         "balance": balance,
@@ -118,6 +120,7 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "active_cases": active,
         "nickname": nickname,
         "spy_mode": spy_mode,
+        "model_selector_enabled": model_selector_enabled,
         "birthday": birthday,
         "description": description,
         "photo": photo,
@@ -482,6 +485,15 @@ async def toggle_spy_mode_endpoint(user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Требуется Премиум подписка для шпионского режима")
     new_val = await db.toggle_spy_mode(user_id)
     return {"spy_mode": bool(new_val)}
+
+@app.post("/api/settings/model-selector")
+async def toggle_model_selector_endpoint(user_id: int = Depends(get_current_user)):
+    # Premium check
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка для этой функции")
+    new_val = await db.toggle_model_selector(user_id)
+    return {"model_selector_enabled": bool(new_val)}
+
 
 @app.post("/api/cases/{case_id}/chat")
 async def send_chat_message(case_id: int, data: ChatMessage, user_id: int = Depends(get_current_user)):

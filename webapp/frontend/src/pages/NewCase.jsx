@@ -136,7 +136,7 @@ const BUDGET_OPTIONS = [
   'До 10 000 ₽', 'До 30 000 ₽', 'Неограничен'
 ]
 
-const STEPS = ['target', 'holiday', 'context', 'budget', 'confirm']
+const STEPS = ['detective', 'target', 'holiday', 'context', 'budget', 'confirm']
 
 const AI_MODELS = [
   { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'По умолчанию. Быстрая и лаконичная базовая модель Google.' },
@@ -535,7 +535,7 @@ export default function NewCase() {
     } catch { }
   }
 
-  const currentStepKey = step >= 2 ? STEPS[step - 2] : null
+  const currentStepKey = step >= 2 ? STEPS[step - 1] : null
 
   const hasCustomHoliday = form.holiday && !HOLIDAY_OPTIONS.includes(form.holiday) && form.holiday !== 'Без повода'
 
@@ -550,6 +550,7 @@ export default function NewCase() {
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'gemini-3.5-flash'
     try {
       await api.createCase({
         target: form.target,
@@ -557,7 +558,7 @@ export default function NewCase() {
         context: form.context || 'Нет данных',
         persona: form.persona,
         budget: form.budget || 'Не указан',
-        ai_model: form.ai_model,
+        ai_model: activeModel,
       })
 
       // Reset form and return to dashboard
@@ -615,7 +616,7 @@ export default function NewCase() {
           <div style={{ width: 36 }} />
         ) : (
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
-            {step >= 2 ? `${step - 1}/${STEPS.length}` : ''}
+            {step >= 2 ? `${step}/${STEPS.length}` : ''}
           </div>
         )}
       </div>
@@ -624,7 +625,7 @@ export default function NewCase() {
       {step >= 2 && (
         <div className="wizard-progress">
           {STEPS.map((s, i) => (
-            <div key={s} className={`wizard-dot ${i === (step - 2) ? 'active' : i < (step - 2) ? 'done' : ''}`} />
+            <div key={s} className={`wizard-dot ${i === (step - 1) ? 'active' : i < (step - 1) ? 'done' : ''}`} />
           ))}
         </div>
       )}
@@ -830,16 +831,34 @@ export default function NewCase() {
         <div className="wizard-step">
           <div className="wizard-step__title">🎉 Какой повод?</div>
           <div className="wizard-step__desc">Выберите из вариантов или напишите свой</div>
-          <div className="option-grid">
-            {HOLIDAY_OPTIONS.map(h => (
-              <div
-                key={h}
-                className={`option-item ${form.holiday === h ? 'selected' : ''}`}
-                onClick={() => { setForm({ ...form, holiday: h }); setStep(4) }}
-              >
-                {h}
-              </div>
-            ))}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+            {HOLIDAY_OPTIONS.map(h => {
+              const isSelected = form.holiday === h;
+              return (
+                <div
+                  key={h}
+                  onClick={() => { triggerHaptic(); setForm({ ...form, holiday: h }); setStep(4) }}
+                  style={{
+                    background: isSelected ? 'rgba(108, 92, 231, 0.12)' : 'var(--card-bg)',
+                    border: '1px solid',
+                    borderColor: isSelected ? 'var(--accent)' : 'var(--card-border)',
+                    borderRadius: '20px',
+                    padding: '8px 14px',
+                    fontSize: '13px',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: isSelected ? 600 : 400,
+                    boxShadow: isSelected ? '0 0 8px rgba(108, 92, 231, 0.15)' : 'none'
+                  }}
+                >
+                  {h}
+                </div>
+              );
+            })}
           </div>
           <div className="input-group" style={{ marginTop: 12 }}>
             <input
@@ -917,66 +936,99 @@ export default function NewCase() {
             </div>
           </div>
 
-          <div className="section-header" style={{ marginTop: 24, marginBottom: 8 }}>
-            <div className="section-header__title">🤖 Выберите ИИ модель детектива</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-            {AI_MODELS.map(m => {
-              const isSelected = form.ai_model === m.id;
-              const isLocked = m.id !== 'gemini-3.5-flash' && !profile?.is_premium;
-              return (
-                <div
-                  key={m.id}
-                  className={`card no-active-scale ${isSelected ? 'selected' : ''}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                    padding: '14px 16px',
-                    borderColor: isSelected ? 'var(--accent)' : 'var(--card-border)',
-                    background: isSelected ? 'rgba(108, 92, 231, 0.08)' : 'var(--card-bg)',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    opacity: isLocked ? 0.65 : 1,
-                    transition: 'var(--transition)'
-                  }}
-                  onClick={async () => {
-                    if (isLocked) {
-                      const confirmStore = await showConfirm(
-                        `👑 Модель ${m.name} доступна только с премиум подпиской!\n\nЖелаете перейти в магазин для активации?`
-                      );
-                      if (confirmStore) {
-                        navigate('/store');
-                      }
-                      return;
-                    }
-                    triggerHaptic();
-                    setForm({ ...form, ai_model: m.id });
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+          {profile?.model_selector_enabled !== false && (
+            <>
+              <div className="section-header" style={{ marginTop: 24, marginBottom: 8 }}>
+                <div className="section-header__title">🤖 Выберите ИИ модель детектива</div>
+              </div>
+              
+              {/* Horizontal Scrollable Selector */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                paddingBottom: '8px',
+                marginBottom: '12px',
+                scrollbarWidth: 'none',
+                WebkitOverflowScrolling: 'touch',
+                width: '100%'
+              }} className="model-selector-horizontal">
+                {AI_MODELS.map(m => {
+                  const isSelected = form.ai_model === m.id;
+                  const isLocked = m.id !== 'gemini-3.5-flash' && !profile?.is_premium;
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '10px 16px',
+                        borderRadius: '20px',
+                        border: '1px solid',
+                        borderColor: isSelected ? 'var(--accent)' : 'var(--card-border)',
+                        background: isSelected ? 'rgba(108, 92, 231, 0.12)' : 'var(--card-bg)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                        opacity: isLocked ? 0.65 : 1,
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        transition: 'var(--transition)'
+                      }}
+                      onClick={async () => {
+                        if (isLocked) {
+                          const confirmStore = await showConfirm(
+                            `👑 Модель ${m.name} доступна только с премиум подпиской!\n\nЖелаете перейти в магазин для активации?`
+                          );
+                          if (confirmStore) {
+                            navigate('/store');
+                          }
+                          return;
+                        }
+                        triggerHaptic();
+                        setForm({ ...form, ai_model: m.id });
+                      }}
+                    >
                       <span>{m.icon}</span>
                       <span>{m.name}</span>
-                      {m.id === 'gemini-3.5-flash' && (
-                        <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-secondary)' }}>
-                          Базовая
-                        </span>
-                      )}
+                      {isLocked ? (
+                        <span style={{ fontSize: '11px', marginLeft: '2px' }}>🔒</span>
+                      ) : isSelected ? (
+                        <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: '2px' }}>✓</span>
+                      ) : null}
                     </div>
-                    {isLocked ? (
-                      <span style={{ fontSize: 13 }} title="Требуется Премиум">🔒 👑</span>
-                    ) : isSelected ? (
-                      <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
-                    ) : null}
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Single Description Box */}
+              {(() => {
+                const selectedModelInfo = AI_MODELS.find(m => m.id === form.ai_model);
+                return selectedModelInfo ? (
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    background: 'rgba(255,255,255,0.02)',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--card-border)',
+                    marginBottom: 20,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    lineHeight: '1.4',
+                    textAlign: 'left'
+                  }}>
+                    <span style={{ fontSize: '14px' }}>💡</span>
+                    <div>
+                      <strong>{selectedModelInfo.name}:</strong> {selectedModelInfo.desc}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: '1.45', textAlign: 'left' }}>
-                    {m.desc}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                ) : null;
+              })()}
+            </>
+          )}
 
           <SlideToConfirm onConfirm={handleSubmit} submitting={submitting} />
         </div>

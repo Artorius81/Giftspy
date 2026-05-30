@@ -549,6 +549,32 @@ async def get_user_spy_mode(user_id):
     return False
 
 
+async def get_user_model_selector_enabled(user_id) -> bool:
+    await _ensure_user(user_id)
+    result = await asyncio.to_thread(
+        lambda: _client.table('users')
+            .select('model_selector_enabled')
+            .eq('id', user_id)
+            .execute()
+    )
+    if result.data and 'model_selector_enabled' in result.data[0]:
+        val = result.data[0]['model_selector_enabled']
+        return bool(val) if val is not None else True
+    return True
+
+
+async def toggle_model_selector(user_id) -> bool:
+    current = await get_user_model_selector_enabled(user_id)
+    new_val = not current
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({'model_selector_enabled': new_val})
+            .eq('id', user_id)
+            .execute()
+    )
+    return new_val
+
+
 async def get_all_user_cases(customer_id):
     try:
         result = await asyncio.to_thread(

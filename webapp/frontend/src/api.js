@@ -118,6 +118,7 @@ const api = {
 
   // Settings
   toggleSpyMode: () => request('/api/settings/spy-mode', { method: 'POST' }),
+  toggleModelSelector: () => request('/api/settings/model-selector', { method: 'POST' }),
 
   // Wishlist
   addWishlistItem: (data) => request('/api/wishlist', {

@@ -14,6 +14,8 @@ export default function Settings() {
   
   const [spyMode, setSpyMode] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [modelSelectorEnabled, setModelSelectorEnabled] = useState(true)
+  const [togglingModel, setTogglingModel] = useState(false)
 
   // Переключение подразделов настроек: 'main', 'account', 'theme'
   const [settingsScreen, setSettingsScreen] = useState('main')
@@ -25,6 +27,7 @@ export default function Settings() {
     if (profile) {
       const isPremium = !!profile.is_premium
       setSpyMode(isPremium ? profile.spy_mode : false)
+      setModelSelectorEnabled(profile.model_selector_enabled !== false)
     }
   }, [profile])
 
@@ -74,6 +77,20 @@ export default function Settings() {
       await showAlert(e.message)
     }
     setToggling(false)
+  }
+
+  const handleToggleModelSelector = async (e) => {
+    e.stopPropagation()
+    triggerHaptic()
+    setTogglingModel(true)
+    try {
+      const result = await api.toggleModelSelector()
+      setModelSelectorEnabled(result.model_selector_enabled)
+      if (profile) mutate({ ...profile, model_selector_enabled: result.model_selector_enabled })
+    } catch (e) {
+      await showAlert(e.message)
+    }
+    setTogglingModel(false)
   }
 
   const getDefaultAvatar = (userId) => {
@@ -318,6 +335,38 @@ export default function Settings() {
                 className={`settings-toggle-btn ${spyMode ? 'active' : ''}`}
                 disabled={!isPremium || toggling}
                 onClick={handleToggleSpy}
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+
+            {/* Выбор ИИ моделей */}
+            <div 
+              className="settings-list-item"
+              onClick={() => {
+                if (!isPremium) {
+                  triggerHaptic();
+                  navigate('/store');
+                }
+              }}
+            >
+              <div className="settings-list-icon">🤖</div>
+              <div className="settings-list-info">
+                <div className="settings-list-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>Выбор ИИ моделей</span>
+                  {!isPremium && <span style={{ fontSize: '12px' }}>🔒</span>}
+                </div>
+                <div className="settings-list-subtitle">
+                  {isPremium 
+                    ? 'Смена ИИ моделей (GPT-4o, Claude) при создании дел'
+                    : 'Возможность выбирать умные ИИ модели (Премиум)'}
+                </div>
+              </div>
+              
+              <button
+                className={`settings-toggle-btn ${modelSelectorEnabled ? 'active' : ''}`}
+                disabled={!isPremium || togglingModel}
+                onClick={handleToggleModelSelector}
               >
                 <span className="settings-toggle-knob" />
               </button>
