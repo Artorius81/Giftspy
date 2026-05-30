@@ -153,17 +153,8 @@ async def _process_target_input(case, user_message, event):
             )
         return
 
-    # Уведомляем пользователя об ответе цели в AI-режиме (без раскрытия текста для сохранения ценности премиума)
-    notif = await db.get_user_notifications(customer_id)
-    if notif.get('notify_dialogue', True):
-        try:
-            await bot.send_message(
-                chat_id=customer_id,
-                text=f"💬 **{display_name}** прислал(а) новый ответ детективу **{persona}**!\n\nЗагляните в досье, чтобы узнать подробности! 🕵️‍♂️",
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            logging.warning(f"Failed to send target reply alert: {e}")
+    # AI-mode reply notification removed to prevent spam (users can monitor progress in WebApp)
+    pass
 
     chat_entity = await event.get_chat()
     async with client.action(chat_entity, 'typing'):
@@ -218,17 +209,8 @@ async def _process_target_input(case, user_message, event):
                 await event.respond(ai_text, parse_mode="Markdown")
                 await db.save_chat_message(case_id, 'ai', ai_text)
                 
-                # Уведомляем пользователя об ответе детектива (без раскрытия текста для сохранения ценности премиума)
-                notif = await db.get_user_notifications(customer_id)
-                if notif.get('notify_dialogue', True):
-                    try:
-                        await bot.send_message(
-                            chat_id=customer_id,
-                            text=f"🕵️‍♂️ **Детектив {persona}** продолжил диалог и отправил новое сообщение цели!\n\nСледите за расследованием в Mini App! 📱",
-                            parse_mode="Markdown"
-                        )
-                    except Exception as e:
-                        logging.warning(f"Failed to send detective response alert: {e}")
+                # AI-mode response notification removed to prevent spam (users can monitor progress in WebApp)
+                pass
 
                 if spy_mode:
                     await update_spy_message(case_id, customer_id, display_name, persona)

@@ -62,50 +62,53 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
 
   useEffect(() => {
     if (messages.length > 0 && isActiveTab) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
+      // Instant snap on first render / tab transition
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+      
+      // Delay-safe fallback in case of rendering lag
+      const t1 = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+      }, 50)
+      
+      const t2 = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+      }, 150)
+
+      const t3 = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+      }, 300)
+      
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+        clearTimeout(t3)
+      }
     }
-  }, [loading, isActiveTab])
+  }, [isActiveTab, loading])
 
   // Handle mobile keyboard: Telegram TMA and standard visualViewport
   useEffect(() => {
     const handleResize = () => {
-      const el = inputAreaRef.current
-      if (!el) return
-      
-      let kbHeight = 0
-      if (window.Telegram?.WebApp && window.Telegram.WebApp.viewportStableHeight) {
-        const tg = window.Telegram.WebApp
-        kbHeight = tg.viewportStableHeight - tg.viewportHeight
-      } else if (window.visualViewport) {
-        kbHeight = window.innerHeight - window.visualViewport.height
-      }
-
-      if (kbHeight > 100) {
-        el.style.bottom = `${kbHeight + 8}px`
+      if (!window.visualViewport) return
+      const keyboardHeight = window.innerHeight - window.visualViewport.height
+      if (keyboardHeight > 100 && isActiveTab) {
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' })
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
         }, 50)
-      } else {
-        el.style.bottom = ''
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }, 150)
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        }, 300)
       }
     }
 
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.onEvent('viewportChanged', handleResize)
-    }
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize)
-    }
-
+    window.visualViewport?.addEventListener('resize', handleResize)
     return () => {
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.offEvent('viewportChanged', handleResize)
-      }
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize)
-      }
+      window.visualViewport?.removeEventListener('resize', handleResize)
     }
-  }, [])
+  }, [isActiveTab])
 
   const handleSend = async () => {
     if (!inputText.trim() || !isManualMode || sending) return
@@ -299,7 +302,18 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onFocus={() => window.Telegram?.WebApp?.expand()}
+                onFocus={() => {
+                  window.Telegram?.WebApp?.expand()
+                  setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                  }, 100)
+                  setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                  }, 300)
+                  setTimeout(() => {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+                  }, 500)
+                }}
               />
               <button
                 className="chat-send-btn"

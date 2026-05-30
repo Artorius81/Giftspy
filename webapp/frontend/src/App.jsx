@@ -49,7 +49,7 @@ function AppContent() {
   useEffect(() => {
     const handleFocusIn = (e) => {
       const el = e.target
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.classList.contains('chat-input-field')) {
         const scroll = () => el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         setTimeout(scroll, 100)
         setTimeout(scroll, 300)
@@ -63,6 +63,9 @@ function AppContent() {
       document.documentElement.style.setProperty('--keyboard-height', `${Math.max(0, keyboardHeight)}px`)
       if (keyboardHeight > 100) {
         document.activeElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        document.body.classList.add('keyboard-open')
+      } else {
+        document.body.classList.remove('keyboard-open')
       }
     }
 
@@ -72,6 +75,7 @@ function AppContent() {
     return () => {
       document.removeEventListener('focusin', handleFocusIn)
       window.visualViewport?.removeEventListener('resize', handleViewportResize)
+      document.body.classList.remove('keyboard-open')
     }
   }, [])
 

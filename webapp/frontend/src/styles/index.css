@@ -1008,21 +1008,25 @@ textarea.input { min-height: 80px; resize: vertical; }
   color: var(--text);
 }
 
+.case-detail-page {
+  padding-top: 0 !important;
+}
+
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(24px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 16px 16px;
+  padding: calc(10px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 6px))) 16px 10px 16px;
   position: sticky;
   top: 0;
   z-index: 10;
   background: var(--bg);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: none;
 }
 
 [data-theme="light"] .chat-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: none;
 }
 
 .chat-header__title {
@@ -1071,6 +1075,13 @@ textarea.input { min-height: 80px; resize: vertical; }
   z-index: 90;
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
   gap: 2px;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), bottom 0.15s ease, opacity 0.15s ease;
+}
+
+body.keyboard-open .chat-view-toggle {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translate(-50%, 40px) !important;
 }
 
 [data-theme="light"] .chat-view-toggle {
@@ -1142,7 +1153,8 @@ textarea.input { min-height: 80px; resize: vertical; }
 .chat-view {
   display: flex;
   flex-direction: column;
-  padding-bottom: 110px;
+  padding-bottom: calc(110px + var(--keyboard-height, 0px));
+  transition: padding-bottom 0.15s ease;
 }
 
 .chat-messages {
@@ -1295,7 +1307,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 /* ---- Redesigned Chat Input Area ---- */
 .chat-input-area {
   position: fixed;
-  bottom: 84px;
+  bottom: calc(84px + var(--keyboard-height, 0px));
   left: 16px;
   right: 16px;
   max-width: calc(480px - 32px);
@@ -1651,7 +1663,7 @@ textarea.input { min-height: 80px; resize: vertical; }
 
 /* In case-detail, position input above toggle */
 .case-detail-page .chat-input-area {
-  bottom: 84px;
+  bottom: calc(84px + var(--keyboard-height, 0px));
 }
 
 /* ---- Intercept area (above view toggle) ---- */
