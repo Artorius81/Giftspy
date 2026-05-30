@@ -497,7 +497,7 @@ export default function NewCase() {
       const updated = await api.getCases()
       mutateCases(updated)
 
-      navigate('/new-case', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       await showAlert(err.message)
     }

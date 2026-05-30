@@ -120,14 +120,16 @@ export default function InAppNotificationProvider({ children }) {
                 const isViewingThisCase = location.pathname === `/dossier/${activeCase.id}`
                 
                 if (!isViewingThisCase && lastMsg) {
-                  const senderName = lastMsg.sender === 'user' ? activeCase.display_name : `Детектив ${activeCase.persona}`
-                  const cleanText = lastMsg.message.replace(/✏️ \[ред\.\]\s*/, '')
-                  const truncated = cleanText.length > 60 ? cleanText.substring(0, 60) + '...' : cleanText
+                  const isUser = lastMsg.sender === 'user'
+                  const title = isUser ? 'Новый ответ цели' : 'Ответ детектива'
+                  const desc = isUser 
+                    ? `Цель ${activeCase.display_name} прислала новый ответ!`
+                    : `Детектив ${activeCase.persona} продолжил опрос!`
 
                   showNotification({
-                    title: lastMsg.sender === 'user' ? 'Новый ответ цели' : 'Ответ детектива',
-                    desc: `${senderName}: "${truncated}"`,
-                    icon: lastMsg.sender === 'user' ? '💬' : '🕵️‍♂️',
+                    title,
+                    desc,
+                    icon: isUser ? '💬' : '🕵️‍♂️',
                     onClick: () => navigate(`/dossier/${activeCase.id}`)
                   })
                 }

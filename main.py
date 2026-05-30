@@ -153,13 +153,13 @@ async def _process_target_input(case, user_message, event):
             )
         return
 
-    # Уведомляем пользователя об ответе цели в AI-режиме
+    # Уведомляем пользователя об ответе цели в AI-режиме (без раскрытия текста для сохранения ценности премиума)
     notif = await db.get_user_notifications(customer_id)
     if notif.get('notify_dialogue', True):
         try:
             await bot.send_message(
                 chat_id=customer_id,
-                text=f"💬 **{display_name}** ответил(а) детективу **{persona}**:\n_{user_message[:150]}_\n\nДетектив обдумывает ответ... 🤔",
+                text=f"💬 **{display_name}** прислал(а) новый ответ детективу **{persona}**!\n\nЗагляните в досье, чтобы узнать подробности! 🕵️‍♂️",
                 parse_mode="Markdown"
             )
         except Exception as e:
@@ -218,13 +218,13 @@ async def _process_target_input(case, user_message, event):
                 await event.respond(ai_text, parse_mode="Markdown")
                 await db.save_chat_message(case_id, 'ai', ai_text)
                 
-                # Уведомляем пользователя об ответе детектива
+                # Уведомляем пользователя об ответе детектива (без раскрытия текста для сохранения ценности премиума)
                 notif = await db.get_user_notifications(customer_id)
                 if notif.get('notify_dialogue', True):
                     try:
                         await bot.send_message(
                             chat_id=customer_id,
-                            text=f"🕵️‍♂️ **Детектив {persona}** ответил цели:\n_{ai_text[:150]}_\n\nСледите за расследованием в Mini App! 📱",
+                            text=f"🕵️‍♂️ **Детектив {persona}** продолжил диалог и отправил новое сообщение цели!\n\nСледите за расследованием в Mini App! 📱",
                             parse_mode="Markdown"
                         )
                     except Exception as e:
