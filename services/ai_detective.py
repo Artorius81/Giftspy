@@ -90,6 +90,10 @@ class AIDetectiveService:
             api_key=config.OPENROUTER_API_KEY,
             base_url="https://api.proxyapi.ru/openai/v1"
         )
+        self.openrouter_client = OpenAI(
+            api_key=config.OPENROUTER_API_KEY,
+            base_url="https://api.proxyapi.ru/openrouter/v1"
+        )
         self.model = "deepseek-v4"
         
     async def create_new_chat(self, holiday, context, persona, budget, ai_model="deepseek-v4"):
@@ -240,10 +244,10 @@ class AIDetectiveService:
         
         # Translate frontend friendly IDs to real API model IDs for ProxyAPI
         model_mapping = {
-            "deepseek-v4": "deepseek-chat",
-            "deepseek-v4-pro": "deepseek-chat",
-            "claude-4-6-opus": "claude-3-opus-20240229",
-            "claude-opus-4-7": "claude-3-opus-20240229"
+            "deepseek-v4": "deepseek/deepseek-chat",
+            "deepseek-v4-pro": "deepseek/deepseek-chat",
+            "claude-4-6-opus": "anthropic/claude-3-opus",
+            "claude-opus-4-7": "anthropic/claude-3-opus"
         }
         api_model = model_mapping.get(model, model)
         
@@ -258,6 +262,14 @@ class AIDetectiveService:
                     )
                 )
                 return response.text
+            elif "/" in api_model:
+                openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+                response = self.openrouter_client.chat.completions.create(
+                    model=api_model,
+                    messages=openai_msgs,
+                    temperature=0.8,
+                )
+                return response.choices[0].message.content
             else:
                 openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
                 response = self.openai_client.chat.completions.create(
@@ -271,11 +283,11 @@ class AIDetectiveService:
             if model == "deepseek-v4":
                 raise e
             
-            # Seamless fallback to default DeepSeek V4 model (via deepseek-chat)
+            # Seamless fallback to default DeepSeek V4 model (via deepseek/deepseek-chat)
             openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
             try:
-                response = self.openai_client.chat.completions.create(
-                    model="deepseek-chat",
+                response = self.openrouter_client.chat.completions.create(
+                    model="deepseek/deepseek-chat",
                     messages=openai_msgs,
                     temperature=0.8,
                 )
