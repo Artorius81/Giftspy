@@ -81,7 +81,7 @@ class CaseCreate(BaseModel):
     context: str = "Нет данных"
     persona: str
     budget: str = "Не указан"
-    ai_model: Optional[str] = "gemini-3.5-flash"
+    ai_model: Optional[str] = "deepseek-v4"
 
 
 class WishlistItemCreate(BaseModel):
@@ -442,7 +442,7 @@ async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)
         raise HTTPException(status_code=409, detail="Active case already exists for this target")
     
     # Secure server-side check: only premium users can select custom models
-    selected_model = data.ai_model if has_premium else 'gemini-3.5-flash'
+    selected_model = data.ai_model if has_premium else 'deepseek-v4'
     
     if not has_premium:
         await db.deduct_balance(user_id)

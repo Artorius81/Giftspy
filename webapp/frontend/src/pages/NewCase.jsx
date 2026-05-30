@@ -139,10 +139,13 @@ const BUDGET_OPTIONS = [
 const STEPS = ['detective', 'target', 'holiday', 'context', 'budget', 'confirm']
 
 const AI_MODELS = [
-  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'По умолчанию. Быстрая и лаконичная базовая модель Google.' },
+  { id: 'deepseek-v4', name: 'DeepSeek V4', icon: '⚡️', desc: 'По умолчанию (Бесплатно). Быстрая и высокоинтеллектуальная базовая модель.' },
+  { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', icon: '🚀', desc: 'Премиум DeepSeek. Максимальный интеллект для сложных расследований.' },
+  { id: 'claude-4-6-opus', name: 'Claude 4.6 Opus', icon: '👑', desc: 'Премиум Anthropic. Безупречный детективный разум и глубокое понимание психологии.' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'Базовая лаконичная модель Google.' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: '🧠', desc: 'Флагман OpenAI. Превосходная логика, глубокий анализ и точность роли.' },
-  { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', icon: '👑', desc: 'Премиум Anthropic. Невероятно глубокий контекст, мощный анализ эмоций и безупречный детективный интеллект.' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный и сбалансированный ИИ от OpenAI.' },
+  { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', icon: '👑', desc: 'Премиум Anthropic. Мощный анализ эмоций и безупречный интеллект.' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный ИИ от OpenAI.' },
 ]
 
 export default function NewCase() {
@@ -180,7 +183,7 @@ export default function NewCase() {
     context: '',
     persona: localStorage.getItem('last_selected_persona') || '',
     budget: '',
-    ai_model: 'gemini-3.5-flash',
+    ai_model: 'deepseek-v4',
   })
 
   // Persist chosen persona
@@ -351,7 +354,7 @@ export default function NewCase() {
               const opacity = isVisible ? (isActive ? 1 : 0.5) : 0;
 
               const shiftX = offset * 115 + dragOffset;
-              const isPremiumLocked = p.name !== 'Виктор Блэк' && !profile?.is_premium;
+              const isPremiumLocked = p.name && !p.name.includes('Виктор Блэк') && !profile?.is_premium;
 
               return (
                 <div
@@ -486,7 +489,7 @@ export default function NewCase() {
             className="btn btn--primary"
             onClick={async () => {
               const activePersona = personas[activePersonaIdx];
-              const isLocked = activePersona && activePersona.name !== 'Виктор Блэк' && !profile?.is_premium;
+              const isLocked = activePersona && activePersona.name && !activePersona.name.includes('Виктор Блэк') && !profile?.is_premium;
               if (isLocked) {
                 const confirmUnlock = await showConfirm(
                   `👑 Детектив ${activePersona.name} доступен только с премиум подпиской!\n\nХотите перейти в магазин, чтобы активировать премиум?`
@@ -549,7 +552,7 @@ export default function NewCase() {
 
   const handleSubmit = async () => {
     setSubmitting(true)
-    const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'gemini-3.5-flash'
+    const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'deepseek-v4'
     try {
       await api.createCase({
         target: form.target,
@@ -567,7 +570,7 @@ export default function NewCase() {
         context: '',
         persona: localStorage.getItem('last_selected_persona') || '',
         budget: '',
-        ai_model: 'gemini-3.5-flash',
+        ai_model: 'deepseek-v4',
       })
       setTargetDisplayName('')
       setStep(0)
@@ -954,7 +957,7 @@ export default function NewCase() {
               }} className="model-selector-horizontal">
                 {AI_MODELS.map(m => {
                   const isSelected = form.ai_model === m.id;
-                  const isLocked = m.id !== 'gemini-3.5-flash' && !profile?.is_premium;
+                  const isLocked = m.id !== 'deepseek-v4' && !profile?.is_premium;
                   return (
                     <div
                       key={m.id}

@@ -90,9 +90,9 @@ class AIDetectiveService:
             api_key=config.OPENROUTER_API_KEY,
             base_url="https://api.proxyapi.ru/openai/v1"
         )
-        self.model = "gemini-3.5-flash"
+        self.model = "deepseek-v4"
         
-    async def create_new_chat(self, holiday, context, persona, budget, ai_model="gemini-3.5-flash"):
+    async def create_new_chat(self, holiday, context, persona, budget, ai_model="deepseek-v4"):
          personas = await db.get_personas()
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
@@ -237,10 +237,20 @@ class AIDetectiveService:
 
     def _call_gemini(self, chat_context: dict) -> str:
         model = chat_context.get("model", self.model)
+        
+        # Translate frontend friendly IDs to real API model IDs for ProxyAPI
+        model_mapping = {
+            "deepseek-v4": "deepseek-chat",
+            "deepseek-v4-pro": "deepseek-chat",
+            "claude-4-6-opus": "claude-3-opus-20240229",
+            "claude-opus-4-7": "claude-3-opus-20240229"
+        }
+        api_model = model_mapping.get(model, model)
+        
         try:
-            if model.startswith("gemini"):
+            if api_model.startswith("gemini"):
                 response = self.client.models.generate_content(
-                    model=model,
+                    model=api_model,
                     contents=chat_context["messages"],
                     config=types.GenerateContentConfig(
                         system_instruction=chat_context["system"],
@@ -251,23 +261,39 @@ class AIDetectiveService:
             else:
                 openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
                 response = self.openai_client.chat.completions.create(
-                    model=model,
+                    model=api_model,
                     messages=openai_msgs,
                     temperature=0.8,
                 )
                 return response.choices[0].message.content
         except Exception as e:
-            logging.error(f"AI Call failed for model {model}: {e}. Attempting fallback to gemini-3.5-flash...")
-            if model == "gemini-3.5-flash":
+            logging.error(f"AI Call failed for model {model} (mapped: {api_model}): {e}. Attempting fallback to deepseek-v4...")
+            if model == "deepseek-v4":
                 raise e
-            # Seamless fallback to default Gemini model
-            response = self.client.models.generate_content(
-                model="gemini-3.5-flash",
-                contents=chat_context["messages"],
-                config=types.GenerateContentConfig(
-                    system_instruction=chat_context["system"],
+            
+            # Seamless fallback to default DeepSeek V4 model (via deepseek-chat)
+            openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+            try:
+                response = self.openai_client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=openai_msgs,
                     temperature=0.8,
                 )
-            )
-            return response.text
+                return response.choices[0].message.content
+            except Exception as fallback_err:
+                logging.error(f"Fallback to deepseek-v4 failed: {fallback_err}. Falling back to gemini-3.5-flash...")
+                # Ultimate fallback to gemini-3.5-flash as a last resort
+                try:
+                    response = self.client.models.generate_content(
+                        model="gemini-3.5-flash",
+                        contents=chat_context["messages"],
+                        config=types.GenerateContentConfig(
+                            system_instruction=chat_context["system"],
+                            temperature=0.8,
+                        )
+                    )
+                    return response.text
+                except Exception as ultimate_err:
+                    logging.error(f"Ultimate fallback failed: {ultimate_err}")
+                    raise e
 

@@ -18,6 +18,9 @@ const STATUS_MAP = {
 }
 
 const MODEL_DISPLAY_MAP = {
+  'deepseek-v4': 'DeepSeek V4 ⚡️',
+  'deepseek-v4-pro': 'DeepSeek V4 Pro 🚀',
+  'claude-4-6-opus': 'Claude 4.6 Opus 👑',
   'gemini-3.5-flash': 'Gemini 3.5 Flash ⚡️',
   'gpt-4o': 'GPT-4o 🧠',
   'claude-3.5-sonnet': 'Claude 3.5 Sonnet 🎨',
