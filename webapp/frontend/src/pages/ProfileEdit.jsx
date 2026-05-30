@@ -220,7 +220,7 @@ export default function ProfileEdit() {
 
   // Получить имя и юзернейм из Telegram WebApp
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {}
-  const displayPhone = tgUser.username ? `@${tgUser.username}` : `+573150981777`
+  const displayPhone = profile?.phone || (tgUser.username ? `@${tgUser.username}` : 'Не указан')
   const displayName = profile.nickname || `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim() || 'Пользователь'
 
   // Подсчитать общее количество целей

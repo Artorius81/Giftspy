@@ -358,12 +358,12 @@ async def _ensure_user(user_id):
 
 
 async def get_user_profile(user_id):
-    """Returns (balance, successful, active, nickname, spy_mode, birthday, description, photo_file_id)"""
+    """Returns (balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo_file_id, phone)"""
     await _ensure_user(user_id)
     
     user_result = await asyncio.to_thread(
         lambda: _client.table('users')
-            .select('balance, premium_until, nickname, spy_mode, birthday, description, photo_file_id')
+            .select('balance, premium_until, nickname, spy_mode, birthday, description, photo_file_id, phone')
             .eq('id', user_id)
             .execute()
     )
@@ -376,6 +376,7 @@ async def get_user_profile(user_id):
     birthday = row.get('birthday')
     description = row.get('description')
     photo = row.get('photo_file_id')
+    phone = row.get('phone')
     
     cases_result = await asyncio.to_thread(
         lambda: _client.table('cases')
@@ -387,7 +388,7 @@ async def get_user_profile(user_id):
     successful = sum(1 for c in cases_result.data if c['status'] in ('done', 'delivered'))
     active = sum(1 for c in cases_result.data if c['status'] in ('pending', 'started', 'in_progress', 'manual_mode'))
     
-    return balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo
+    return balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo, phone
 
 
 async def get_user_balance(user_id):
@@ -502,7 +503,7 @@ async def update_user_nickname(user_id, nickname):
 
 async def update_user_field(user_id, field, value):
     """Updates a single user profile field."""
-    allowed = ('nickname', 'birthday', 'description', 'photo_file_id')
+    allowed = ('nickname', 'birthday', 'description', 'photo_file_id', 'phone')
     if field not in allowed:
         return
     await _ensure_user(user_id)
@@ -511,6 +512,23 @@ async def update_user_field(user_id, field, value):
             .update({field: value})
             .eq('id', user_id)
             .execute()
+    )
+
+
+async def get_user_phone(user_id: int):
+    await _ensure_user(user_id)
+    res = await asyncio.to_thread(
+        lambda: _client.table('users').select('phone').eq('id', user_id).execute()
+    )
+    if res.data and res.data[0]:
+        return res.data[0].get('phone')
+    return None
+
+
+async def update_user_phone(user_id: int, phone: str):
+    await _ensure_user(user_id)
+    await asyncio.to_thread(
+        lambda: _client.table('users').update({'phone': phone}).eq('id', user_id).execute()
     )
 
 

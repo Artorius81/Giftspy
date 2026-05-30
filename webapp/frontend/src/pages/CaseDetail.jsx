@@ -77,7 +77,8 @@ export default function CaseDetail() {
   }
 
   return (
-    <div className="page page-profile-bg case-detail-page">
+    <>
+      <div className="page page-profile-bg case-detail-page">
       <div className="chat-header">
         <button className="chat-header__btn" onClick={() => tabIndex === 1 ? setTabIndex(0) : navigate(-1)}>
           <span className="icon">‹</span>
@@ -189,6 +190,7 @@ export default function CaseDetail() {
           isActiveTab={tabIndex === 1}
         />
       </div>
+    </div>
 
       {/* Floating Toggle */}
       <div className="chat-view-toggle">
@@ -203,6 +205,6 @@ export default function CaseDetail() {
           <span className="chat-view-toggle-btn__icon">{caseData.spy_mode && !!profile?.is_premium ? '💬' : '🔒'}</span> Переписка
         </button>
       </div>
-    </div>
+    </>
   )
 }

@@ -177,27 +177,37 @@ export default function NewCase() {
     }
   }, [form.persona])
 
+  const isFirstLoad = useRef(true)
+
   // Sync activePersonaIdx with selected persona in form
   useEffect(() => {
     if (personas.length > 0) {
       const idx = personas.findIndex(p => p.name === form.persona)
-      if (idx !== -1) {
-        const targetIdx = personas.length + idx
-        if (activePersonaIdx % personas.length !== idx) {
-          setActivePersonaIdx(targetIdx)
-        }
-      } else {
+      let targetIdx = idx !== -1 ? idx : -1
+      
+      if (targetIdx === -1) {
         const savedPersona = localStorage.getItem('last_selected_persona')
         const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
         if (savedIdx !== -1) {
-          const targetIdx = personas.length + savedIdx
-          setActivePersonaIdx(targetIdx)
-          setForm(prev => ({ ...prev, persona: savedPersona }))
+          targetIdx = savedIdx
         } else {
-          const middleIdx = Math.floor(personas.length / 2)
-          const targetIdx = personas.length + middleIdx
-          setActivePersonaIdx(targetIdx)
-          setForm(prev => ({ ...prev, persona: personas[middleIdx].name }))
+          targetIdx = Math.floor(personas.length / 2)
+        }
+      }
+      
+      const newActiveIdx = personas.length + targetIdx
+      
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false
+        setTransitionEnabled(false)
+        setActivePersonaIdx(newActiveIdx)
+        setForm(prev => ({ ...prev, persona: personas[targetIdx].name }))
+        setTimeout(() => {
+          setTransitionEnabled(true)
+        }, 50)
+      } else {
+        if (activePersonaIdx % personas.length !== targetIdx) {
+          setActivePersonaIdx(newActiveIdx)
         }
       }
     }
@@ -241,37 +251,13 @@ export default function NewCase() {
     }
   }
 
-  const handleTouchEnd = () => {
-    if (!isDraggingTrack) return
-    setIsDraggingTrack(false)
-    
-    isSwipingLocked.current = true
-    setTimeout(() => {
-      isSwipingLocked.current = false
-    }, 700)
-    
-    const threshold = 50
-    const offset = dragOffsetRef.current
-    let newIdx = activePersonaIdx
+  const selectPersonaIndex = (newIdx) => {
     const N = personas.length
-    
-    if (offset > threshold) {
-      // Swipe right -> go to previous
-      newIdx = activePersonaIdx - 1
-    } else if (offset < -threshold) {
-      // Swipe left -> go to next
-      newIdx = activePersonaIdx + 1
-    }
+    if (N === 0) return
     
     setActivePersonaIdx(newIdx)
     const activePersona = personas[((newIdx % N) + N) % N]
     setForm(prev => ({ ...prev, persona: activePersona.name }))
-    
-    // Clear manual drag overrides to let React take over the snapping transition cleanly
-    if (trackRef.current) {
-      trackRef.current.style.transform = ''
-      trackRef.current.style.transition = ''
-    }
     
     // Seamless infinite scroll wrapping
     if (newIdx < N) {
@@ -292,6 +278,38 @@ export default function NewCase() {
           setTransitionEnabled(true)
         }, 50)
       }, 650)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (!isDraggingTrack) return
+    setIsDraggingTrack(false)
+    
+    isSwipingLocked.current = true
+    setTimeout(() => {
+      isSwipingLocked.current = false
+    }, 700)
+    
+    const threshold = 50
+    const offset = dragOffsetRef.current
+    let newIdx = activePersonaIdx
+    const N = personas.length
+    if (N === 0) return
+    
+    if (offset > threshold) {
+      // Swipe right -> go to previous
+      newIdx = activePersonaIdx - 1
+    } else if (offset < -threshold) {
+      // Swipe left -> go to next
+      newIdx = activePersonaIdx + 1
+    }
+    
+    selectPersonaIndex(newIdx)
+    
+    // Clear manual drag overrides to let React take over the snapping transition cleanly
+    if (trackRef.current) {
+      trackRef.current.style.transform = ''
+      trackRef.current.style.transition = ''
     }
     
     dragOffsetRef.current = 0
@@ -327,6 +345,7 @@ export default function NewCase() {
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     const N = personas.length
+    if (N === 0) return
     
     if (offset > threshold) {
       newIdx = activePersonaIdx - 1
@@ -334,35 +353,12 @@ export default function NewCase() {
       newIdx = activePersonaIdx + 1
     }
     
-    setActivePersonaIdx(newIdx)
-    const activePersona = personas[((newIdx % N) + N) % N]
-    setForm(prev => ({ ...prev, persona: activePersona.name }))
+    selectPersonaIndex(newIdx)
     
     // Clear manual drag overrides to let React take over the snapping transition cleanly
     if (trackRef.current) {
       trackRef.current.style.transform = ''
       trackRef.current.style.transition = ''
-    }
-    
-    // Seamless infinite scroll wrapping
-    if (newIdx < N) {
-      setTimeout(() => {
-        setTransitionEnabled(false)
-        const resetIdx = newIdx + N
-        setActivePersonaIdx(resetIdx)
-        setTimeout(() => {
-          setTransitionEnabled(true)
-        }, 50)
-      }, 650)
-    } else if (newIdx >= 2 * N) {
-      setTimeout(() => {
-        setTransitionEnabled(false)
-        const resetIdx = newIdx - N
-        setActivePersonaIdx(resetIdx)
-        setTimeout(() => {
-          setTransitionEnabled(true)
-        }, 50)
-      }, 650)
     }
     
     dragOffsetRef.current = 0
@@ -407,8 +403,7 @@ export default function NewCase() {
                       setTimeout(() => {
                         isSwipingLocked.current = false
                       }, 700)
-                      setActivePersonaIdx(idx);
-                      setForm(prev => ({ ...prev, persona: p.name }));
+                      selectPersonaIndex(idx)
                     }}
                   >
                     <div className="persona-carousel-card">

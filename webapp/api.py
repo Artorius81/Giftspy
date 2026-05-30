@@ -88,7 +88,7 @@ class WishlistItemCreate(BaseModel):
 
 @app.get("/api/profile")
 async def get_profile(user_id: int = Depends(get_current_user)):
-    balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo, phone = await db.get_user_profile(user_id)
     
     # Compute is_premium based on date check
     is_premium = False
@@ -113,6 +113,7 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "birthday": birthday,
         "description": description,
         "photo": photo,
+        "phone": phone,
         "self_target_id": self_target_id,
         "wishlist": [
             {

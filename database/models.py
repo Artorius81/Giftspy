@@ -17,6 +17,7 @@ class User(Base):
     description = Column(Text, default=None)
     photo_file_id = Column(Text, default=None)
     registered_at = Column(DateTime, default=datetime.utcnow)
+    phone = Column(Text, default=None)
 
 class Case(Base):
     __tablename__ = 'cases'

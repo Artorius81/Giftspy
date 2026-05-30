@@ -110,6 +110,54 @@ export default function Home() {
     .filter(t => t.daysLeft !== null)
     .sort((a, b) => a.daysLeft - b.daysLeft)
 
+  // Dynamic card content based on current or last completed investigation
+  const getCardContent = () => {
+    const activeCase = [...allCases]
+      .filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
+      .sort((a, b) => b.id - a.id)[0]
+
+    if (activeCase) {
+      const statusMap = {
+        pending: 'В режиме ожидания',
+        started: 'Расследование началось',
+        in_progress: 'Детектив ведет допрос',
+        manual_mode: 'Ручной перехват активен'
+      }
+      const statusText = statusMap[activeCase.status] || 'В процессе'
+      return {
+        title: `В процессе: ${activeCase.display_name}`,
+        subtitle: `🕵️‍♂️ ${activeCase.persona} • ${statusText}`,
+        btnText: 'Следить за расследованием',
+        action: () => { triggerHaptic(); navigate(`/dossier/${activeCase.id}`); },
+        emoji: '🕵️‍♂️'
+      }
+    }
+
+    const lastCompleted = [...allCases]
+      .filter(c => ['done', 'delivered'].includes(c.status))
+      .sort((a, b) => b.id - a.id)[0]
+
+    if (lastCompleted) {
+      return {
+        title: `Завершено по: ${lastCompleted.display_name}`,
+        subtitle: `✨ Досье собрано! Загляните в вишлист цели`,
+        btnText: 'Посмотреть результаты',
+        action: () => { triggerHaptic(); navigate(`/dossier/${lastCompleted.id}`); },
+        emoji: '📋'
+      }
+    }
+
+    return {
+      title: 'Поиск идеального подарка',
+      subtitle: 'Детектив готов начать расследование',
+      btnText: 'Начать новое дело',
+      action: () => { triggerHaptic(); navigate('/new-case'); },
+      emoji: '🎁'
+    }
+  }
+
+  const card = getCardContent()
+
   // Format Russian plural suffix for targets
   const getTargetsText = (count) => {
     if (count % 10 === 1 && count % 100 !== 11) return `${count} цель`;
@@ -141,17 +189,17 @@ export default function Home() {
 
       {/* Search-Alternative CTA Card (Opaque background blocks detective bottom crop) */}
       <div className="profile-wishlist-card profile-wishlist-card--opaque" style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-        <div className="profile-wishlist-card-top" onClick={() => navigate('/new-case')}>
+        <div className="profile-wishlist-card-top" onClick={card.action}>
           <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
-            🎁
+            {card.emoji}
           </div>
           <div className="profile-wishlist-card-details">
-            <span className="profile-wishlist-card-title">Поиск идеального подарка</span>
-            <span className="profile-wishlist-card-subtitle">Детектив готов начать расследование</span>
+            <span className="profile-wishlist-card-title">{card.title}</span>
+            <span className="profile-wishlist-card-subtitle">{card.subtitle}</span>
           </div>
         </div>
-        <button className="profile-wishlist-card-btn" onClick={() => navigate('/new-case')}>
-          Начать расследование
+        <button className="profile-wishlist-card-btn" onClick={card.action}>
+          {card.btnText}
         </button>
       </div>
 
