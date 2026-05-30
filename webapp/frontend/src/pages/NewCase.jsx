@@ -160,6 +160,7 @@ export default function NewCase() {
   const [submitting, setSubmitting] = useState(false)
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
   const [isDraggingTrack, setIsDraggingTrack] = useState(false)
+  const [dragOffset, setDragOffset] = useState(0)
   const [transitionEnabled, setTransitionEnabled] = useState(true)
   const isSwipingLocked = useRef(false)
 
@@ -219,10 +220,6 @@ export default function NewCase() {
     }
   }, [personas])
 
-  const touchStartX = useRef(0)
-  const dragOffsetRef = useRef(0)
-  const trackRef = useRef(null)
-
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX
     dragOffsetRef.current = 0
@@ -234,33 +231,25 @@ export default function NewCase() {
     const currentX = e.touches[0].clientX
     const diff = currentX - touchStartX.current
     dragOffsetRef.current = diff
-    
-    // Smooth 120fps hardware-accelerated direct DOM updates
-    if (trackRef.current) {
-      trackRef.current.style.transform = `translateX(calc(-78px - (${activePersonaIdx} * 156px) + ${diff}px))`
-    }
+    setDragOffset(diff)
   }
 
   const handleTouchEnd = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
+    setDragOffset(0)
     
-    const threshold = 50
+    const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     const N = personas.length
     if (N > 0) {
-      if (offset > threshold) {
+      if (offset > dragThreshold) {
         newIdx = activePersonaIdx - 1
-      } else if (offset < -threshold) {
+      } else if (offset < -dragThreshold) {
         newIdx = activePersonaIdx + 1
       }
       selectPersonaIndex(newIdx)
-    }
-    
-    // Clear manual drag overrides to let React take over the snapping transition cleanly
-    if (trackRef.current) {
-      trackRef.current.style.transform = ''
     }
     
     dragOffsetRef.current = 0
@@ -277,31 +266,25 @@ export default function NewCase() {
     if (!isDraggingTrack || !touchStartX.current) return
     const diff = e.clientX - touchStartX.current
     dragOffsetRef.current = diff
-    if (trackRef.current) {
-      trackRef.current.style.transform = `translateX(calc(-78px - (${activePersonaIdx} * 156px) + ${diff}px))`
-    }
+    setDragOffset(diff)
   }
 
   const handleMouseUpOrLeave = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
+    setDragOffset(0)
     
-    const threshold = 50
+    const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     const N = personas.length
     if (N > 0) {
-      if (offset > threshold) {
+      if (offset > dragThreshold) {
         newIdx = activePersonaIdx - 1
-      } else if (offset < -threshold) {
+      } else if (offset < -dragThreshold) {
         newIdx = activePersonaIdx + 1
       }
       selectPersonaIndex(newIdx)
-    }
-    
-    // Clear manual drag overrides to let React take over the snapping transition cleanly
-    if (trackRef.current) {
-      trackRef.current.style.transform = ''
     }
     
     dragOffsetRef.current = 0
@@ -311,18 +294,17 @@ export default function NewCase() {
   const selectPersonaIndex = (newIdx) => {
     const N = personas.length
     if (N === 0) return
-    const clampedIdx = Math.max(0, Math.min(newIdx, N - 1))
-    setActivePersonaIdx(clampedIdx)
-    setForm(prev => ({ ...prev, persona: personas[clampedIdx].name }))
+    const circularIdx = ((newIdx % N) + N) % N
+    setActivePersonaIdx(circularIdx)
+    setForm(prev => ({ ...prev, persona: personas[circularIdx].name }))
   }
 
   const renderCarousel = () => {
     const N = personas.length
-    const extendedPersonas = personas
     
     return (
       <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
-        <div className="persona-carousel-container">
+        <div className="persona-carousel-container" style={{ width: '100%', overflow: 'hidden' }}>
           <div 
             className="persona-carousel-track-wrapper"
             onTouchStart={handleTouchStart} 
@@ -332,31 +314,60 @@ export default function NewCase() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
             onMouseLeave={handleMouseUpOrLeave}
-            style={{ cursor: isDraggingTrack ? 'grabbing' : 'grab' }}
+            style={{ 
+              cursor: isDraggingTrack ? 'grabbing' : 'grab',
+              position: 'relative',
+              width: '100%',
+              height: '220px',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
           >
-            <div
-              ref={trackRef}
-              className="persona-carousel-track"
-              style={{
-                transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
-                transition: isDraggingTrack ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
-              }}
-            >
-              {extendedPersonas.map((p, idx) => {
-                const isActive = idx === activePersonaIdx;
-                return (
-                  <div
-                    key={idx}
-                    className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
-                    onClick={() => selectPersonaIndex(idx)}
-                  >
-                    <div className="persona-carousel-card">
-                      <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
-                    </div>
+            {personas.map((p, idx) => {
+              let offset = idx - activePersonaIdx;
+              if (N > 0) {
+                if (offset > N / 2) offset -= N;
+                if (offset < -N / 2) offset += N;
+              }
+
+              const isVisible = Math.abs(offset) <= 1;
+              const isActive = offset === 0;
+              const zIndex = 10 - Math.abs(offset);
+              const scale = isActive ? 1.08 : 0.82;
+              const opacity = isVisible ? (isActive ? 1 : 0.5) : 0;
+              
+              const shiftX = offset * 115 + dragOffset;
+              
+              return (
+                <div
+                  key={idx}
+                  className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    if (isDraggingTrack) return;
+                    selectPersonaIndex(idx);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    zIndex: zIndex,
+                    opacity: opacity,
+                    pointerEvents: isVisible ? 'auto' : 'none',
+                    transform: `translate3d(calc(-50% + ${shiftX}px), -50%, 0) scale(${scale})`,
+                    transition: isDraggingTrack ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease',
+                    willChange: 'transform, opacity',
+                    margin: 0,
+                    flex: 'none'
+                  }}
+                >
+                  <div className="persona-carousel-card">
+                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
