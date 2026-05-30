@@ -110,53 +110,14 @@ export default function Home() {
     .filter(t => t.daysLeft !== null)
     .sort((a, b) => a.daysLeft - b.daysLeft)
 
-  // Dynamic card content based on current or last completed investigation
-  const getCardContent = () => {
-    const activeCase = [...allCases]
-      .filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
-      .sort((a, b) => b.id - a.id)[0]
+  // Extract active case and last completed case
+  const activeCase = [...allCases]
+    .filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
+    .sort((a, b) => b.id - a.id)[0]
 
-    if (activeCase) {
-      const statusMap = {
-        pending: 'В режиме ожидания',
-        started: 'Расследование началось',
-        in_progress: 'Детектив ведет допрос',
-        manual_mode: 'Ручной перехват активен'
-      }
-      const statusText = statusMap[activeCase.status] || 'В процессе'
-      return {
-        title: `В процессе: ${activeCase.display_name}`,
-        subtitle: `🕵️‍♂️ ${activeCase.persona} • ${statusText}`,
-        btnText: 'Следить за расследованием',
-        action: () => { triggerHaptic(); navigate(`/dossier/${activeCase.id}`); },
-        emoji: '🕵️‍♂️'
-      }
-    }
-
-    const lastCompleted = [...allCases]
-      .filter(c => ['done', 'delivered'].includes(c.status))
-      .sort((a, b) => b.id - a.id)[0]
-
-    if (lastCompleted) {
-      return {
-        title: `Завершено по: ${lastCompleted.display_name}`,
-        subtitle: `✨ Досье собрано! Загляните в вишлист цели`,
-        btnText: 'Посмотреть результаты',
-        action: () => { triggerHaptic(); navigate(`/dossier/${lastCompleted.id}`); },
-        emoji: '📋'
-      }
-    }
-
-    return {
-      title: 'Поиск идеального подарка',
-      subtitle: 'Детектив готов начать расследование',
-      btnText: 'Начать новое дело',
-      action: () => { triggerHaptic(); navigate('/new-case'); },
-      emoji: '🎁'
-    }
-  }
-
-  const card = getCardContent()
+  const lastCompleted = [...allCases]
+    .filter(c => ['done', 'delivered'].includes(c.status))
+    .sort((a, b) => b.id - a.id)[0]
 
   // Format Russian plural suffix for targets
   const getTargetsText = (count) => {
@@ -188,19 +149,211 @@ export default function Home() {
       </div>
 
       {/* Search-Alternative CTA Card (Opaque background blocks detective bottom crop) */}
-      <div className="profile-wishlist-card profile-wishlist-card--opaque" style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
-        <div className="profile-wishlist-card-top" onClick={card.action}>
-          <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
-            {card.emoji}
+      <div className="profile-wishlist-card profile-wishlist-card--opaque" style={{ marginBottom: '20px', position: 'relative', zIndex: 2, padding: '20px 24px' }}>
+        {activeCase ? (
+          // Active Case Layout: No left emoji, colored status dot, below-label target, progress bar
+          <div 
+            style={{ display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer' }}
+            onClick={() => { triggerHaptic(); navigate(`/dossier/${activeCase.id}`); }}
+          >
+            {/* Header Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ 
+                fontSize: '13px', 
+                fontWeight: '800', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.6px',
+                color: '#a78bfa' // Beautiful premium lavender, NOT pink!
+              }}>
+                В процессе
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="pulse-dot" style={{ 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#10b981',
+                  display: 'inline-block'
+                }} />
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  {activeCase.status === 'pending' ? 'В режиме ожидания' :
+                   activeCase.status === 'started' ? 'Расследование началось' :
+                   activeCase.status === 'in_progress' ? 'Детектив ведет допрос' :
+                   activeCase.status === 'manual_mode' ? 'Ручной перехват активен' : 'В процессе'}
+                </span>
+              </div>
+            </div>
+
+            {/* Target name & Detective name below */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ 
+                fontSize: '19px', 
+                fontWeight: '800', 
+                color: 'var(--text)',
+                letterSpacing: '-0.3px',
+                lineHeight: '1.2'
+              }}>
+                {activeCase.display_name}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                Детектив: {activeCase.persona}
+              </span>
+            </div>
+
+            {/* Interrogation Progress Bar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+              <div style={{ 
+                width: '100%', 
+                height: '6px', 
+                background: 'rgba(255,255,255,0.06)', 
+                borderRadius: '10px', 
+                overflow: 'hidden' 
+              }}>
+                <div style={{ 
+                  width: `${
+                    activeCase.status === 'pending' ? 25 :
+                    activeCase.status === 'started' ? 50 :
+                    activeCase.status === 'in_progress' ? 75 :
+                    activeCase.status === 'manual_mode' ? 90 : 25
+                  }%`, 
+                  height: '100%', 
+                  background: 'linear-gradient(90deg, #a78bfa 0%, #818cf8 100%)', 
+                  borderRadius: '10px',
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                <span>Статус ведения допроса</span>
+                <span>
+                  {activeCase.status === 'pending' ? '25%' :
+                   activeCase.status === 'started' ? '50%' :
+                   activeCase.status === 'in_progress' ? '75%' :
+                   activeCase.status === 'manual_mode' ? '90%' : '25%'}
+                </span>
+              </div>
+            </div>
+
+            <button 
+              className="profile-wishlist-card-btn" 
+              style={{ marginTop: '8px' }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                triggerHaptic(); 
+                navigate(`/dossier/${activeCase.id}`); 
+              }}
+            >
+              Следить за расследованием
+            </button>
           </div>
-          <div className="profile-wishlist-card-details">
-            <span className="profile-wishlist-card-title">{card.title}</span>
-            <span className="profile-wishlist-card-subtitle">{card.subtitle}</span>
+        ) : lastCompleted ? (
+          // Last Completed Case Layout: No left emoji, colored status dot, below-label target, 100% progress bar
+          <div 
+            style={{ display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer' }}
+            onClick={() => { triggerHaptic(); navigate(`/dossier/${lastCompleted.id}`); }}
+          >
+            {/* Header Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ 
+                fontSize: '13px', 
+                fontWeight: '800', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.6px',
+                color: '#34d399' // Premium emerald green
+              }}>
+                Завершено
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#34d399',
+                  display: 'inline-block'
+                }} />
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  Досье собрано!
+                </span>
+              </div>
+            </div>
+
+            {/* Target name & Detective name below */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ 
+                fontSize: '19px', 
+                fontWeight: '800', 
+                color: 'var(--text)',
+                letterSpacing: '-0.3px',
+                lineHeight: '1.2'
+              }}>
+                {lastCompleted.display_name}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                Детектив: {lastCompleted.persona}
+              </span>
+            </div>
+
+            {/* Completed Progress Bar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+              <div style={{ 
+                width: '100%', 
+                height: '6px', 
+                background: 'rgba(255,255,255,0.06)', 
+                borderRadius: '10px', 
+                overflow: 'hidden' 
+              }}>
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  background: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)', 
+                  borderRadius: '10px'
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                <span>Статус ведения допроса</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <button 
+              className="profile-wishlist-card-btn" 
+              style={{ marginTop: '8px' }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                triggerHaptic(); 
+                navigate(`/dossier/${lastCompleted.id}`); 
+              }}
+            >
+              Посмотреть результаты
+            </button>
           </div>
-        </div>
-        <button className="profile-wishlist-card-btn" onClick={card.action}>
-          {card.btnText}
-        </button>
+        ) : (
+          // Default State: No cases (Simple Premium Greeting Card)
+          <div 
+            style={{ display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer' }}
+            onClick={() => { triggerHaptic(); navigate('/new-case'); }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div className="profile-wishlist-card-icon-container" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)' }}>
+                🎁
+              </div>
+              <div className="profile-wishlist-card-details">
+                <span className="profile-wishlist-card-subtitle" style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text)' }}>Поиск идеального подарка</span>
+                <span className="profile-wishlist-card-subtitle" style={{ opacity: 0.6, fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>Детектив готов начать расследование</span>
+              </div>
+            </div>
+            <button 
+              className="profile-wishlist-card-btn" 
+              style={{ marginTop: '4px' }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                triggerHaptic(); 
+                navigate('/new-case'); 
+              }}
+            >
+              Начать новое дело
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Upcoming Birthdays Section */}
