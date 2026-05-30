@@ -93,7 +93,7 @@ export default function CaseDetail() {
         {/* Tab 0: Summary */}
         <div className="case-content">
           {/* Case Header Card */}
-          <div className="card" style={{ background: 'var(--gradient-card)' }}>
+          <div className="card no-active-scale" style={{ background: 'var(--gradient-card)' }}>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
               📁 Дело №{caseData.id}
             </div>
@@ -128,7 +128,7 @@ export default function CaseDetail() {
               <div className="section-header">
                 <div className="section-header__title">🧩 Зацепки</div>
               </div>
-              <div className="card">
+              <div className="card no-active-scale">
                 <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{caseData.context}</p>
               </div>
             </>
@@ -146,7 +146,7 @@ export default function CaseDetail() {
 
           {/* Active case indicator */}
           {isActive && !caseData.report && (
-            <div className="card" style={{ textAlign: 'center', marginTop: 16 }}>
+            <div className="card no-active-scale" style={{ textAlign: 'center', marginTop: 16 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>🕵️‍♂️</div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>Расследование в процессе</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>

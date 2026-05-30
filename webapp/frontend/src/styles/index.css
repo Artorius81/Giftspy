@@ -6358,14 +6358,14 @@ html {
   left: 50%;
   display: flex;
   align-items: center;
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   will-change: transform;
 }
 
 .persona-carousel-slide {
   flex: 0 0 140px;
   margin: 0 8px;
-  transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   opacity: 0.5;
   transform: scale(0.85);
   filter: blur(0.8px) grayscale(15%);
@@ -6392,7 +6392,7 @@ html {
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
-  transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -6526,8 +6526,16 @@ body:has(.profile-sheet-backdrop) .bottom-nav {
 }
 
 /* Override scale effect on specific history target cards */
-.profile-order-card.no-active-scale:active {
+.profile-order-card.no-active-scale {
+  cursor: default !important;
+}
+.profile-order-card.no-active-scale:active,
+.card.no-active-scale:active {
   transform: none !important;
+  border-color: var(--card-border) !important;
+}
+.card.no-active-scale {
+  cursor: default !important;
 }
 
 /* Smooth expandable content max-height transition for collapse/expand */

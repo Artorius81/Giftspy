@@ -292,8 +292,8 @@ export default function ProfileEdit() {
       <div className="profile-balance-premium-container" style={{ margin: '16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Карточка Баланса */}
         <div
-          className="profile-order-card"
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, padding: '14px 18px', gap: 12 }}
+          className="profile-order-card no-active-scale"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, padding: '14px 18px', gap: 12, cursor: 'default' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>🔍</span>
@@ -415,7 +415,7 @@ export default function ProfileEdit() {
       </div>
 
       {/* Premium Wishlist Card Widget (mockup design) */}
-      <div className="profile-wishlist-card-premium" style={{ marginBottom: '100px' }}>
+      <div className="profile-wishlist-card-premium" style={{ marginBottom: '12px' }}>
         <div className="profile-wishlist-header-row" onClick={() => navigate('/targets/my')}>
           <div className="profile-wishlist-sheet-icon">
             📄<span className="profile-wishlist-heart-badge">❤️</span>

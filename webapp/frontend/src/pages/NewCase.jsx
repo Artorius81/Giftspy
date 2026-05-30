@@ -124,8 +124,11 @@ const STATUS = {
 }
 
 const HOLIDAY_OPTIONS = [
-  '🎂 День Рождения', '💐 8 Марта', '🛡 23 Февраля',
-  '🎄 Новый Год', '💍 Годовщина', '🎁 Просто так'
+  '🎂 День Рождения', '🎄 Новый Год', '🎅 Тайный Санта',
+  '💐 8 Марта', '🛡 23 Февраля', '💍 Годовщина',
+  '👨 День отца', '👩 День матери', '🎓 Выпускной',
+  '💑 День св. Валентина', '🏠 Новоселье', '🎉 Юбилей',
+  '🎁 Просто так'
 ]
 
 const BUDGET_OPTIONS = [
@@ -191,24 +194,12 @@ export default function NewCase() {
         if (savedIdx !== -1) {
           targetIdx = savedIdx
         } else {
-          targetIdx = Math.floor(personas.length / 2)
+          targetIdx = 0
         }
       }
       
-      const newActiveIdx = personas.length + targetIdx
-      
-      if (isFirstLoad.current) {
-        isFirstLoad.current = false
-        setTransitionEnabled(false)
-        setActivePersonaIdx(newActiveIdx)
-        setForm(prev => ({ ...prev, persona: personas[targetIdx].name }))
-        setTimeout(() => {
-          setTransitionEnabled(true)
-        }, 50)
-      } else {
-        if (activePersonaIdx % personas.length !== targetIdx) {
-          setActivePersonaIdx(newActiveIdx)
-        }
+      if (activePersonaIdx !== targetIdx) {
+        setActivePersonaIdx(targetIdx)
       }
     }
   }, [personas, form.persona])
@@ -233,7 +224,6 @@ export default function NewCase() {
   const trackRef = useRef(null)
 
   const handleTouchStart = (e) => {
-    if (isSwipingLocked.current) return
     touchStartX.current = e.touches[0].clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
@@ -251,65 +241,26 @@ export default function NewCase() {
     }
   }
 
-  const selectPersonaIndex = (newIdx) => {
-    const N = personas.length
-    if (N === 0) return
-    
-    setActivePersonaIdx(newIdx)
-    const activePersona = personas[((newIdx % N) + N) % N]
-    setForm(prev => ({ ...prev, persona: activePersona.name }))
-    
-    // Seamless infinite scroll wrapping
-    if (newIdx < N) {
-      setTimeout(() => {
-        setTransitionEnabled(false)
-        const resetIdx = newIdx + N
-        setActivePersonaIdx(resetIdx)
-        setTimeout(() => {
-          setTransitionEnabled(true)
-        }, 50)
-      }, 650)
-    } else if (newIdx >= 2 * N) {
-      setTimeout(() => {
-        setTransitionEnabled(false)
-        const resetIdx = newIdx - N
-        setActivePersonaIdx(resetIdx)
-        setTimeout(() => {
-          setTransitionEnabled(true)
-        }, 50)
-      }, 650)
-    }
-  }
-
   const handleTouchEnd = () => {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
-    
-    isSwipingLocked.current = true
-    setTimeout(() => {
-      isSwipingLocked.current = false
-    }, 700)
     
     const threshold = 50
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     const N = personas.length
-    if (N === 0) return
-    
-    if (offset > threshold) {
-      // Swipe right -> go to previous
-      newIdx = activePersonaIdx - 1
-    } else if (offset < -threshold) {
-      // Swipe left -> go to next
-      newIdx = activePersonaIdx + 1
+    if (N > 0) {
+      if (offset > threshold) {
+        newIdx = activePersonaIdx - 1
+      } else if (offset < -threshold) {
+        newIdx = activePersonaIdx + 1
+      }
+      selectPersonaIndex(newIdx)
     }
-    
-    selectPersonaIndex(newIdx)
     
     // Clear manual drag overrides to let React take over the snapping transition cleanly
     if (trackRef.current) {
       trackRef.current.style.transform = ''
-      trackRef.current.style.transition = ''
     }
     
     dragOffsetRef.current = 0
@@ -317,7 +268,6 @@ export default function NewCase() {
   }
 
   const handleMouseDown = (e) => {
-    if (isSwipingLocked.current) return
     touchStartX.current = e.clientX
     dragOffsetRef.current = 0
     setIsDraggingTrack(true)
@@ -336,38 +286,39 @@ export default function NewCase() {
     if (!isDraggingTrack) return
     setIsDraggingTrack(false)
     
-    isSwipingLocked.current = true
-    setTimeout(() => {
-      isSwipingLocked.current = false
-    }, 700)
-    
     const threshold = 50
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
     const N = personas.length
-    if (N === 0) return
-    
-    if (offset > threshold) {
-      newIdx = activePersonaIdx - 1
-    } else if (offset < -threshold) {
-      newIdx = activePersonaIdx + 1
+    if (N > 0) {
+      if (offset > threshold) {
+        newIdx = activePersonaIdx - 1
+      } else if (offset < -threshold) {
+        newIdx = activePersonaIdx + 1
+      }
+      selectPersonaIndex(newIdx)
     }
-    
-    selectPersonaIndex(newIdx)
     
     // Clear manual drag overrides to let React take over the snapping transition cleanly
     if (trackRef.current) {
       trackRef.current.style.transform = ''
-      trackRef.current.style.transition = ''
     }
     
     dragOffsetRef.current = 0
     touchStartX.current = 0
   }
 
+  const selectPersonaIndex = (newIdx) => {
+    const N = personas.length
+    if (N === 0) return
+    const clampedIdx = Math.max(0, Math.min(newIdx, N - 1))
+    setActivePersonaIdx(clampedIdx)
+    setForm(prev => ({ ...prev, persona: personas[clampedIdx].name }))
+  }
+
   const renderCarousel = () => {
     const N = personas.length
-    const extendedPersonas = N > 0 ? [...personas, ...personas, ...personas] : []
+    const extendedPersonas = personas
     
     return (
       <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
@@ -388,7 +339,7 @@ export default function NewCase() {
               className="persona-carousel-track"
               style={{
                 transform: `translateX(calc(-78px - (${activePersonaIdx} * 156px)))`,
-                transition: (!transitionEnabled || isDraggingTrack) ? 'none' : 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)'
+                transition: isDraggingTrack ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
               }}
             >
               {extendedPersonas.map((p, idx) => {
@@ -397,14 +348,7 @@ export default function NewCase() {
                   <div
                     key={idx}
                     className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
-                    onClick={() => {
-                      if (isSwipingLocked.current) return
-                      isSwipingLocked.current = true
-                      setTimeout(() => {
-                        isSwipingLocked.current = false
-                      }, 700)
-                      selectPersonaIndex(idx)
-                    }}
+                    onClick={() => selectPersonaIndex(idx)}
                   >
                     <div className="persona-carousel-card">
                       <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
@@ -416,13 +360,13 @@ export default function NewCase() {
           </div>
         </div>
 
-        {personas[activePersonaIdx % N] && (
+        {personas[activePersonaIdx] && (
           <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '16px', padding: '0 8px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
-              {personas[activePersonaIdx % N].name}
+              {personas[activePersonaIdx].name}
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
-              {personas[activePersonaIdx % N].desc}
+              {personas[activePersonaIdx].desc}
             </p>
           </div>
         )}
@@ -714,7 +658,7 @@ export default function NewCase() {
                   key={t.id}
                   className={`card ${form.target === t.identifier ? 'selected' : ''}`}
                   style={form.target === t.identifier ? { borderColor: 'var(--accent)' } : {}}
-                  onClick={() => { setForm({ ...form, target: t.identifier }); setTargetDisplayName(t.name || ''); setStep(2) }}
+                  onClick={() => { setForm({ ...form, target: t.identifier }); setTargetDisplayName(t.name || ''); setStep(3) }}
                 >
                   <div className="card__header">
                     <div className="card__avatar">
@@ -829,7 +773,7 @@ export default function NewCase() {
       {currentStepKey === 'confirm' && (
         <div className="wizard-step">
           <div className="wizard-step__title">✅ Подтверждение</div>
-          <div className="card">
+          <div className="card no-active-scale">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
               <div><strong>🎯 Цель:</strong> {targetDisplayName || form.target}</div>
               <div><strong>🎉 Повод:</strong> {form.holiday || 'Без повода'}</div>
