@@ -32,7 +32,7 @@ async def init_db():
 
 # ================= CASES =================
 
-async def add_case(customer_id, target, holiday, context, persona, budget):
+async def add_case(customer_id, target, holiday, context, persona, budget, ai_model='gemini-3.5-flash'):
     result = await asyncio.to_thread(
         lambda: _client.table('cases').insert({
             'customer_id': customer_id,
@@ -40,7 +40,8 @@ async def add_case(customer_id, target, holiday, context, persona, budget):
             'holiday': holiday,
             'context': context,
             'persona': persona,
-            'budget': budget
+            'budget': budget,
+            'ai_model': ai_model
         }).execute()
     )
     return result.data[0]['id']
@@ -49,12 +50,24 @@ async def add_case(customer_id, target, holiday, context, persona, budget):
 async def get_pending_cases():
     result = await asyncio.to_thread(
         lambda: _client.table('cases')
-            .select('id, customer_id, target, holiday, context, persona, budget, status, report')
+            .select('id, customer_id, target, holiday, context, persona, budget, status, report, ai_model')
             .eq('status', 'pending')
             .execute()
     )
     return [(r['id'], r['customer_id'], r['target'], r['holiday'], r['context'],
-             r['persona'], r['budget'], r['status'], r['report']) for r in result.data]
+             r['persona'], r['budget'], r['status'], r['report'], r.get('ai_model', 'gemini-3.5-flash')) for r in result.data]
+
+
+async def get_case_ai_model(case_id):
+    result = await asyncio.to_thread(
+        lambda: _client.table('cases')
+            .select('ai_model')
+            .eq('id', case_id)
+            .execute()
+    )
+    if result.data and 'ai_model' in result.data[0]:
+        return result.data[0]['ai_model'] or 'gemini-3.5-flash'
+    return 'gemini-3.5-flash'
 
 
 async def get_started_cases():

@@ -34,6 +34,7 @@ class Case(Base):
     status = Column(Text, default='pending')
     report = Column(Text)
     spy_message_id = Column(BigInteger, default=None)
+    ai_model = Column(Text, default='gemini-3.5-flash')
     created_at = Column(DateTime, default=datetime.utcnow)
     
     chats = relationship("ChatHistory", back_populates="case", cascade="all, delete-orphan")

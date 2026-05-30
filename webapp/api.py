@@ -81,6 +81,7 @@ class CaseCreate(BaseModel):
     context: str = "Нет данных"
     persona: str
     budget: str = "Не указан"
+    ai_model: Optional[str] = "gemini-3.5-flash"
 
 
 class WishlistItemCreate(BaseModel):
@@ -382,6 +383,8 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
     # Check if spy mode is enabled
     spy_mode = await db.get_user_spy_mode(user_id)
     
+    ai_model = await db.get_case_ai_model(case_id)
+    
     return {
         "id": case_id,
         "target": target,
@@ -397,6 +400,7 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
         "target_db_id": target_db_id,
         "created_at": created_at,
         "completed_at": completed_at,
+        "ai_model": ai_model,
     }
 
 @app.get("/api/cases/{case_id}/chat")
@@ -434,9 +438,12 @@ async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)
     if existing:
         raise HTTPException(status_code=409, detail="Active case already exists for this target")
     
+    # Secure server-side check: only premium users can select custom models
+    selected_model = data.ai_model if has_premium else 'gemini-3.5-flash'
+    
     if not has_premium:
         await db.deduct_balance(user_id)
-    case_id = await db.add_case(user_id, data.target, data.holiday, data.context, data.persona, data.budget)
+    case_id = await db.add_case(user_id, data.target, data.holiday, data.context, data.persona, data.budget, ai_model=selected_model)
     
     # Auto-save target if not exists
     saved = await db.find_target_by_identifier(user_id, data.target)

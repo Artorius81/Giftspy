@@ -17,6 +17,14 @@ const STATUS_MAP = {
   error: '⚠️ Ошибка',
 }
 
+const MODEL_DISPLAY_MAP = {
+  'gemini-3.5-flash': 'Gemini 3.5 Flash ⚡️',
+  'gpt-4o': 'GPT-4o 🧠',
+  'claude-3.5-sonnet': 'Claude 3.5 Sonnet 🎨',
+  'gpt-4o-mini': 'GPT-4o Mini 🚀',
+  'claude-3.5-haiku': 'Claude 3.5 Haiku ⚡️',
+}
+
 export default function CaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -102,6 +110,9 @@ export default function CaseDetail() {
               <div>🎉 <strong>Повод:</strong> {caseData.holiday}</div>
               <div>🕵️ <strong>Детектив:</strong> {caseData.persona}</div>
               <div>💵 <strong>Бюджет:</strong> {caseData.budget}</div>
+              {caseData.ai_model && (
+                <div>🤖 <strong>Модель ИИ:</strong> {MODEL_DISPLAY_MAP[caseData.ai_model] || caseData.ai_model}</div>
+              )}
               {caseData.created_at && (
                 <div>📅 <strong>Начато:</strong> {timeAgo(caseData.created_at)}</div>
               )}

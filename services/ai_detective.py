@@ -5,6 +5,21 @@ import config
 from database import db
 from google import genai
 from google.genai import types
+from openai import OpenAI
+
+def _to_openai_messages(system_instruction: str, messages: list) -> list:
+    openai_msgs = []
+    if system_instruction:
+        openai_msgs.append({"role": "system", "content": system_instruction})
+    for msg in messages:
+        if hasattr(msg, 'parts') and msg.parts:
+            text = msg.parts[0].text
+            role = "assistant" if msg.role == "model" else msg.role
+            openai_msgs.append({"role": role, "content": text})
+        elif isinstance(msg, dict):
+            role = "assistant" if msg.get("role") == "model" else msg.get("role", "user")
+            openai_msgs.append({"role": role, "content": msg.get("content", "")})
+    return openai_msgs
 
 # ================= ОБНОВЛЕННЫЙ ПРОМПТ ИИ =================
 SYSTEM_PROMPT_TEMPLATE = """
@@ -71,9 +86,13 @@ class AIDetectiveService:
             api_key=config.OPENROUTER_API_KEY,
             http_options={"api_version": "v1beta", "base_url": "https://api.proxyapi.ru/google/"},
         )
+        self.openai_client = OpenAI(
+            api_key=config.OPENROUTER_API_KEY,
+            base_url="https://api.proxyapi.ru/openai/v1"
+        )
         self.model = "gemini-3.5-flash"
         
-    async def create_new_chat(self, holiday, context, persona, budget):
+    async def create_new_chat(self, holiday, context, persona, budget, ai_model="gemini-3.5-flash"):
          personas = await db.get_personas()
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
@@ -84,7 +103,7 @@ class AIDetectiveService:
              budget=budget,
              emojis=emojis
          )
-         return {"system": custom_prompt, "messages": []}
+         return {"system": custom_prompt, "messages": [], "model": ai_model}
 
     async def restore_chat_from_db(self, case_id, holiday, context, persona, budget):
          """Восстанавливает историю диалога из БД в формате google.genai types.Content."""
@@ -99,6 +118,9 @@ class AIDetectiveService:
              emojis=emojis
          )
          
+         # Fetch the custom AI model used for this case
+         ai_model = await db.get_case_ai_model(case_id)
+         
          messages = []
          history = await db.get_chat_history(case_id)
          
@@ -109,7 +131,7 @@ class AIDetectiveService:
                  role = "user" if sender == "user" else "model"
                  messages.append(types.Content(role=role, parts=[types.Part.from_text(text=message_text)]))
                  
-         return {"system": custom_prompt, "messages": messages}
+         return {"system": custom_prompt, "messages": messages, "model": ai_model}
 
     async def generate_first_messages(self, chat_context: dict):
         """Generates two first messages: greeting and can-I-ask-questions.
@@ -214,13 +236,23 @@ class AIDetectiveService:
             return []
 
     def _call_gemini(self, chat_context: dict) -> str:
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=chat_context["messages"],
-            config=types.GenerateContentConfig(
-                system_instruction=chat_context["system"],
+        model = chat_context.get("model", self.model)
+        if model.startswith("gemini"):
+            response = self.client.models.generate_content(
+                model=model,
+                contents=chat_context["messages"],
+                config=types.GenerateContentConfig(
+                    system_instruction=chat_context["system"],
+                    temperature=0.8,
+                )
+            )
+            return response.text
+        else:
+            openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+            response = self.openai_client.chat.completions.create(
+                model=model,
+                messages=openai_msgs,
                 temperature=0.8,
             )
-        )
-        return response.text
+            return response.choices[0].message.content
 

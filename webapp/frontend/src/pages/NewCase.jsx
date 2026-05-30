@@ -138,6 +138,14 @@ const BUDGET_OPTIONS = [
 
 const STEPS = ['target', 'holiday', 'context', 'budget', 'confirm']
 
+const AI_MODELS = [
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'По умолчанию. Быстрая и лаконичная базовая модель Google.' },
+  { id: 'gpt-4o', name: 'GPT-4o', icon: '🧠', desc: 'Флагман OpenAI. Превосходная логика, глубокий анализ и точность роли.' },
+  { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', icon: '🎨', desc: 'Флагман Anthropic. Невероятно живой язык и художественный отыгрыш роли.' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный и сбалансированный ИИ от OpenAI.' },
+  { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', icon: '⚡️', desc: 'Сверхбыстрый и точный компактный ИИ от Anthropic.' },
+]
+
 export default function NewCase() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -173,6 +181,7 @@ export default function NewCase() {
     context: '',
     persona: localStorage.getItem('last_selected_persona') || '',
     budget: '',
+    ai_model: 'gemini-3.5-flash',
   })
 
   // Persist chosen persona
@@ -548,6 +557,7 @@ export default function NewCase() {
         context: form.context || 'Нет данных',
         persona: form.persona,
         budget: form.budget || 'Не указан',
+        ai_model: form.ai_model,
       })
 
       // Reset form and return to dashboard
@@ -557,6 +567,7 @@ export default function NewCase() {
         context: '',
         persona: localStorage.getItem('last_selected_persona') || '',
         budget: '',
+        ai_model: 'gemini-3.5-flash',
       })
       setTargetDisplayName('')
       setStep(0)
@@ -905,6 +916,68 @@ export default function NewCase() {
               <div><strong>💵 Бюджет:</strong> {form.budget || 'Не указан'}</div>
             </div>
           </div>
+
+          <div className="section-header" style={{ marginTop: 24, marginBottom: 8 }}>
+            <div className="section-header__title">🤖 Выберите ИИ модель детектива</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+            {AI_MODELS.map(m => {
+              const isSelected = form.ai_model === m.id;
+              const isLocked = m.id !== 'gemini-3.5-flash' && !profile?.is_premium;
+              return (
+                <div
+                  key={m.id}
+                  className={`card no-active-scale ${isSelected ? 'selected' : ''}`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    padding: '14px 16px',
+                    borderColor: isSelected ? 'var(--accent)' : 'var(--card-border)',
+                    background: isSelected ? 'rgba(108, 92, 231, 0.08)' : 'var(--card-bg)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    opacity: isLocked ? 0.65 : 1,
+                    transition: 'var(--transition)'
+                  }}
+                  onClick={async () => {
+                    if (isLocked) {
+                      const confirmStore = await showConfirm(
+                        `👑 Модель ${m.name} доступна только с премиум подпиской!\n\nЖелаете перейти в магазин для активации?`
+                      );
+                      if (confirmStore) {
+                        navigate('/store');
+                      }
+                      return;
+                    }
+                    triggerHaptic();
+                    setForm({ ...form, ai_model: m.id });
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+                      <span>{m.icon}</span>
+                      <span>{m.name}</span>
+                      {m.id === 'gemini-3.5-flash' && (
+                        <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: 4, color: 'var(--text-secondary)' }}>
+                          Базовая
+                        </span>
+                      )}
+                    </div>
+                    {isLocked ? (
+                      <span style={{ fontSize: 13 }} title="Требуется Премиум">🔒 👑</span>
+                    ) : isSelected ? (
+                      <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                    ) : null}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: '1.45', textAlign: 'left' }}>
+                    {m.desc}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <SlideToConfirm onConfirm={handleSubmit} submitting={submitting} />
         </div>
       )}
