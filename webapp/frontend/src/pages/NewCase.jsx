@@ -5,6 +5,7 @@ import { getTargetEmoji } from './TargetDetail'
 import { useData } from '../hooks/useData'
 import { showAlert, showConfirm } from '../utils/popup'
 import { timeAgo } from '../utils/timeAgo'
+import detectiveImg from '../assets/detective.png'
 
 
 
@@ -676,7 +677,7 @@ export default function NewCase() {
                   }}
                 >
                   <div className="persona-carousel-card" style={{ position: 'relative' }}>
-                    <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
+                    <img src={p.photo || detectiveImg} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
                     {isPremiumLocked && (
                       <div style={{
                         position: 'absolute',
@@ -1680,7 +1681,7 @@ export default function NewCase() {
                       overflow: 'hidden',
                       flexShrink: 0
                     }}>
-                      {p.photo ? <img src={p.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🕵️‍♂️'}
+                      <img src={p.photo || detectiveImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { showAlert } from '../utils/popup'
+import detectiveImg from '../assets/detective.png'
 
 export default function DetectiveLibrary() {
   const navigate = useNavigate()
@@ -219,11 +220,7 @@ export default function DetectiveLibrary() {
                   flexShrink: 0,
                   border: '1px solid var(--card-border)'
                 }}>
-                  {p.photo ? (
-                    <img src={p.photo} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ fontSize: '24px' }}>🕵️‍♂️</span>
-                  )}
+                  <img src={p.photo || detectiveImg} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { showAlert } from '../utils/popup'
+import detectiveImg from '../assets/detective.png'
 
 const SKILL_PRESETS = [
   { id: 'deduction', label: 'Дедукция 🧠', val: 90, color: '#6c5ce7' },
@@ -35,6 +36,19 @@ export default function DetectiveCreate() {
   
   // Step Wizard State
   const [formStep, setFormStep] = useState(1)
+  const [step4Ready, setStep4Ready] = useState(false)
+
+  useEffect(() => {
+    if (formStep === 4) {
+      setStep4Ready(false)
+      const t = setTimeout(() => {
+        setStep4Ready(true)
+      }, 400)
+      return () => clearTimeout(t)
+    } else {
+      setStep4Ready(false)
+    }
+  }, [formStep])
 
   // Form states
   const [name, setName] = useState('')
@@ -67,7 +81,7 @@ export default function DetectiveCreate() {
   
   // Avatar states
   const [avatarType, setAvatarType] = useState('ai') // 'ai' or 'upload'
-  const [photoUrl, setPhotoUrl] = useState('https://hswsezmciuwqxhspxamj.supabase.co/storage/v1/object/public/detectives/viktor_black@3x.png') // default photo url
+  const [photoUrl, setPhotoUrl] = useState(detectiveImg) // default photo url
   const [isAvatarSet, setIsAvatarSet] = useState(false)
   
   // AI Generation states
@@ -115,7 +129,7 @@ export default function DetectiveCreate() {
         setSpecialty(p.specialty || '')
         setEmojis(p.emojis || '')
         setIsPublic(p.is_public || false)
-        setPhotoUrl(p.photo || '')
+        setPhotoUrl(p.photo || detectiveImg)
         setIsAvatarSet(!!p.photo)
         
         // Parse opening phrase if embedded
@@ -316,6 +330,10 @@ export default function DetectiveCreate() {
     
     if (formStep < 4) {
       handleNextStep()
+      return
+    }
+
+    if (formStep === 4 && !step4Ready) {
       return
     }
 
@@ -1257,7 +1275,7 @@ export default function DetectiveCreate() {
             <button
               type="submit"
               className="btn btn--primary"
-              disabled={submitting}
+              disabled={submitting || !step4Ready}
               style={{
                 flex: 2,
                 padding: '16px',
