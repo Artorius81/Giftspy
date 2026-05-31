@@ -280,27 +280,49 @@ export default function NewCase() {
 
   const isFirstLoad = useRef(true)
 
-  // Sync activePersonaIdx with selected persona in form
-  useEffect(() => {
-    if (personas.length > 0) {
-      const idx = personas.findIndex(p => p.name === form.persona)
-      let targetIdx = idx !== -1 ? idx : -1
+  const hasLoadedDefaultPersona = useRef(false)
 
-      if (targetIdx === -1) {
-        const savedPersona = localStorage.getItem('last_selected_persona')
-        const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
-        if (savedIdx !== -1) {
-          targetIdx = savedIdx
+  // Sync activePersonaIdx with selected persona in form & handle premium defaults on load
+  useEffect(() => {
+    if (personas.length > 0 && profile !== undefined) {
+      if (!hasLoadedDefaultPersona.current) {
+        hasLoadedDefaultPersona.current = true
+        const hasPremium = profile?.is_premium
+        let targetPersona = ''
+        
+        if (hasPremium) {
+          targetPersona = localStorage.getItem('last_selected_persona') || personas[0]?.name || ''
         } else {
-          targetIdx = 0
+          // Non-premium users always default to Viktor Black (the first persona)
+          targetPersona = personas[0]?.name || ''
+        }
+        
+        const idx = personas.findIndex(p => p.name === targetPersona)
+        const targetIdx = idx !== -1 ? idx : 0
+        
+        setActivePersonaIdx(targetIdx)
+        setForm(prev => ({ ...prev, persona: personas[targetIdx]?.name || '' }))
+      } else {
+        // Subsequent syncs from form.persona changes (carousel swipes, user clicks)
+        const idx = personas.findIndex(p => p.name === form.persona)
+        let targetIdx = idx !== -1 ? idx : -1
+
+        if (targetIdx === -1) {
+          const savedPersona = localStorage.getItem('last_selected_persona')
+          const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
+          if (savedIdx !== -1) {
+            targetIdx = savedIdx
+          } else {
+            targetIdx = 0
+          }
+        }
+
+        if (activePersonaIdx !== targetIdx) {
+          setActivePersonaIdx(targetIdx)
         }
       }
-
-      if (activePersonaIdx !== targetIdx) {
-        setActivePersonaIdx(targetIdx)
-      }
     }
-  }, [personas, form.persona])
+  }, [personas, form.persona, profile])
 
   const preloadedImagesRef = useRef([])
 

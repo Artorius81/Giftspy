@@ -136,10 +136,11 @@ async def _process_target_input(case, user_message, event):
     
     display_name = await resolve_target_display_name(customer_id, target)
     spy_mode = await db.get_user_spy_mode(customer_id)
+    has_premium = await db.is_premium(customer_id)
     
     # Spy Mode — обновляем сообщение
     is_manual = (status == 'manual_mode')
-    if spy_mode:
+    if spy_mode and has_premium:
         await update_spy_message(case_id, customer_id, display_name, persona, manual_mode=is_manual)
 
     if status == 'manual_mode':
@@ -212,7 +213,8 @@ async def _process_target_input(case, user_message, event):
                 # AI-mode response notification removed to prevent spam (users can monitor progress in WebApp)
                 pass
 
-                if spy_mode:
+                has_premium = await db.is_premium(customer_id)
+                if spy_mode and has_premium:
                     await update_spy_message(case_id, customer_id, display_name, persona)
 
         except Exception as e:
@@ -275,7 +277,8 @@ async def handle_target_edited_message(event):
     
     display_name = await resolve_target_display_name(customer_id, case[2])
     spy_mode = await db.get_user_spy_mode(customer_id)
-    if spy_mode:
+    has_premium = await db.is_premium(customer_id)
+    if spy_mode and has_premium:
         await update_spy_message(case_id, customer_id, display_name, case[5])
 
     # Если в ИИ-режиме — ИИ реагирует на редактирование
@@ -290,7 +293,8 @@ async def handle_target_edited_message(event):
                 if ai_text:
                     await event.respond(ai_text, parse_mode="Markdown")
                     await db.save_chat_message(case_id, 'ai', ai_text)
-                    if spy_mode:
+                    has_premium = await db.is_premium(customer_id)
+                    if spy_mode and has_premium:
                         await update_spy_message(case_id, customer_id, display_name, case[5])
             except Exception as e:
                 logging.error(f"Ошибка при обработке ред. сообщения: {e}")

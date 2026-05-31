@@ -169,7 +169,8 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                             
                             # Spy mode: показываем первое сообщение заказчику
                             spy_mode = await db.get_user_spy_mode(customer_id)
-                            if spy_mode:
+                            has_premium = await db.is_premium(customer_id)
+                            if spy_mode and has_premium:
                                 try:
                                     import sys
                                     main_module = sys.modules.get('main')

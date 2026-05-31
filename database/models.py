@@ -19,7 +19,7 @@ class User(Base):
     birthday = Column(Text, default=None)
     description = Column(Text, default=None)
     photo_file_id = Column(Text, default=None)
-    model_selector_enabled = Column(Boolean, default=True)
+    model_selector_enabled = Column(Boolean, default=False)
     registered_at = Column(DateTime, default=datetime.utcnow)
 
 class Case(Base):

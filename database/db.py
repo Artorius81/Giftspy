@@ -559,8 +559,8 @@ async def get_user_model_selector_enabled(user_id) -> bool:
     )
     if result.data and 'model_selector_enabled' in result.data[0]:
         val = result.data[0]['model_selector_enabled']
-        return bool(val) if val is not None else True
-    return True
+        return bool(val) if val is not None else False
+    return False
 
 
 async def toggle_model_selector(user_id) -> bool:

@@ -186,7 +186,8 @@ async def process_photo(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "open_settings")
 async def open_settings(callback: CallbackQuery):
-    spy_mode = await db.get_user_spy_mode(callback.from_user.id)
+    has_premium = await db.is_premium(callback.from_user.id)
+    spy_mode = await db.get_user_spy_mode(callback.from_user.id) if has_premium else False
     spy_status = "включен ✅" if spy_mode else "выключен ❌"
     text = (f"⚙️ **Настройки**\n━━━━━━━━━━━━━\n\n"
             f"🔍 Шпионский режим: {spy_status}\n"

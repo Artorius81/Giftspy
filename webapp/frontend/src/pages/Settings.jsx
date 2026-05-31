@@ -26,8 +26,8 @@ export default function Settings() {
   useEffect(() => {
     if (profile) {
       const isPremium = !!profile.is_premium
-      setSpyMode(isPremium ? profile.spy_mode : false)
-      setModelSelectorEnabled(profile.model_selector_enabled !== false)
+      setSpyMode(isPremium ? !!profile.spy_mode : false)
+      setModelSelectorEnabled(isPremium ? !!profile.model_selector_enabled : false)
     }
   }, [profile])
 
@@ -321,7 +321,10 @@ export default function Settings() {
             >
               <div className="settings-list-icon">🕵️</div>
               <div className="settings-list-info">
-                <div className="settings-list-title">Шпионский режим</div>
+                <div className="settings-list-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>Шпионский режим</span>
+                  {!isPremium && <span style={{ fontSize: '12px' }}>🔒</span>}
+                </div>
                 <div className="settings-list-subtitle">
                   {isPremium 
                     ? (premiumExpiry ? `Премиум активен до ${premiumExpiry}` : 'Активен')
