@@ -625,7 +625,7 @@ export default function NewCase() {
                   >
                     <div className="persona-carousel-card" style={{
                       position: 'relative',
-                      border: '2px dashed var(--accent)',
+                      border: '2px dashed var(--text-secondary)',
                       borderRadius: '16px',
                       background: 'rgba(255, 255, 255, 0.02)',
                       display: 'flex',
@@ -636,7 +636,7 @@ export default function NewCase() {
                       height: '180px',
                       width: '120px'
                     }}>
-                      <span style={{ fontSize: '32px', color: 'var(--accent)', fontWeight: '300', marginBottom: '4px' }}>+</span>
+                      <span style={{ fontSize: '32px', color: 'var(--text-secondary)', fontWeight: '300', marginBottom: '4px' }}>+</span>
                       <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text)' }}>Добавить</span>
                     </div>
                   </div>
@@ -1066,7 +1066,7 @@ export default function NewCase() {
 
               {/* Library Button */}
               <button
-                onClick={() => { triggerHaptic(); setShowLibraryModal(true); }}
+                onClick={() => { triggerHaptic(); navigate('/detectives/library'); }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

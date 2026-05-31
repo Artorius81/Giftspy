@@ -64,8 +64,15 @@ async function requestFile(path, file) {
   })
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Network error' }))
-    throw new Error(err.detail || `HTTP ${res.status}`)
+    const text = await res.text().catch(() => '')
+    let detail = 'Network error'
+    try {
+      const err = JSON.parse(text)
+      detail = err.detail || detail
+    } catch {
+      detail = text || `HTTP ${res.status}`
+    }
+    throw new Error(detail)
   }
 
   return res.json()

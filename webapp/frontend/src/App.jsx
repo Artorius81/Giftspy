@@ -12,6 +12,7 @@ import Store from './pages/Store'
 import Settings from './pages/Settings'
 import ProfileEdit from './pages/ProfileEdit'
 import DetectiveCreate from './pages/DetectiveCreate'
+import DetectiveLibrary from './pages/DetectiveLibrary'
 import PopupProvider from './components/PopupProvider'
 import InAppNotificationProvider from './components/InAppNotificationProvider'
 import './styles/snackbar.css'
@@ -90,6 +91,7 @@ function AppContent() {
         <Route path="/targets/:id/profile" element={<TargetDetail />} />
         <Route path="/new-case" element={<NewCase />} />
         <Route path="/detective/create" element={<DetectiveCreate />} />
+        <Route path="/detectives/library" element={<DetectiveLibrary />} />
         <Route path="/dossier" element={<Dossier />} />
         <Route path="/dossier/:id" element={<CaseDetail />} />
         <Route path="/store" element={<Store />} />

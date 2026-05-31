@@ -1197,12 +1197,20 @@ async def upload_detective_avatar(user_id: int, file_bytes: bytes) -> str:
         logging.warning(f"Failed uploading to detectives storage bucket: {e}. Falling back to profile_photo...")
         
     # Резервный вариант — загрузка в работающий бакет фото профиля
-    await asyncio.to_thread(
-        lambda: _client.storage.from_("profile_photo").upload(
-            path=file_name,
-            file=file_bytes,
-            file_options={"content-type": "image/jpeg", "upsert": "true"}
+    try:
+        await asyncio.to_thread(
+            lambda: _client.storage.from_("profile_photo").upload(
+                path=file_name,
+                file=file_bytes,
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+            )
         )
-    )
-    url = _client.storage.from_("profile_photo").get_public_url(file_name)
-    return url
+        url = _client.storage.from_("profile_photo").get_public_url(file_name)
+        return url
+    except Exception as e2:
+        logging.error(f"Failed fallback upload to profile_photo storage bucket: {e2}")
+        
+    # Буленепробиваемый резервный вариант — возврат Base64 data-uri
+    import base64
+    base64_str = base64.b64encode(file_bytes).decode('utf-8')
+    return f"data:image/jpeg;base64,{base64_str}"
