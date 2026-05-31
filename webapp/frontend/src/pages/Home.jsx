@@ -126,7 +126,7 @@ export default function Home() {
     return `${count} целей`;
   }
 
-  const getGreeting = () => {
+  const getGreetingData = () => {
     const hr = new Date().getHours()
     const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {}
     const fullName = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim()
@@ -137,7 +137,7 @@ export default function Home() {
     else if (hr < 12) greetingText = 'Доброе утро'
     else if (hr < 18) greetingText = 'Добрый день'
     
-    return `${greetingText}, ${name}`
+    return { greetingText, name }
   }
 
   return (
@@ -145,7 +145,12 @@ export default function Home() {
       {/* Centered Premium Header with Greeting & No Header Buttons */}
       <div className="new-header" style={{ justifyContent: 'center', background: 'transparent', borderBottom: 'none', paddingBottom: '8px' }}>
         <h1 className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.3px', color: 'var(--text)' }}>
-          {getGreeting()}
+          {getGreetingData().greetingText}, <span className="greeting-nickname" style={{ 
+            background: 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: '800'
+          }}>{getGreetingData().name}</span>
         </h1>
       </div>
 
