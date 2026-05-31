@@ -993,19 +993,216 @@ async def update_user_notifications(user_id, field, value):
 
 # ================= DETECTIVES (PERSONAS) =================
 
-async def get_personas():
-    """Возвращает актуальный список детективов из БД."""
-    result = await asyncio.to_thread(
-        lambda: _client.table('detectives').select('id, name, description, photo_url, emojis, ai_description').order('id').execute()
-    )
+async def get_personas(user_id=None):
+    """Возвращает актуальный список детективов из БД (включая личные и добавленные)."""
+    personas_data = []
+    
+    try:
+        # Системные детективы (без создателя)
+        sys_res = await asyncio.to_thread(
+            lambda: _client.table('detectives')
+                .select('*')
+                .is_('creator_id', 'null')
+                .order('id')
+                .execute()
+        )
+        if sys_res.data:
+            personas_data.extend(sys_res.data)
+    except Exception as e:
+        logging.error(f"Error fetching system personas: {e}")
+        
+    if user_id:
+        try:
+            # Собственные кастомные детективы
+            own_res = await asyncio.to_thread(
+                lambda: _client.table('detectives')
+                    .select('*')
+                    .eq('creator_id', user_id)
+                    .order('id')
+                    .execute()
+            )
+            if own_res.data:
+                personas_data.extend(own_res.data)
+        except Exception as e:
+            logging.error(f"Error fetching user's own personas: {e}")
+            
+        try:
+            # Добавленные из библиотеки
+            added_res = await asyncio.to_thread(
+                lambda: _client.table('added_detectives')
+                    .select('detective_id, detectives(*)')
+                    .eq('user_id', user_id)
+                    .execute()
+            )
+            if added_res.data:
+                for r in added_res.data:
+                    det = r.get('detectives')
+                    if det:
+                        # Исключаем дубликаты
+                        if det['id'] not in [p['id'] for p in personas_data]:
+                            personas_data.append(det)
+        except Exception as e:
+            logging.error(f"Error fetching added community personas: {e}")
+
     personas = []
-    for r in result.data:
+    for r in personas_data:
         personas.append({
             "id": r['id'],
             "name": r['name'],
-            "desc": r['description'],
-            "photo": r['photo_url'],
-            "emojis": r['emojis'],
-            "ai_description": r.get('ai_description', '')
+            "desc": r.get('description') or '',
+            "photo": r.get('photo_url') or '',
+            "emojis": r.get('emojis') or '🕵️‍♂️, 🎁, ✨, 🤫, 🔍',
+            "ai_description": r.get('ai_description') or '',
+            "creator_id": r.get('creator_id'),
+            "is_public": bool(r.get('is_public', False)),
+            "is_approved": bool(r.get('is_approved', True)),
+            "specialty": r.get('specialty') or 'Секретное расследование 🕵️‍♂️',
+            "skills": r.get('skills') or []
         })
     return personas
+
+
+async def get_public_detectives(user_id):
+    """Возвращает все одобренные публичные детективы других пользователей для отображения в Библиотеке."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('detectives')
+            .select('*')
+            .not_.is_('creator_id', 'null')
+            .neq('creator_id', user_id)
+            .eq('is_public', True)
+            .eq('is_approved', True)
+            .order('id')
+            .execute()
+    )
+    
+    # Получаем список уже добавленных детективов этим пользователем
+    added_res = await asyncio.to_thread(
+        lambda: _client.table('added_detectives')
+            .select('detective_id')
+            .eq('user_id', user_id)
+            .execute()
+    )
+    added_ids = {r['detective_id'] for r in added_res.data} if added_res.data else set()
+    
+    public_detectives = []
+    for r in result.data:
+        public_detectives.append({
+            "id": r['id'],
+            "name": r['name'],
+            "desc": r.get('description') or '',
+            "photo": r.get('photo_url') or '',
+            "emojis": r.get('emojis') or '🕵️‍♂️, 🎁, ✨, 🤫, 🔍',
+            "ai_description": r.get('ai_description') or '',
+            "creator_id": r.get('creator_id'),
+            "is_public": bool(r.get('is_public', False)),
+            "is_approved": bool(r.get('is_approved', True)),
+            "specialty": r.get('specialty') or 'Секретное расследование 🕵️‍♂️',
+            "skills": r.get('skills') or [],
+            "is_added": r['id'] in added_ids
+        })
+    return public_detectives
+
+
+async def add_detective_to_library(user_id: int, detective_id: int):
+    """Связывает публичного детектива с пользователем (Добавить себе)."""
+    exists = await asyncio.to_thread(
+        lambda: _client.table('added_detectives')
+            .select('id')
+            .eq('user_id', user_id)
+            .eq('detective_id', detective_id)
+            .execute()
+    )
+    if not exists.data:
+        await asyncio.to_thread(
+            lambda: _client.table('added_detectives')
+                .insert({'user_id': user_id, 'detective_id': detective_id})
+                .execute()
+        )
+
+
+async def remove_detective_from_library(user_id: int, detective_id: int):
+    """Удаляет связь чужого детектива со своим профилем."""
+    await asyncio.to_thread(
+        lambda: _client.table('added_detectives')
+            .delete()
+            .eq('user_id', user_id)
+            .eq('detective_id', detective_id)
+            .execute()
+    )
+
+
+async def create_custom_detective(creator_id: int, name: str, description: str, ai_description: str, photo_url: str, emojis: str, is_public: bool, is_approved: bool, specialty: str, skills: list):
+    """Создает нового кастомного детектива в Supabase."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('detectives').insert({
+            'name': name,
+            'description': description,
+            'ai_description': ai_description,
+            'photo_url': photo_url,
+            'emojis': emojis,
+            'creator_id': creator_id,
+            'is_public': is_public,
+            'is_approved': is_approved,
+            'specialty': specialty,
+            'skills': skills
+        }).execute()
+    )
+    return result.data[0]['id']
+
+
+async def get_user_custom_detectives_enabled(user_id) -> bool:
+    """Проверяет, включен ли конструктор детективов у пользователя."""
+    await _ensure_user(user_id)
+    result = await asyncio.to_thread(
+        lambda: _client.table('users')
+            .select('custom_detectives_enabled')
+            .eq('id', user_id)
+            .execute()
+    )
+    if result.data and 'custom_detectives_enabled' in result.data[0]:
+        val = result.data[0]['custom_detectives_enabled']
+        return bool(val) if val is not None else False
+    return False
+
+
+async def toggle_custom_detectives(user_id) -> bool:
+    """Тогглит настройку конструктора детективов."""
+    current = await get_user_custom_detectives_enabled(user_id)
+    new_val = not current
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({'custom_detectives_enabled': new_val})
+            .eq('id', user_id)
+            .execute()
+    )
+    return new_val
+
+
+async def upload_detective_avatar(user_id: int, file_bytes: bytes) -> str:
+    """Загружает аватар детектива в Supabase Storage и возвращает публичный URL."""
+    import time
+    file_name = f"custom_det_{user_id}_{int(time.time())}.jpg"
+    
+    try:
+        await asyncio.to_thread(
+            lambda: _client.storage.from_("detectives").upload(
+                path=file_name,
+                file=file_bytes,
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+            )
+        )
+        url = _client.storage.from_("detectives").get_public_url(file_name)
+        return url
+    except Exception as e:
+        logging.warning(f"Failed uploading to detectives storage bucket: {e}. Falling back to profile_photo...")
+        
+    # Резервный вариант — загрузка в работающий бакет фото профиля
+    await asyncio.to_thread(
+        lambda: _client.storage.from_("profile_photo").upload(
+            path=file_name,
+            file=file_bytes,
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+    )
+    url = _client.storage.from_("profile_photo").get_public_url(file_name)
+    return url

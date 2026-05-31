@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey, Text, Boolean, JSON
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
@@ -20,6 +20,7 @@ class User(Base):
     description = Column(Text, default=None)
     photo_file_id = Column(Text, default=None)
     model_selector_enabled = Column(Boolean, default=False)
+    custom_detectives_enabled = Column(Boolean, default=False)
     registered_at = Column(DateTime, default=datetime.utcnow)
 
 class Case(Base):
@@ -96,3 +97,29 @@ class Reminder(Base):
     remind_at = Column(DateTime)
     is_sent = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Detective(Base):
+    __tablename__ = 'detectives'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(Text, nullable=False)
+    description = Column(Text)
+    photo_url = Column(Text)
+    emojis = Column(Text, default='🕵️‍♂️, 🎁, ✨, 🤫, 🔍')
+    ai_description = Column(Text)
+    
+    # Custom properties for custom and community detectives
+    creator_id = Column(BigInteger, default=None)
+    is_public = Column(Boolean, default=False)
+    is_approved = Column(Boolean, default=True)
+    specialty = Column(Text, default='Секретное расследование 🕵️‍♂️')
+    skills = Column(JSON, default=list)
+
+
+class AddedDetective(Base):
+    __tablename__ = 'added_detectives'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False)
+    detective_id = Column(Integer, ForeignKey('detectives.id', ondelete='CASCADE'), nullable=False)

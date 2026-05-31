@@ -115,10 +115,21 @@ const api = {
 
   // Personas
   getPersonas: () => request('/api/personas'),
+  getPublicPersonas: () => request('/api/personas/public'),
+  createPersona: (data) => request('/api/personas', {
+    method: 'POST', body: JSON.stringify(data)
+  }),
+  addPersonaToLibrary: (id) => request(`/api/personas/${id}/add`, { method: 'POST' }),
+  removePersonaFromLibrary: (id) => request(`/api/personas/${id}/remove`, { method: 'DELETE' }),
+  generateAvatar: (prompt, provider) => request('/api/personas/generate-avatar', {
+    method: 'POST', body: JSON.stringify({ prompt, provider })
+  }),
+  uploadDetectiveAvatar: (file) => requestFile('/api/personas/upload-avatar', file),
 
   // Settings
   toggleSpyMode: () => request('/api/settings/spy-mode', { method: 'POST' }),
   toggleModelSelector: () => request('/api/settings/model-selector', { method: 'POST' }),
+  toggleCustomDetectives: () => request('/api/settings/custom-detectives', { method: 'POST' }),
 
   // Wishlist
   addWishlistItem: (data) => request('/api/wishlist', {

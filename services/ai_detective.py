@@ -96,8 +96,8 @@ class AIDetectiveService:
         )
         self.model = "deepseek-v4"
         
-    async def create_new_chat(self, holiday, context, persona, budget, ai_model="deepseek-v4"):
-         personas = await db.get_personas()
+    async def create_new_chat(self, holiday, context, persona, budget, ai_model="deepseek-v4", user_id=None):
+         personas = await db.get_personas(user_id)
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
          
@@ -117,7 +117,9 @@ class AIDetectiveService:
 
     async def restore_chat_from_db(self, case_id, holiday, context, persona, budget):
          """Восстанавливает историю диалога из БД в формате google.genai types.Content."""
-         personas = await db.get_personas()
+         case_data = await db.get_case_by_id(case_id)
+         customer_id = case_data[1] if case_data else None
+         personas = await db.get_personas(customer_id)
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
          
@@ -437,4 +439,56 @@ class AIDetectiveService:
                 except Exception as ultimate_err:
                     logging.error(f"Ultimate fallback failed: {ultimate_err}")
                     raise e
+
+    async def generate_avatar(self, prompt: str, provider: str = "dall-e-3") -> bytes:
+        """Генерирует изображение аватара детектива по текстовому описанию и возвращает байты."""
+        import httpx
+        logging.info(f"Generating avatar using provider {provider} with prompt: {prompt}")
+        
+        if provider == "imagen-3":
+            try:
+                # Попытка через Google GenAI SDK
+                response = await asyncio.to_thread(
+                    self.client.models.generate_images,
+                    model='imagen-3.0-generate-002',
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                    )
+                )
+                if response.generated_images:
+                    return response.generated_images[0].image.image_bytes
+                else:
+                    raise Exception("No images returned from Google Imagen")
+            except Exception as e:
+                logging.error(f"Google Imagen 3 generation failed: {e}. Falling back to DALL-E 3...")
+                provider = "dall-e-3"  # Резервный переход
+                
+        # OpenAI DALL-E (dall-e-3 или dall-e-2)
+        model = "dall-e-3" if provider == "dall-e-3" else "dall-e-2"
+        size = "1024x1024" if model == "dall-e-3" else "512x512"
+        
+        try:
+            response = await asyncio.to_thread(
+                self.openai_client.images.generate,
+                model=model,
+                prompt=prompt,
+                n=1,
+                size=size
+            )
+            image_url = response.data[0].url
+            if not image_url:
+                raise Exception("Empty image URL returned from OpenAI")
+                
+            # Скачиваем изображение по ссылке
+            async with httpx.AsyncClient() as httpx_client:
+                img_res = await httpx_client.get(image_url, timeout=30.0)
+                if img_res.status_code == 200:
+                    return img_res.content
+                else:
+                    raise Exception(f"Failed downloading generated image: HTTP {img_res.status_code}")
+        except Exception as e:
+            logging.error(f"DALL-E generation failed: {e}")
+            raise Exception(f"Ошибка ИИ-генерации аватара: {str(e)}")
 

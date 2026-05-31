@@ -110,6 +110,7 @@ async def get_profile(user_id: int = Depends(get_current_user)):
     wishlist = await db.get_wishlist_grouped(self_target_id)
     
     model_selector_enabled = await db.get_user_model_selector_enabled(user_id)
+    custom_detectives_enabled = await db.get_user_custom_detectives_enabled(user_id)
     
     return {
         "user_id": user_id,
@@ -121,6 +122,7 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "nickname": nickname,
         "spy_mode": spy_mode,
         "model_selector_enabled": model_selector_enabled,
+        "custom_detectives_enabled": custom_detectives_enabled,
         "birthday": birthday,
         "description": description,
         "photo": photo,
@@ -458,9 +460,23 @@ async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)
 
 # ================= PERSONAS =================
 
+class CustomDetectiveCreate(BaseModel):
+    name: str
+    description: str
+    ai_description: str
+    photo_url: str
+    emojis: Optional[str] = "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
+    is_public: Optional[bool] = False
+    specialty: Optional[str] = "Секретное расследование 🕵️‍♂️"
+    skills: Optional[list] = []
+
+class AvatarGenerate(BaseModel):
+    prompt: str
+    provider: Optional[str] = "dall-e-3"
+
 @app.get("/api/personas")
-async def list_personas():
-    personas = await db.get_personas()
+async def list_personas(user_id: int = Depends(get_current_user)):
+    personas = await db.get_personas(user_id)
     return [
         {
             "index": i,
@@ -469,10 +485,98 @@ async def list_personas():
             "desc": p["desc"],
             "photo": p["photo"],
             "emojis": p.get("emojis", ""),
-            "ai_description": p.get("ai_description", "")
+            "ai_description": p.get("ai_description", ""),
+            "creator_id": p.get("creator_id"),
+            "is_public": p.get("is_public", False),
+            "is_approved": p.get("is_approved", True),
+            "specialty": p.get("specialty"),
+            "skills": p.get("skills")
         }
         for i, p in enumerate(personas)
     ]
+
+@app.get("/api/personas/public")
+async def list_public_personas(user_id: int = Depends(get_current_user)):
+    return await db.get_public_detectives(user_id)
+
+@app.post("/api/personas")
+async def create_persona(data: CustomDetectiveCreate, user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+    
+    name = data.name.strip()[:32]
+    if not name:
+        raise HTTPException(status_code=400, detail="Имя не может быть пустым")
+        
+    desc = data.description.strip()[:200]
+    ai_desc = data.ai_description.strip()[:2000]
+    
+    det_id = await db.create_custom_detective(
+        creator_id=user_id,
+        name=name,
+        description=desc,
+        ai_description=ai_desc,
+        photo_url=data.photo_url,
+        emojis=data.emojis or '🕵️‍♂️, 🎁, ✨, 🤫, 🔍',
+        is_public=data.is_public,
+        is_approved=True,  # Default to True, moderation check is visual on UI warning
+        specialty=data.specialty or 'Секретное расследование 🕵️‍♂️',
+        skills=data.skills
+    )
+    return {"id": det_id}
+
+@app.post("/api/personas/{det_id}/add")
+async def add_persona_to_lib(det_id: int, user_id: int = Depends(get_current_user)):
+    await db.add_detective_to_library(user_id, det_id)
+    return {"ok": True}
+
+@app.delete("/api/personas/{det_id}/remove")
+async def remove_persona_from_lib(det_id: int, user_id: int = Depends(get_current_user)):
+    await db.remove_detective_from_library(user_id, det_id)
+    return {"ok": True}
+
+@app.post("/api/personas/generate-avatar")
+async def generate_avatar_endpoint(data: AvatarGenerate, user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+        
+    if not data.prompt.strip():
+        raise HTTPException(status_code=400, detail="Описание не может быть пустым")
+        
+    try:
+        from services.ai_detective import AIDetectiveService
+        ai_service = AIDetectiveService()
+        image_bytes = await ai_service.generate_avatar(data.prompt.strip(), data.provider)
+        
+        # Upload to Supabase Storage
+        photo_url = await db.upload_detective_avatar(user_id, image_bytes)
+        return {"photo_url": photo_url}
+    except Exception as e:
+        logging.error(f"Failed to generate and upload avatar: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/personas/upload-avatar")
+async def upload_avatar_endpoint(file: UploadFile = File(...), user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+        
+    file_bytes = await file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:  # 10MB
+        raise HTTPException(status_code=400, detail="Файл слишком большой")
+        
+    try:
+        photo_url = await db.upload_detective_avatar(user_id, file_bytes)
+        return {"photo_url": photo_url}
+    except Exception as e:
+        logging.error(f"Failed to upload avatar: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка загрузки изображения")
+
+@app.post("/api/settings/custom-detectives")
+async def toggle_custom_detectives_endpoint(user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка для этой функции")
+    new_val = await db.toggle_custom_detectives(user_id)
+    return {"custom_detectives_enabled": bool(new_val)}
 
 
 # ================= SETTINGS =================

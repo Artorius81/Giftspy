@@ -16,6 +16,8 @@ export default function Settings() {
   const [toggling, setToggling] = useState(false)
   const [modelSelectorEnabled, setModelSelectorEnabled] = useState(true)
   const [togglingModel, setTogglingModel] = useState(false)
+  const [customDetectivesEnabled, setCustomDetectivesEnabled] = useState(false)
+  const [togglingCustomDetectives, setTogglingCustomDetectives] = useState(false)
 
   // Переключение подразделов настроек: 'main', 'account', 'theme'
   const [settingsScreen, setSettingsScreen] = useState('main')
@@ -28,6 +30,7 @@ export default function Settings() {
       const isPremium = !!profile.is_premium
       setSpyMode(isPremium ? !!profile.spy_mode : false)
       setModelSelectorEnabled(isPremium ? !!profile.model_selector_enabled : false)
+      setCustomDetectivesEnabled(isPremium ? !!profile.custom_detectives_enabled : false)
     }
   }, [profile])
 
@@ -91,6 +94,20 @@ export default function Settings() {
       await showAlert(e.message)
     }
     setTogglingModel(false)
+  }
+
+  const handleToggleCustomDetectives = async (e) => {
+    e.stopPropagation()
+    triggerHaptic()
+    setTogglingCustomDetectives(true)
+    try {
+      const result = await api.toggleCustomDetectives()
+      setCustomDetectivesEnabled(result.custom_detectives_enabled)
+      if (profile) mutate({ ...profile, custom_detectives_enabled: result.custom_detectives_enabled })
+    } catch (e) {
+      await showAlert(e.message)
+    }
+    setTogglingCustomDetectives(false)
   }
 
   const getDefaultAvatar = (userId) => {
@@ -368,6 +385,38 @@ export default function Settings() {
                 className={`settings-toggle-btn ${modelSelectorEnabled ? 'active' : ''}`}
                 disabled={!isPremium || togglingModel}
                 onClick={handleToggleModelSelector}
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+
+            {/* Конструктор детективов */}
+            <div 
+              className="settings-list-item"
+              onClick={() => {
+                if (!isPremium) {
+                  triggerHaptic();
+                  navigate('/store');
+                }
+              }}
+            >
+              <div className="settings-list-icon">✍️</div>
+              <div className="settings-list-info">
+                <div className="settings-list-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>Конструктор детективов</span>
+                  {!isPremium && <span style={{ fontSize: '12px' }}>🔒</span>}
+                </div>
+                <div className="settings-list-subtitle">
+                  {isPremium 
+                    ? 'Создавайте собственных детективов с уникальным ИИ характером'
+                    : 'Возможность создавать своих детективов (Премиум)'}
+                </div>
+              </div>
+              
+              <button
+                className={`settings-toggle-btn ${customDetectivesEnabled ? 'active' : ''}`}
+                disabled={!isPremium || togglingCustomDetectives}
+                onClick={handleToggleCustomDetectives}
               >
                 <span className="settings-toggle-knob" />
               </button>

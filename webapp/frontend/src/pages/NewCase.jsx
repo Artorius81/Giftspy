@@ -245,7 +245,7 @@ export default function NewCase() {
   }
 
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
-  const { data: personasData, loading: pLoading } = useData('personas', api.getPersonas)
+  const { data: personasData, loading: pLoading, mutate: mutatePersonas } = useData('personas', api.getPersonas)
   const { data: casesData, loading: cLoading, mutate: mutateCases } = useData('cases', api.getCases)
   const { data: profile } = useData('profile', api.getProfile)
 
@@ -253,8 +253,34 @@ export default function NewCase() {
   const personas = personasData || []
   const cases = casesData || []
 
+  const displayPersonas = (() => {
+    const filtered = personas.filter(p => {
+      if (filterMyOnly) {
+        return p.creator_id !== null && p.creator_id !== undefined;
+      }
+      return true;
+    });
+    
+    const showAddCard = !profile?.is_premium || profile?.custom_detectives_enabled;
+    const list = [...filtered];
+    if (showAddCard) {
+      list.push({
+        id: 'add_new',
+        name: 'Добавить',
+        desc: 'Создайте своего собственного уникального детектива с уникальным ИИ характером!',
+        photo: null,
+        isVirtual: true
+      });
+    }
+    return list;
+  })();
+
   const [submitting, setSubmitting] = useState(false)
   const [activePersonaIdx, setActivePersonaIdx] = useState(0)
+  const [filterMyOnly, setFilterMyOnly] = useState(false)
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
+  const [libraryPersonas, setLibraryPersonas] = useState([])
+  const [libraryLoading, setLibraryLoading] = useState(false)
   const [isDraggingTrack, setIsDraggingTrack] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
   const [transitionEnabled, setTransitionEnabled] = useState(true)
@@ -364,7 +390,7 @@ export default function NewCase() {
     const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
-    const N = personas.length
+    const N = displayPersonas.length
     if (N > 0) {
       if (offset > dragThreshold) {
         newIdx = activePersonaIdx - 1
@@ -399,7 +425,7 @@ export default function NewCase() {
     const dragThreshold = 55
     const offset = dragOffsetRef.current
     let newIdx = activePersonaIdx
-    const N = personas.length
+    const N = displayPersonas.length
     if (N > 0) {
       if (offset > dragThreshold) {
         newIdx = activePersonaIdx - 1
@@ -413,19 +439,122 @@ export default function NewCase() {
     touchStartX.current = 0
   }
 
-  const selectPersonaIndex = (newIdx) => {
-    const N = personas.length
+  const selectPersonaIndex = (newIdx, targetPersonas = displayPersonas) => {
+    const N = targetPersonas.length
     if (N === 0) return
     const circularIdx = ((newIdx % N) + N) % N
     setActivePersonaIdx(circularIdx)
-    setForm(prev => ({ ...prev, persona: personas[circularIdx].name }))
+    setForm(prev => ({ ...prev, persona: targetPersonas[circularIdx]?.name || '' }))
+  }
+
+  // Fetch library detectives when modal opens
+  useEffect(() => {
+    if (showLibraryModal) {
+      setLibraryLoading(true)
+      api.getPublicPersonas()
+        .then(data => {
+          setLibraryPersonas(data)
+          setLibraryLoading(false)
+        })
+        .catch(err => {
+          console.error(err)
+          setLibraryLoading(false)
+        })
+    }
+  }, [showLibraryModal])
+
+  const handleToggleLibraryAdd = async (p) => {
+    triggerHaptic()
+    const wasAdded = p.is_added
+    try {
+      if (wasAdded) {
+        await api.removePersonaFromLibrary(p.id)
+        p.is_added = false
+      } else {
+        await api.addPersonaToLibrary(p.id)
+        p.is_added = true
+      }
+      setLibraryPersonas([...libraryPersonas])
+      
+      // Refresh carousel list in real time
+      const updated = await api.getPersonas()
+      mutatePersonas(updated)
+    } catch (e) {
+      await showAlert(e.message)
+    }
   }
 
   const renderCarousel = () => {
-    const N = personas.length
+    const N = displayPersonas.length
 
     return (
       <div className="wizard-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
+        
+        {/* Carousel Navigation Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '12px', marginBottom: '8px' }}>
+          <button
+            onClick={() => selectPersonaIndex(activePersonaIdx - 1)}
+            style={{
+              padding: '8px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              width: '36px',
+              height: '36px',
+              transition: 'var(--transition)'
+            }}
+          >
+            ‹
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {displayPersonas.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => selectPersonaIndex(index)}
+                style={{
+                  height: '6px',
+                  borderRadius: '999px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  width: activePersonaIdx === index ? '18px' : '6px',
+                  background: activePersonaIdx === index ? 'var(--accent)' : 'var(--card-border)'
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => selectPersonaIndex(activePersonaIdx + 1)}
+            style={{
+              padding: '8px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              width: '36px',
+              height: '36px',
+              transition: 'var(--transition)'
+            }}
+          >
+            ›
+          </button>
+        </div>
+
         <div className="persona-carousel-container" style={{ width: '100%', overflow: 'hidden' }}>
           <div
             className="persona-carousel-track-wrapper"
@@ -447,7 +576,7 @@ export default function NewCase() {
               justifyContent: 'center'
             }}
           >
-            {personas.map((p, idx) => {
+            {displayPersonas.map((p, idx) => {
               let offset = idx - activePersonaIdx;
               if (N > 0) {
                 if (offset > N / 2) offset -= N;
@@ -461,6 +590,59 @@ export default function NewCase() {
               const opacity = isVisible ? (isActive ? 1 : 0.5) : 0;
 
               const shiftX = offset * 115 + dragOffset;
+
+              if (p.isVirtual) {
+                return (
+                  <div
+                    key="add_new"
+                    className={`persona-carousel-slide ${isActive ? 'active' : ''}`}
+                    onClick={async () => {
+                      if (isDraggingTrack) return;
+                      if (!profile?.is_premium) {
+                        const confirmStore = await showConfirm(
+                          "👑 Создание собственного детектива доступно только с Премиум-подпиской!\n\nХотите перейти в магазин, чтобы активировать Премиум?"
+                        );
+                        if (confirmStore) {
+                          navigate('/store');
+                        }
+                      } else {
+                        navigate('/detective/create');
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      zIndex: zIndex,
+                      opacity: opacity,
+                      pointerEvents: isVisible ? 'auto' : 'none',
+                      transform: `translate3d(calc(-50% + ${shiftX}px), -50%, 0) scale(${scale})`,
+                      transition: isDraggingTrack ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease',
+                      willChange: 'transform, opacity',
+                      margin: 0,
+                      flex: 'none'
+                    }}
+                  >
+                    <div className="persona-carousel-card" style={{
+                      position: 'relative',
+                      border: '2px dashed var(--accent)',
+                      borderRadius: '16px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxSizing: 'border-box',
+                      height: '180px',
+                      width: '120px'
+                    }}>
+                      <span style={{ fontSize: '32px', color: 'var(--accent)', fontWeight: '300', marginBottom: '4px' }}>+</span>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text)' }}>Добавить</span>
+                    </div>
+                  </div>
+                );
+              }
+
               const isPremiumLocked = (p.id ? p.id !== 1 : idx !== 0) && !profile?.is_premium;
 
               return (
@@ -523,74 +705,68 @@ export default function NewCase() {
           </div>
         </div>
 
-        {/* Navigation Buttons and Pagination Dots */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '12px', marginBottom: '8px' }}>
-          <button
-            onClick={() => selectPersonaIndex(activePersonaIdx - 1)}
-            style={{
-              padding: '8px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: 'var(--text)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              width: '36px',
-              height: '36px',
-              transition: 'var(--transition)'
-            }}
-          >
-            ‹
-          </button>
+        {displayPersonas[activePersonaIdx] && (() => {
+          const p = displayPersonas[activePersonaIdx];
+          
+          if (p.isVirtual) {
+            return (
+              <div className="detective-dossier-card" style={{
+                width: '100%',
+                maxWidth: '340px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px dashed var(--accent)',
+                borderRadius: '16px',
+                padding: '16px',
+                marginTop: '12px',
+                marginBottom: '16px',
+                height: '240px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                boxShadow: '0 8px 32px rgba(108, 92, 231, 0.08)',
+                backdropFilter: 'blur(10px)',
+                boxSizing: 'border-box',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: '28px', marginBottom: '8px' }}>✍️</span>
+                <h3 style={{ fontSize: '15px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)' }}>
+                  Ваш собственный детектив
+                </h3>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: 0, padding: '0 10px' }}>
+                  Настройте характер, специализацию, навыки и сгенерируйте уникальный аватар с помощью ИИ!
+                </p>
+                <button
+                  className="btn btn--primary"
+                  onClick={async () => {
+                    if (!profile?.is_premium) {
+                      const confirmStore = await showConfirm(
+                        "👑 Создание собственного детектива доступно только с Премиум-подпиской!\n\nХотите перейти в магазин, чтобы активировать Премиум?"
+                      );
+                      if (confirmStore) {
+                        navigate('/store');
+                      }
+                    } else {
+                      navigate('/detective/create');
+                    }
+                  }}
+                  style={{
+                    marginTop: '12px',
+                    padding: '8px 20px',
+                    fontSize: '12px',
+                    borderRadius: '20px',
+                    width: 'auto'
+                  }}
+                >
+                  🚀 Создать детектива
+                </button>
+              </div>
+            );
+          }
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {personas.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => selectPersonaIndex(index)}
-                style={{
-                  height: '6px',
-                  borderRadius: '999px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                  width: activePersonaIdx === index ? '18px' : '6px',
-                  background: activePersonaIdx === index ? 'var(--accent)' : 'var(--card-border)'
-                }}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={() => selectPersonaIndex(activePersonaIdx + 1)}
-            style={{
-              padding: '8px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: 'var(--text)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              width: '36px',
-              height: '36px',
-              transition: 'var(--transition)'
-            }}
-          >
-            ›
-          </button>
-        </div>
-
-        {personas[activePersonaIdx] && (() => {
-          const p = personas[activePersonaIdx];
-          const stats = getDetectiveStats(p.name);
+          const stats = p.skills && p.skills.length > 0
+            ? { specialty: p.specialty || 'Секретное расследование 🕵️‍♂️', skills: p.skills }
+            : getDetectiveStats(p.name);
           const isLocked = (p.id ? p.id !== 1 : activePersonaIdx !== 0) && !profile?.is_premium;
           
           return (
@@ -664,8 +840,8 @@ export default function NewCase() {
                       <div style={{
                         height: '100%',
                         width: `${sk.val}%`,
-                        background: sk.color,
-                        boxShadow: `0 0 8px ${sk.color}`,
+                        background: sk.color || '#6c5ce7',
+                        boxShadow: `0 0 8px ${sk.color || '#6c5ce7'}`,
                         borderRadius: '2px',
                         transition: 'width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1)'
                       }} />
@@ -834,6 +1010,83 @@ export default function NewCase() {
       {/* Step 0: Dashboard */}
       {step === 0 && (
         <div className="detective-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Filters and Library Header */}
+          {profile?.is_premium && profile?.custom_detectives_enabled && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '100%',
+              padding: '0 8px',
+              marginBottom: '-8px',
+              marginTop: '4px'
+            }}>
+              {/* Toggle Switcher */}
+              <div style={{
+                display: 'flex',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--card-border)',
+                borderRadius: '20px',
+                padding: '3px'
+              }}>
+                <button
+                  onClick={() => { triggerHaptic(); setFilterMyOnly(false); selectPersonaIndex(0, displayPersonas.filter(p => !filterMyOnly)); }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '17px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: !filterMyOnly ? 'var(--accent)' : 'transparent',
+                    color: !filterMyOnly ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Все
+                </button>
+                <button
+                  onClick={() => { triggerHaptic(); setFilterMyOnly(true); selectPersonaIndex(0, displayPersonas.filter(p => filterMyOnly)); }}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '17px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: filterMyOnly ? 'var(--accent)' : 'transparent',
+                    color: filterMyOnly ? '#fff' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Мои
+                </button>
+              </div>
+
+              {/* Library Button */}
+              <button
+                onClick={() => { triggerHaptic(); setShowLibraryModal(true); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(108, 92, 231, 0.12) 100%)',
+                  border: '1px solid rgba(108, 92, 231, 0.25)',
+                  borderRadius: '20px',
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>🌍</span> Библиотека
+              </button>
+            </div>
+          )}
+
           {/* 3D Touch Detective Carousel */}
           {renderCarousel()}
 
@@ -1266,6 +1519,82 @@ export default function NewCase() {
           <SlideToConfirm onConfirm={handleSubmit} submitting={submitting} />
         </div>
       )}
+    {/* Community Library Bottom Sheet */}
+    {showLibraryModal && (
+      <>
+        <div className="bottom-sheet-backdrop" onClick={() => setShowLibraryModal(false)} />
+        <div className="bottom-sheet" style={{ height: '75vh', maxHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+          <div className="bottom-sheet-header" style={{ flexShrink: 0 }}>
+            <span className="bottom-sheet-title">🌍 Библиотека детективов</span>
+            <button className="bottom-sheet-close" onClick={() => setShowLibraryModal(false)}>✕</button>
+          </div>
+          
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 4px', display: 'flex', flexDirection: 'column', gap: '12px' }} className="custom-scroll">
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', margin: '4px 0 8px 0', lineHeight: '1.4' }}>
+              Добавляйте к себе в карусель уникальных детективов, созданных сообществом Giftspy!
+            </p>
+            
+            {libraryLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="spinner" /></div>
+            ) : libraryPersonas.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                Пока нет доступных публичных детективов от других пользователей. Будьте первыми, кто создаст! 🚀
+              </div>
+            ) : (
+              libraryPersonas.map(p => (
+                <div key={p.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '16px',
+                  padding: '12px 14px',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      {p.photo ? <img src={p.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🕵️‍♂️'}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 650, marginTop: '2px' }}>{p.specialty}</div>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.3' }}>{p.desc}</div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleToggleLibraryAdd(p)}
+                    className={`btn btn--small ${p.is_added ? 'btn--secondary' : 'btn--primary'}`}
+                    style={{
+                      width: 'auto',
+                      padding: '8px 14px',
+                      borderRadius: '16px',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      margin: 0,
+                      flexShrink: 0
+                    }}
+                  >
+                    {p.is_added ? '✓ Добавлен' : '＋ Добавить'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </>
+    )}
     </div>
   )
 }
