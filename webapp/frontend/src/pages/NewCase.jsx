@@ -148,6 +148,91 @@ const AI_MODELS = [
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный ИИ от OpenAI.' },
 ]
 
+const getDetectiveStats = (name) => {
+  if (!name) return { specialty: 'Секретное расследование', skills: [] };
+  if (name.includes('Виктор')) {
+    return {
+      specialty: 'Классическое следствие 🧥',
+      skills: [
+        { label: 'Дедукция 🧠', val: 95, color: '#6c5ce7' },
+        { label: 'Проницательность 👁️', val: 90, color: '#00cec9' },
+        { label: 'Вежливость 🤝', val: 95, color: '#e84393' }
+      ]
+    }
+  } else if (name.includes('Коржик')) {
+    return {
+      specialty: 'Вынюхивание радости 🐾',
+      skills: [
+        { label: 'Милота 🐾', val: 100, color: '#fdcb6e' },
+        { label: 'Нюх на подарки 🦴', val: 95, color: '#e17055' },
+        { label: 'Обаяние 🐕', val: 100, color: '#ff7675' }
+      ]
+    }
+  } else if (name.includes('Зорп')) {
+    return {
+      specialty: 'Космический анализ 🛸',
+      skills: [
+        { label: 'Оригинальность 🛸', val: 100, color: '#0984e3' },
+        { label: 'Межгалактический юмор 👽', val: 90, color: '#2ecc71' },
+        { label: 'Логика гика 👾', val: 85, color: '#9b59b6' }
+      ]
+    }
+  } else if (name.includes('Реджинальд') || name.includes('Фезерстон')) {
+    return {
+      specialty: 'Светские беседы 🎩',
+      skills: [
+        { label: 'Галантность 🧐', val: 100, color: '#ffeaa7' },
+        { label: 'Манеры 🎩', val: 100, color: '#dfe6e9' },
+        { label: 'Тактичность 🕰️', val: 95, color: '#74b9ff' }
+      ]
+    }
+  } else if (name.includes('Гробовщик')) {
+    return {
+      specialty: 'Брутальный допрос 💀',
+      skills: [
+        { label: 'Прямолинейность 💀', val: 90, color: '#2d3436' },
+        { label: 'Скрытность 🌑', val: 95, color: '#636e72' },
+        { label: 'Чёрный юмор 🥃', val: 85, color: '#d63031' }
+      ]
+    }
+  } else if (name.includes('Глитч')) {
+    return {
+      specialty: 'Кибернетический опрос 🤖',
+      skills: [
+        { label: 'Мемы 💾', val: 95, color: '#a29bfe' },
+        { label: 'Непредсказуемость ⚡', val: 90, color: '#ffeaa7' },
+        { label: 'Киберлогика ⚙️', val: 85, color: '#00cec9' }
+      ]
+    }
+  } else if (name.includes('Гэндальф')) {
+    return {
+      specialty: 'Мудрое прорицание 🔮',
+      skills: [
+        { label: 'Мудрость 🔮', val: 98, color: '#ffeaa7' },
+        { label: 'Чародейство ✨', val: 95, color: '#e84393' },
+        { label: 'Загадочность 📜', val: 90, color: '#81ecec' }
+      ]
+    }
+  } else if (name.includes('Джек') || name.includes('Капитан')) {
+    return {
+      specialty: 'Пиратский азарт 🏴‍☠️',
+      skills: [
+        { label: 'Харизма 🏴‍☠️', val: 99, color: '#e17055' },
+        { label: 'Обаяние 🪙', val: 95, color: '#fdcb6e' },
+        { label: 'Авантюризм 🌊', val: 100, color: '#0984e3' }
+      ]
+    }
+  }
+  return {
+    specialty: 'Секретное расследование 🕵️‍♂️',
+    skills: [
+      { label: 'Дедукция 🧠', val: 90, color: '#6c5ce7' },
+      { label: 'Скрытность 🤫', val: 90, color: '#00cec9' },
+      { label: 'Обаяние ✨', val: 90, color: '#e84393' }
+    ]
+  }
+}
+
 export default function NewCase() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -354,7 +439,7 @@ export default function NewCase() {
               const opacity = isVisible ? (isActive ? 1 : 0.5) : 0;
 
               const shiftX = offset * 115 + dragOffset;
-              const isPremiumLocked = p.name && !p.name.includes('Виктор Блэк') && !profile?.is_premium;
+              const isPremiumLocked = (p.id ? p.id !== 1 : idx !== 0) && !profile?.is_premium;
 
               return (
                 <div
@@ -384,15 +469,40 @@ export default function NewCase() {
                       <div style={{
                         position: 'absolute',
                         inset: 0,
-                        background: 'rgba(0, 0, 0, 0.45)',
+                        background: 'rgba(15, 15, 20, 0.65)',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '32px',
-                        color: '#ffd700',
-                        backdropFilter: 'blur(1px)'
+                        backdropFilter: 'blur(3px)',
+                        borderRadius: 'inherit'
                       }}>
-                        👑
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '50%',
+                          background: 'radial-gradient(circle, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.02) 100%)',
+                          border: '1px solid rgba(255,215,0,0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 0 15px rgba(255,215,0,0.2)',
+                          marginBottom: '8px'
+                        }}>
+                          <span style={{ fontSize: '26px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>👑</span>
+                        </div>
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: 900,
+                          color: '#ffd700',
+                          letterSpacing: '1px',
+                          textTransform: 'uppercase',
+                          background: 'rgba(255,215,0,0.12)',
+                          padding: '2px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255,215,0,0.25)',
+                          boxShadow: '0 0 10px rgba(255,215,0,0.05)'
+                        }}>Premium</span>
                       </div>
                     )}
                   </div>
@@ -467,16 +577,94 @@ export default function NewCase() {
           </button>
         </div>
 
-        {personas[activePersonaIdx] && (
-          <div className="active-detective-details" style={{ width: '100%', maxWidth: '340px', textAlign: 'center', marginTop: '12px', padding: '0 8px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '-0.3px' }}>
-              {personas[activePersonaIdx].name}
-            </h2>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.45', margin: '0 0 16px 0', minHeight: '56px' }}>
-              {personas[activePersonaIdx].desc}
-            </p>
-          </div>
-        )}
+        {personas[activePersonaIdx] && (() => {
+          const p = personas[activePersonaIdx];
+          const stats = getDetectiveStats(p.name);
+          const isLocked = (p.id ? p.id !== 1 : activePersonaIdx !== 0) && !profile?.is_premium;
+          
+          return (
+            <div className="detective-dossier-card" style={{
+              width: '100%',
+              maxWidth: '340px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: isLocked ? '1px solid rgba(255, 215, 0, 0.2)' : '1px solid var(--card-border)',
+              borderRadius: '16px',
+              padding: '16px',
+              marginTop: '12px',
+              marginBottom: '16px',
+              height: '240px', // Fixed height to prevent ANY layout shifting!
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxShadow: isLocked ? '0 8px 32px rgba(255, 215, 0, 0.05)' : '0 8px 32px rgba(0, 0, 0, 0.15)',
+              backdropFilter: 'blur(10px)',
+              boxSizing: 'border-box',
+              textAlign: 'left'
+            }}>
+              {/* Header: Name and Status Badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: 'var(--text)' }}>
+                  {p.name}
+                </h3>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  background: isLocked ? 'rgba(255, 215, 0, 0.12)' : 'rgba(46, 204, 113, 0.12)',
+                  color: isLocked ? '#ffd700' : '#2ecc71',
+                  border: isLocked ? '1px solid rgba(255, 215, 0, 0.25)' : '1px solid rgba(46, 204, 113, 0.25)',
+                  boxShadow: isLocked ? '0 0 10px rgba(255, 215, 0, 0.1)' : 'none',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  {isLocked ? '👑 Premium' : '🟢 Free'}
+                </span>
+              </div>
+              
+              {/* Specialty */}
+              <div style={{ fontSize: '11px', color: isLocked ? '#ffd700' : 'var(--accent)', fontWeight: 700, marginTop: '2px', opacity: 0.9 }}>
+                🔒 Специализация: {stats.specialty}
+              </div>
+
+              {/* Description - Fixed Height with Scroll if needed to keep layout stable */}
+              <div style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                lineHeight: '1.45',
+                margin: '6px 0',
+                height: '52px',
+                overflowY: 'auto',
+                scrollbarWidth: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }} className="custom-scroll">
+                {p.desc}
+              </div>
+
+              {/* Skills Progress Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {stats.skills.map((sk, idx) => (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      <span>{sk.label}</span>
+                      <span>{sk.val}%</span>
+                    </div>
+                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${sk.val}%`,
+                        background: sk.color,
+                        boxShadow: `0 0 8px ${sk.color}`,
+                        borderRadius: '2px',
+                        transition: 'width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1)'
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <div style={{
           width: '100%',
@@ -489,7 +677,7 @@ export default function NewCase() {
             className="btn btn--primary"
             onClick={async () => {
               const activePersona = personas[activePersonaIdx];
-              const isLocked = activePersona && activePersona.name && !activePersona.name.includes('Виктор Блэк') && !profile?.is_premium;
+              const isLocked = activePersona && (activePersona.id ? activePersona.id !== 1 : activePersonaIdx !== 0) && !profile?.is_premium;
               if (isLocked) {
                 const confirmUnlock = await showConfirm(
                   `👑 Детектив ${activePersona.name} доступен только с премиум подпиской!\n\nХотите перейти в магазин, чтобы активировать премиум?`
@@ -528,7 +716,7 @@ export default function NewCase() {
     }
   }, [targetsData, searchParams])
   useEffect(() => {
-    if (searchParams.get('target')) setStep(2) // go directly to holiday step (step 2)
+    if (searchParams.get('target')) setStep(3) // go directly to holiday step (step 2 of wizard, index 3)
   }, [searchParams])
 
   const triggerHaptic = () => {

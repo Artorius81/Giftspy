@@ -464,6 +464,7 @@ async def list_personas():
     return [
         {
             "index": i,
+            "id": p["id"],
             "name": p["name"],
             "desc": p["desc"],
             "photo": p["photo"],
