@@ -618,7 +618,18 @@ async def upload_avatar_endpoint(file: UploadFile = File(...), user_id: int = De
 @app.get("/api/personas/{det_id}")
 async def get_persona_endpoint(det_id: int, user_id: int = Depends(get_current_user)):
     p = await db.get_detective_by_id(det_id)
-    if not p or (p.get('creator_id') and p.get('creator_id') != user_id):
+    if not p:
+        raise HTTPException(status_code=404, detail="Detective not found")
+    
+    # Разрешаем просмотр, если это:
+    # 1. Системный детектив (creator_id is None)
+    # 2. Собственный кастомный детектив (creator_id == user_id)
+    # 3. Публичный и одобренный детектив другого пользователя
+    is_owner = p.get('creator_id') == user_id
+    is_system = p.get('creator_id') is None
+    is_public_approved = p.get('is_public', False) and p.get('is_approved', True)
+    
+    if not (is_system or is_owner or is_public_approved):
         raise HTTPException(status_code=404, detail="Detective not found")
     return p
 
