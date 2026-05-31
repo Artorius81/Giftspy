@@ -63,6 +63,20 @@ function formatRussianBirthday(bdayStr) {
   return bdayStr
 }
 
+// Helper to calculate dynamic interrogation progress percentage mathematically
+function getInterrogationProgress(c) {
+  if (!c) return 0;
+  if (['done', 'delivered'].includes(c.status)) return 100;
+  if (['cancelled', 'error'].includes(c.status)) return 0;
+  
+  const msgCount = c.message_count || 0;
+  if (c.status === 'pending' && msgCount === 0) return 10;
+  
+  // Dynamic calculation: base 15% + 7.5% per message, capped at 95%
+  const progress = Math.min(95, 15 + (msgCount * 7.5));
+  return Math.round(progress);
+}
+
 
 export default function Home() {
   const navigate = useNavigate()
@@ -176,7 +190,7 @@ export default function Home() {
                 letterSpacing: '0.6px',
                 color: '#a78bfa' // Beautiful premium lavender, NOT pink!
               }}>
-                В процессе
+                В процессе • Дело №{activeCase.case_number || `oX${activeCase.id * 100}`}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="pulse-dot" style={{ 
@@ -195,20 +209,49 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Target name & Detective name below */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ 
-                fontSize: '19px', 
-                fontWeight: '800', 
-                color: 'var(--text)',
-                letterSpacing: '-0.3px',
-                lineHeight: '1.2'
+            {/* Middle Row with Detective Photo on the left, Target & Detective name on the right */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '48px',
+                height: '70px',
+                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.03)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0,
+                border: '1px solid var(--card-border)'
               }}>
-                {activeCase.display_name}
-              </span>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
-                Детектив: {activeCase.persona}
-              </span>
+                <img 
+                  src={activeCase.persona_photo || detectiveImg} 
+                  alt={activeCase.persona} 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: activeCase.persona_photo ? 'cover' : 'contain', 
+                    padding: activeCase.persona_photo ? '0' : '6px',
+                    boxSizing: 'border-box'
+                  }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                <span style={{ 
+                  fontSize: '19px', 
+                  fontWeight: '800', 
+                  color: 'var(--text)',
+                  letterSpacing: '-0.3px',
+                  lineHeight: '1.2',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {activeCase.display_name}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                  Детектив: {activeCase.persona}
+                </span>
+              </div>
             </div>
 
             {/* Interrogation Progress Bar */}
@@ -221,12 +264,7 @@ export default function Home() {
                 overflow: 'hidden' 
               }}>
                 <div style={{ 
-                  width: `${
-                    activeCase.status === 'pending' ? 25 :
-                    activeCase.status === 'started' ? 50 :
-                    activeCase.status === 'in_progress' ? 75 :
-                    activeCase.status === 'manual_mode' ? 90 : 25
-                  }%`, 
+                  width: `${getInterrogationProgress(activeCase)}%`, 
                   height: '100%', 
                   background: 'linear-gradient(90deg, #a78bfa 0%, #818cf8 100%)', 
                   borderRadius: '10px',
@@ -235,12 +273,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
                 <span>Статус ведения допроса</span>
-                <span>
-                  {activeCase.status === 'pending' ? '25%' :
-                   activeCase.status === 'started' ? '50%' :
-                   activeCase.status === 'in_progress' ? '75%' :
-                   activeCase.status === 'manual_mode' ? '90%' : '25%'}
-                </span>
+                <span>{getInterrogationProgress(activeCase)}%</span>
               </div>
             </div>
 
@@ -271,7 +304,7 @@ export default function Home() {
                 letterSpacing: '0.6px',
                 color: '#34d399' // Premium emerald green
               }}>
-                Завершено
+                Завершено • Дело №{lastCompleted.case_number || `oX${lastCompleted.id * 100}`}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ 
@@ -287,20 +320,49 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Target name & Detective name below */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ 
-                fontSize: '19px', 
-                fontWeight: '800', 
-                color: 'var(--text)',
-                letterSpacing: '-0.3px',
-                lineHeight: '1.2'
+            {/* Middle Row with Detective Photo on the left, Target & Detective name on the right */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '48px',
+                height: '70px',
+                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.03)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0,
+                border: '1px solid var(--card-border)'
               }}>
-                {lastCompleted.display_name}
-              </span>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
-                Детектив: {lastCompleted.persona}
-              </span>
+                <img 
+                  src={lastCompleted.persona_photo || detectiveImg} 
+                  alt={lastCompleted.persona} 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: lastCompleted.persona_photo ? 'cover' : 'contain', 
+                    padding: lastCompleted.persona_photo ? '0' : '6px',
+                    boxSizing: 'border-box'
+                  }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+                <span style={{ 
+                  fontSize: '19px', 
+                  fontWeight: '800', 
+                  color: 'var(--text)',
+                  letterSpacing: '-0.3px',
+                  lineHeight: '1.2',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {lastCompleted.display_name}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                  Детектив: {lastCompleted.persona}
+                </span>
+              </div>
             </div>
 
             {/* Completed Progress Bar */}

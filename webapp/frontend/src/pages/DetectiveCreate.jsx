@@ -15,9 +15,9 @@ const SKILL_PRESETS = [
 ]
 
 const AI_GENERATORS = [
-  { id: 'imagen-3', name: 'Imagen 3 (Google)', desc: 'Превосходный художественный стиль' },
-  { id: 'dall-e-3', name: 'DALL-E 3 (OpenAI)', desc: 'Высочайшая детализация' },
-  { id: 'dall-e-2', name: 'DALL-E 2 (OpenAI)', desc: 'Быстрая классическая модель' }
+  { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image (Google)', desc: 'Превосходный художественный стиль ИИ' },
+  { id: 'gpt-image-2', name: 'GPT Image 2 (OpenAI)', desc: 'Высочайшая детализация (DALL-E 3)' },
+  { id: 'gpt-image-1.5', name: 'GPT Image 1.5 (OpenAI)', desc: 'Быстрая классическая модель' }
 ]
 
 const STEPS = [
@@ -86,7 +86,7 @@ export default function DetectiveCreate() {
   
   // AI Generation states
   const [aiPrompt, setAiPrompt] = useState('')
-  const [selectedGenerator, setSelectedGenerator] = useState('imagen-3')
+  const [selectedGenerator, setSelectedGenerator] = useState('gemini-3-pro-image-preview')
   const [generating, setGenerating] = useState(false)
   
   // Upload states
@@ -1033,7 +1033,13 @@ export default function DetectiveCreate() {
                   <img 
                     src={photoUrl} 
                     alt="Detective Avatar Preview" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: isAvatarSet ? 'cover' : 'contain',
+                      padding: isAvatarSet ? '0' : '16px',
+                      boxSizing: 'border-box'
+                    }}
                   />
                 </div>
               </div>
@@ -1178,7 +1184,7 @@ export default function DetectiveCreate() {
               {/* Tab 2: Custom Photo Upload */}
               {avatarType === 'upload' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'center' }}>
-                  {/* Scrolling warn banner */}
+                  {/* Static warn banner */}
                   <div style={{
                     background: 'rgba(245, 158, 11, 0.08)',
                     border: '1px solid rgba(245, 158, 11, 0.2)',
@@ -1187,16 +1193,13 @@ export default function DetectiveCreate() {
                     textAlign: 'left',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    overflow: 'hidden',
+                    gap: '10px',
                     width: '100%',
                     boxSizing: 'border-box'
                   }}>
-                    <span style={{ fontSize: '15px', zIndex: 2, background: 'rgba(24,24,28,0.98)', paddingRight: '4px' }}>⚠️</span>
-                    <div className="marquee-wrapper" style={{ flex: 1 }}>
-                      <div className="animate-marquee" style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>
-                        Загруженный аватар перед публикацией пройдёт обязательную модерацию командой Giftspy на соответствие правилам сообщества. • Загруженный аватар перед публикацией пройдёт обязательную модерацию командой Giftspy на соответствие правилам сообщества.
-                      </div>
+                    <span style={{ fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>⚠️</span>
+                    <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, lineHeight: '1.4' }}>
+                      Загруженный аватар перед публикацией пройдёт обязательную модерацию командой Giftspy на соответствие правилам сообщества.
                     </div>
                   </div>
 
@@ -1248,7 +1251,7 @@ export default function DetectiveCreate() {
               type="button"
               className="btn btn--secondary"
               onClick={() => { triggerHaptic(); setFormStep(prev => prev - 1); }}
-              style={{ flex: 1, padding: '14px', borderRadius: '14px', margin: 0 }}
+              style={{ flex: 1, padding: '12px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '700', margin: 0 }}
             >
               ⬅ Назад
             </button>
@@ -1261,12 +1264,13 @@ export default function DetectiveCreate() {
               onClick={handleNextStep}
               style={{
                 flex: 2,
-                padding: '14px',
-                borderRadius: '14px',
+                padding: '12px',
+                borderRadius: '12px',
+                fontSize: '13.5px',
                 margin: 0,
                 background: 'linear-gradient(135deg, #a78bfa 0%, #6c5ce7 100%)',
                 boxShadow: 'var(--shadow-glow-subtle)',
-                fontWeight: 'bold'
+                fontWeight: '700'
               }}
             >
               Далее ➡
@@ -1278,13 +1282,13 @@ export default function DetectiveCreate() {
               disabled={submitting || !step4Ready}
               style={{
                 flex: 2,
-                padding: '16px',
-                fontSize: '16px',
-                borderRadius: '14px',
+                padding: '12px',
+                fontSize: '13.5px',
+                borderRadius: '12px',
                 margin: 0,
                 boxShadow: 'var(--shadow-glow)',
                 background: 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)',
-                fontWeight: '800'
+                fontWeight: '700'
               }}
             >
               {submitting ? '⏳ Сохранение...' : (editId ? '✨ Сохранить изменения!' : '✨ Создать детектива!')}

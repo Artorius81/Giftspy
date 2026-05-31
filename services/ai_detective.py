@@ -151,6 +151,29 @@ class AIDetectiveService:
                  
          return {"system": custom_prompt, "messages": messages, "model": ai_model}
 
+    def clean_message_brackets(self, text: str) -> str:
+        """Удаляет из сообщения ИИ все мета-мысли и комментарии в квадратных скобках [ ... ],
+        сохраняя при этом важный технический тег [ДЕЛО ЗАКРЫТО]."""
+        if not text:
+            return text
+        
+        import re
+        # Проверяем наличие служебного тега
+        has_closed_tag = "[ДЕЛО ЗАКРЫТО]" in text
+        
+        # Удаляем все квадратные скобки и их содержимое
+        cleaned = re.sub(r'\[[^\]]*\]', '', text)
+        
+        # Чистим множественные пробелы и переносы строк
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Возвращаем технический тег обратно в конец, если он был
+        if has_closed_tag:
+            if not cleaned.endswith("[ДЕЛО ЗАКРЫТО]"):
+                cleaned = cleaned + " [ДЕЛО ЗАКРЫТО]"
+                
+        return cleaned
+
     async def generate_first_messages(self, chat_context: dict):
         """Generates two first messages: greeting and can-I-ask-questions.
         Returns a list of 2 strings [greeting, question]."""
@@ -163,6 +186,8 @@ class AIDetectiveService:
         
         try:
             greeting = await asyncio.to_thread(self._call_gemini, chat_context)
+            if greeting:
+                greeting = self.clean_message_brackets(greeting)
         except Exception as e:
             logging.error(f"Error generating greeting: {e}")
             return None
@@ -181,6 +206,8 @@ class AIDetectiveService:
         
         try:
             question = await asyncio.to_thread(self._call_gemini, chat_context)
+            if question:
+                question = self.clean_message_brackets(question)
         except Exception as e:
             logging.error(f"Error generating question: {e}")
             return [greeting]
@@ -193,7 +220,8 @@ class AIDetectiveService:
         chat_context["messages"].append(types.Content(role="user", parts=[types.Part.from_text(text=first_msg_prompt)]))
         
         try:
-            return await asyncio.to_thread(self._call_gemini, chat_context)
+            res = await asyncio.to_thread(self._call_gemini, chat_context)
+            return self.clean_message_brackets(res) if res else res
         except Exception as e:
             logging.error(f"Error generating first message: {e}")
             return None
@@ -202,7 +230,8 @@ class AIDetectiveService:
         chat_context["messages"].append(types.Content(role="user", parts=[types.Part.from_text(text=user_message)]))
         
         try:
-            return await asyncio.to_thread(self._call_gemini, chat_context)
+            res = await asyncio.to_thread(self._call_gemini, chat_context)
+            return self.clean_message_brackets(res) if res else res
         except Exception as e:
             logging.error(f"Error generating AI response: {e}")
             return None
@@ -212,7 +241,8 @@ class AIDetectiveService:
         chat_context["messages"].append(types.Content(role="user", parts=[types.Part.from_text(text=COMEBACK_PROMPT)]))
         
         try:
-            return await asyncio.to_thread(self._call_gemini, chat_context)
+            res = await asyncio.to_thread(self._call_gemini, chat_context)
+            return self.clean_message_brackets(res) if res else res
         except Exception as e:
             logging.error(f"Error generating comeback message: {e}")
             return None
@@ -440,17 +470,18 @@ class AIDetectiveService:
                     logging.error(f"Ultimate fallback failed: {ultimate_err}")
                     raise e
 
-    async def generate_avatar(self, prompt: str, provider: str = "dall-e-3") -> bytes:
+    async def generate_avatar(self, prompt: str, provider: str = "gpt-image-2") -> bytes:
         """Генерирует изображение аватара детектива по текстовому описанию и возвращает байты."""
         import httpx
-        logging.info(f"Generating avatar using provider {provider} with prompt: {prompt}")
+        logging.info(f"Generating avatar using provider/model {provider} with prompt: {prompt}")
         
-        if provider == "imagen-3":
+        # If Gemini model is chosen
+        if provider == "gemini-3-pro-image-preview":
             try:
-                # Попытка через Google GenAI SDK
+                # Попытка через Google GenAI SDK с указанным пользователем именем модели
                 response = await asyncio.to_thread(
                     self.client.models.generate_images,
-                    model='imagen-3.0-generate-002',
+                    model='gemini-3-pro-image-preview',
                     prompt=prompt,
                     config=types.GenerateImagesConfig(
                         number_of_images=1,
@@ -460,15 +491,23 @@ class AIDetectiveService:
                 if response.generated_images:
                     return response.generated_images[0].image.image_bytes
                 else:
-                    raise Exception("No images returned from Google Imagen")
+                    raise Exception("No images returned from Gemini Image Preview")
             except Exception as e:
-                logging.error(f"Google Imagen 3 generation failed: {e}. Falling back to DALL-E 3...")
-                provider = "dall-e-3"  # Резервный переход
+                logging.error(f"Gemini 3 Pro Image generation failed: {e}. Falling back to gpt-image-2...")
+                provider = "gpt-image-2"  # Резервный переход к OpenAI gpt-image-2
                 
-        # OpenAI DALL-E (dall-e-3 или dall-e-2) mapped to ProxyAPI gpt-image models
-        model = "gpt-image-2" if provider == "dall-e-3" else "gpt-image-1"
+        # OpenAI GPT Image models
+        # Map any legacy provider strings to the new ones just in case
+        model_mapping = {
+            "dall-e-3": "gpt-image-2",
+            "dall-e-2": "gpt-image-1.5",
+            "imagen-3": "gemini-3-pro-image-preview"
+        }
+        model = model_mapping.get(provider, provider)
+        if model not in ["gpt-image-2", "gpt-image-1.5", "gpt-image-1", "gemini-3-pro-image-preview"]:
+            model = "gpt-image-2"  # safe fallback
+            
         size = "1024x1024"
-        
         try:
             response = await asyncio.to_thread(
                 self.openai_client.images.generate,
@@ -496,6 +535,6 @@ class AIDetectiveService:
                 else:
                     raise Exception(f"Failed downloading generated image: HTTP {img_res.status_code}")
         except Exception as e:
-            logging.error(f"DALL-E generation failed: {e}")
+            logging.error(f"GPT Image generation failed: {e}")
             raise Exception(f"Ошибка ИИ-генерации аватара: {str(e)}")
 

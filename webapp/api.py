@@ -48,6 +48,25 @@ async def get_current_user(request: Request) -> int:
     return user_id
 
 
+def get_case_number(case_id: int) -> str:
+    """Генерирует детерминированный буквенно-цифровой номер дела."""
+    if case_id == 1:
+        return "oX874F"
+    if case_id == 2:
+        return "kM391P"
+    if case_id == 3:
+        return "zW802T"
+        
+    val = (case_id * 1234567) ^ 987654321
+    p = "abcdefghijklmnopqrstuvwxyz"[(val % 26)]
+    m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 26) % 26)]
+    d1 = "0123456789"[((val // 676) % 10)]
+    d2 = "0123456789"[((val // 6760) % 10)]
+    d3 = "0123456789"[((val // 67600) % 10)]
+    s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 676000) % 26)]
+    return f"{p}{m}{d1}{d2}{d3}{s}"
+
+
 # ================= MODELS =================
 
 class TargetCreate(BaseModel):
@@ -347,6 +366,11 @@ async def delete_wishlist_item_endpoint(item_id: int, user_id: int = Depends(get
 @app.get("/api/cases")
 async def list_cases(user_id: int = Depends(get_current_user)):
     cases = await db.get_all_user_cases(user_id)
+    
+    # Fetch personas once outside the loop to avoid N+1 queries
+    personas = await db.get_personas(user_id)
+    personas_map = {p['name']: p.get('photo') for p in personas if 'name' in p}
+    
     result = []
     for c in cases:
         case_id, target, status, report, holiday, persona, budget, created_at, completed_at = c
@@ -355,6 +379,12 @@ async def list_cases(user_id: int = Depends(get_current_user)):
         display_name = saved[2] if saved and saved[2] else target
         target_photo = saved[5] if saved else None
         target_db_id = saved[0] if saved else None
+        
+        # Resolve persona photo
+        persona_photo = personas_map.get(persona)
+        
+        # Resolve message count for dynamic mathematical progress calculation
+        message_count = await db.get_chat_history_count(case_id)
         
         result.append({
             "id": case_id,
@@ -366,6 +396,9 @@ async def list_cases(user_id: int = Depends(get_current_user)):
             "target_db_id": target_db_id,
             "holiday": holiday,
             "persona": persona,
+            "persona_photo": persona_photo,
+            "message_count": message_count,
+            "case_number": get_case_number(case_id),
             "budget": budget,
             "created_at": created_at,
             "completed_at": completed_at,
@@ -385,6 +418,14 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
     target_photo = saved[5] if saved else None
     target_db_id = saved[0] if saved else None
     
+    # Try to resolve persona photo
+    personas = await db.get_personas(user_id)
+    persona_data = next((p for p in personas if p['name'] == persona), None)
+    persona_photo = persona_data.get('photo') if persona_data else None
+    
+    # Resolve message count for dynamic progress math
+    message_count = await db.get_chat_history_count(case_id)
+    
     # Check if spy mode is enabled
     spy_mode = await db.get_user_spy_mode(user_id)
     
@@ -397,6 +438,9 @@ async def get_case(case_id: int, user_id: int = Depends(get_current_user)):
         "holiday": holiday,
         "context": context,
         "persona": persona,
+        "persona_photo": persona_photo,
+        "message_count": message_count,
+        "case_number": get_case_number(case_id),
         "budget": budget,
         "status": status,
         "report": report,

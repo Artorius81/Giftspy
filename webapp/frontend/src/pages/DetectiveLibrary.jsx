@@ -220,7 +220,17 @@ export default function DetectiveLibrary() {
                   flexShrink: 0,
                   border: '1px solid var(--card-border)'
                 }}>
-                  <img src={p.photo || detectiveImg} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img 
+                    src={p.photo || detectiveImg} 
+                    alt={p.name} 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: p.photo ? 'cover' : 'contain', 
+                      padding: p.photo ? '0' : '10px',
+                      boxSizing: 'border-box'
+                    }} 
+                  />
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -677,7 +677,18 @@ export default function NewCase() {
                   }}
                 >
                   <div className="persona-carousel-card" style={{ position: 'relative' }}>
-                    <img src={p.photo || detectiveImg} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
+                    <img 
+                      src={p.photo || detectiveImg} 
+                      alt={p.name} 
+                      className="persona-carousel-photo" 
+                      decoding="async" 
+                      draggable="false" 
+                      style={{
+                        objectFit: p.photo ? 'cover' : 'contain',
+                        padding: p.photo ? '0' : '14px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
                     {isPremiumLocked && (
                       <div style={{
                         position: 'absolute',
@@ -1681,7 +1692,17 @@ export default function NewCase() {
                       overflow: 'hidden',
                       flexShrink: 0
                     }}>
-                      <img src={p.photo || detectiveImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img 
+                        src={p.photo || detectiveImg} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: p.photo ? 'cover' : 'contain', 
+                          padding: p.photo ? '0' : '6px',
+                          boxSizing: 'border-box'
+                        }} 
+                      />
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>

@@ -12,6 +12,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ---- Disable text selection globally, enable for form fields ---- */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+
 /* Remove blue focus outline and tap highlight */
 button, a, input, textarea, select, [role="button"] {
   outline: none;
