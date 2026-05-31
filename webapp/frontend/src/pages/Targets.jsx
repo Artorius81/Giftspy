@@ -60,9 +60,37 @@ export default function Targets() {
       return
     }
     setCreating(true)
+
+    // Formatter logic for target identifier (phone or username)
+    let formattedIdentifier = form.identifier.trim();
+    if (formattedIdentifier.startsWith('@')) {
+      // Keep as is
+    } else if (formattedIdentifier.includes('t.me/')) {
+      const parts = formattedIdentifier.split('t.me/');
+      const username = parts[parts.length - 1].replace('@', '');
+      formattedIdentifier = '@' + username;
+    } else {
+      const digits = formattedIdentifier.replace(/\D/g, '');
+      const isPossiblePhone = /^\+?[\d\s()+-]+$/.test(formattedIdentifier) && digits.length >= 9 && digits.length <= 15;
+      
+      if (isPossiblePhone) {
+        if (digits.length === 11 && digits.startsWith('8')) {
+          formattedIdentifier = '+7' + digits.slice(1);
+        } else if (digits.length === 11 && digits.startsWith('7')) {
+          formattedIdentifier = '+' + digits;
+        } else if (digits.length === 10) {
+          formattedIdentifier = '+7' + digits;
+        } else {
+          formattedIdentifier = '+' + digits;
+        }
+      } else if (/^[a-zA-Z0-9_]{4,32}$/.test(formattedIdentifier)) {
+        formattedIdentifier = '@' + formattedIdentifier;
+      }
+    }
+
     try {
       await api.createTarget({
-        identifier: form.identifier.trim(),
+        identifier: formattedIdentifier,
         name: form.name.trim(),
         habits: form.habits.trim() || null,
         birthday: form.birthday.trim() || null,

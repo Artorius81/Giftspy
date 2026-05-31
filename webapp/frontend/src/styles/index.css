@@ -5229,7 +5229,7 @@ html {
 .store-new-container {
   display: flex;
   flex-direction: column;
-  padding: calc(16px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 12px))) 16px 120px 16px;
+  padding: calc(36px + max(var(--tg-safe-area-inset-top, 0px), env(safe-area-inset-top, 16px))) 16px 120px 16px !important;
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -5243,6 +5243,8 @@ html {
   margin: 16px 0 28px 0;
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(139, 92, 246, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   animation: premiumGlow 4s ease-in-out infinite;
 }
 

@@ -1021,7 +1021,39 @@ export default function NewCase() {
               onChange={e => setForm({ ...form, target: e.target.value })}
             />
           </div>
-          <button className="btn btn--primary" disabled={!form.target} onClick={() => setStep(3)}>
+          <button 
+            className="btn btn--primary" 
+            disabled={!form.target} 
+            onClick={() => {
+              let targetVal = form.target.trim();
+              if (targetVal.startsWith('@')) {
+                // Keep as is
+              } else if (targetVal.includes('t.me/')) {
+                const parts = targetVal.split('t.me/');
+                const username = parts[parts.length - 1].replace('@', '');
+                targetVal = '@' + username;
+              } else {
+                const digits = targetVal.replace(/\D/g, '');
+                const isPossiblePhone = /^\+?[\d\s()+-]+$/.test(targetVal) && digits.length >= 9 && digits.length <= 15;
+                
+                if (isPossiblePhone) {
+                  if (digits.length === 11 && digits.startsWith('8')) {
+                    targetVal = '+7' + digits.slice(1);
+                  } else if (digits.length === 11 && digits.startsWith('7')) {
+                    targetVal = '+' + digits;
+                  } else if (digits.length === 10) {
+                    targetVal = '+7' + digits;
+                  } else {
+                    targetVal = '+' + digits;
+                  }
+                } else if (/^[a-zA-Z0-9_]{4,32}$/.test(targetVal)) {
+                  targetVal = '@' + targetVal;
+                }
+              }
+              setForm({ ...form, target: targetVal });
+              setStep(3);
+            }}
+          >
             Далее →
           </button>
         </div>

@@ -6,6 +6,14 @@ import { showAlert } from '../utils/popup'
 
 const PRODUCTS = [
   {
+    id: 'prem_1',
+    icon: '👑',
+    title: 'Премиум (1 месяц)',
+    desc: 'Безлимитные расследования + шпионский режим',
+    price: '1 ₽',
+    badge: 'Премиум',
+  },
+  {
     id: 'inv_1',
     icon: '🔍',
     title: '1 Расследование',
@@ -19,14 +27,6 @@ const PRODUCTS = [
     desc: 'Выгодный набор — скидка 17%',
     price: '249 ₽',
     badge: 'Выгодно',
-  },
-  {
-    id: 'prem_1',
-    icon: '👑',
-    title: 'Премиум (1 месяц)',
-    desc: 'Безлимитные расследования + шпионский режим',
-    price: '1 ₽',
-    badge: 'Премиум',
   },
 ]
 
@@ -141,18 +141,13 @@ export default function Store() {
       </div>
 
       {/* VIP Premium Perks card */}
-      <div className="store-premium-vip-card" style={{
-        background: 'linear-gradient(135deg, rgba(25, 25, 35, 0.65) 0%, rgba(15, 15, 20, 0.85) 100%)',
-        border: '1px solid rgba(255, 215, 0, 0.25)',
-        boxShadow: '0 8px 32px rgba(255, 215, 0, 0.05)',
-        backdropFilter: 'blur(10px)'
-      }}>
+      <div className="store-premium-vip-card">
         <div className="store-premium-glow-circle" />
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           <span style={{ fontSize: 32 }} role="img" aria-label="crown">👑</span>
           <div>
-            <div className="store-vip-title">Преимущества Premium</div>
+            <div className="store-vip-title">Преимущества Премиум</div>
             <div className="store-vip-desc">Подключите подписку для безграничных возможностей</div>
           </div>
         </div>

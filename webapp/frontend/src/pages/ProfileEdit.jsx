@@ -345,7 +345,7 @@ export default function ProfileEdit() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <span style={{ fontSize: 28, filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.35))' }}>👑</span>
               <div>
-                <div style={{ fontWeight: 850, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.2px' }}>Получите Giftspy Premium</div>
+                <div style={{ fontWeight: 850, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.2px' }}>Получите Giftspy Премиум</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.45 }}>
                   Безлимитные расследования, шпионский режим, выбор ИИ моделей, доступ ко всем детективам и приоритет!
                 </div>
@@ -362,7 +362,7 @@ export default function ProfileEdit() {
                 fontSize: '13px'
               }}
             >
-              Активировать Premium
+              Активировать Премиум
             </button>
           </div>
         )}
