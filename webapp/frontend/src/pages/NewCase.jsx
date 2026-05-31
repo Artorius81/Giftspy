@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { getTargetEmoji } from './TargetDetail'
@@ -266,7 +266,7 @@ export default function NewCase() {
 
   const [targetDisplayName, setTargetDisplayName] = useState('')
 
-  const displayPersonas = (() => {
+  const displayPersonas = useMemo(() => {
     const filtered = personas.filter(p => {
       if (filterMyOnly) {
         return p.creator_id !== null && p.creator_id !== undefined;
@@ -286,7 +286,7 @@ export default function NewCase() {
       });
     }
     return list;
-  })();
+  }, [personas, filterMyOnly, profile]);
 
   const [form, setForm] = useState({
     target: searchParams.get('target') || '',
@@ -310,32 +310,32 @@ export default function NewCase() {
 
   // Sync activePersonaIdx with selected persona in form & handle premium defaults on load
   useEffect(() => {
-    if (personas.length > 0 && profile !== undefined) {
+    if (displayPersonas.length > 0 && profile !== undefined) {
       if (!hasLoadedDefaultPersona.current) {
         hasLoadedDefaultPersona.current = true
         const hasPremium = profile?.is_premium
         let targetPersona = ''
         
         if (hasPremium) {
-          targetPersona = localStorage.getItem('last_selected_persona') || personas[0]?.name || ''
+          targetPersona = localStorage.getItem('last_selected_persona') || displayPersonas[0]?.name || ''
         } else {
           // Non-premium users always default to Viktor Black (the first persona)
-          targetPersona = personas[0]?.name || ''
+          targetPersona = displayPersonas[0]?.name || ''
         }
         
-        const idx = personas.findIndex(p => p.name === targetPersona)
+        const idx = displayPersonas.findIndex(p => p.name === targetPersona)
         const targetIdx = idx !== -1 ? idx : 0
         
         setActivePersonaIdx(targetIdx)
-        setForm(prev => ({ ...prev, persona: personas[targetIdx]?.name || '' }))
+        setForm(prev => ({ ...prev, persona: displayPersonas[targetIdx]?.name || '' }))
       } else {
         // Subsequent syncs from form.persona changes (carousel swipes, user clicks)
-        const idx = personas.findIndex(p => p.name === form.persona)
+        const idx = displayPersonas.findIndex(p => p.name === form.persona)
         let targetIdx = idx !== -1 ? idx : -1
 
         if (targetIdx === -1) {
           const savedPersona = localStorage.getItem('last_selected_persona')
-          const savedIdx = savedPersona ? personas.findIndex(p => p.name === savedPersona) : -1
+          const savedIdx = savedPersona ? displayPersonas.findIndex(p => p.name === savedPersona) : -1
           if (savedIdx !== -1) {
             targetIdx = savedIdx
           } else {
@@ -348,7 +348,15 @@ export default function NewCase() {
         }
       }
     }
-  }, [personas, form.persona, profile])
+  }, [form.persona, displayPersonas, profile])
+
+  // Safeguard: immediately reset index if out of bounds of current displayed personas (e.g. when toggling filter)
+  useEffect(() => {
+    if (activePersonaIdx >= displayPersonas.length && displayPersonas.length > 0) {
+      setActivePersonaIdx(0)
+      setForm(prev => ({ ...prev, persona: displayPersonas[0]?.name || '' }))
+    }
+  }, [displayPersonas.length, activePersonaIdx])
 
   const preloadedImagesRef = useRef([])
 
@@ -853,6 +861,82 @@ export default function NewCase() {
           );
         })()}
 
+        {/* Render Edit/Delete actions for Custom Personas */}
+        {(() => {
+          const activePersona = displayPersonas[activePersonaIdx];
+          const isOwnCustom = activePersona && activePersona.creator_id && activePersona.creator_id === profile?.user_id;
+          if (!isOwnCustom) return null;
+          
+          return (
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              width: '100%',
+              maxWidth: '320px',
+              marginTop: '4px',
+              marginBottom: '2px'
+            }}>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => {
+                  triggerHaptic('medium');
+                  navigate(`/detective/create?edit=${activePersona.id}`);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  margin: 0
+                }}
+              >
+                ✏️ Изменить
+              </button>
+              
+              <button
+                type="button"
+                className="btn"
+                onClick={async () => {
+                  triggerHaptic('heavy');
+                  const confirmDelete = await showConfirm(
+                    `🗑️ Вы уверены, что хотите НАВСЕГДА удалить детектива ${activePersona.name}?\n\nЭто действие нельзя отменить!`
+                  );
+                  if (confirmDelete) {
+                    try {
+                      await api.deletePersona(activePersona.id);
+                      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch { }
+                      await showAlert(`🗑️ Детектив ${activePersona.name} успешно удален.`);
+                      
+                      // Refresh personas list
+                      const updatedPersonas = await api.getPersonas();
+                      mutatePersonas(updatedPersonas);
+                      setActivePersonaIdx(0);
+                      setForm(prev => ({ ...prev, persona: updatedPersonas[0]?.name || '' }));
+                    } catch (err) {
+                      await showAlert(err.message);
+                    }
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
+                  margin: 0
+                }}
+              >
+                🗑️ Удалить
+              </button>
+            </div>
+          );
+        })()}
+
         <div style={{
           width: '100%',
           maxWidth: '320px',
@@ -1031,7 +1115,23 @@ export default function NewCase() {
                 padding: '3px'
               }}>
                 <button
-                  onClick={() => { triggerHaptic(); setFilterMyOnly(false); selectPersonaIndex(0, displayPersonas.filter(p => !filterMyOnly)); }}
+                  onClick={() => {
+                    triggerHaptic();
+                    setFilterMyOnly(false);
+                    const targetList = personas;
+                    const showAddCard = !profile?.is_premium || profile?.custom_detectives_enabled;
+                    const list = [...targetList];
+                    if (showAddCard) {
+                      list.push({
+                        id: 'add_new',
+                        name: 'Добавить',
+                        desc: 'Создайте своего собственного уникального детектива с уникальным ИИ характером!',
+                        photo: null,
+                        isVirtual: true
+                      });
+                    }
+                    selectPersonaIndex(0, list);
+                  }}
                   style={{
                     padding: '6px 14px',
                     borderRadius: '17px',
@@ -1047,7 +1147,23 @@ export default function NewCase() {
                   Все
                 </button>
                 <button
-                  onClick={() => { triggerHaptic(); setFilterMyOnly(true); selectPersonaIndex(0, displayPersonas.filter(p => filterMyOnly)); }}
+                  onClick={() => {
+                    triggerHaptic();
+                    setFilterMyOnly(true);
+                    const targetList = personas.filter(p => p.creator_id !== null && p.creator_id !== undefined);
+                    const showAddCard = !profile?.is_premium || profile?.custom_detectives_enabled;
+                    const list = [...targetList];
+                    if (showAddCard) {
+                      list.push({
+                        id: 'add_new',
+                        name: 'Добавить',
+                        desc: 'Создайте своего собственного уникального детектива с уникальным ИИ характером!',
+                        photo: null,
+                        isVirtual: true
+                      });
+                    }
+                    selectPersonaIndex(0, list);
+                  }}
                   style={{
                     padding: '6px 14px',
                     borderRadius: '17px',

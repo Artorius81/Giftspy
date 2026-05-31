@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
 import { showAlert } from '../utils/popup'
 
@@ -28,6 +28,9 @@ const STEPS = [
 
 export default function DetectiveCreate() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
+  
   const fileInputRef = useRef(null)
   
   // Step Wizard State
@@ -99,6 +102,69 @@ export default function DetectiveCreate() {
       webApp.BackButton.offClick(handleBack)
     }
   }, [navigate, formStep])
+
+  // Load detective details if editing
+  useEffect(() => {
+    if (!editId) return
+    
+    const loadDetective = async () => {
+      try {
+        const p = await api.getPersona(editId)
+        setName(p.name || '')
+        setDescription(p.desc || '')
+        setSpecialty(p.specialty || '')
+        setEmojis(p.emojis || '')
+        setIsPublic(p.is_public || false)
+        setPhotoUrl(p.photo || '')
+        setIsAvatarSet(!!p.photo)
+        
+        // Parse opening phrase if embedded
+        let promptText = p.ai_description || ''
+        const phraseMarker = '\n\nТвоя коронная приветственная фраза при начале допроса: "'
+        if (promptText.includes(phraseMarker)) {
+          const parts = promptText.split(phraseMarker)
+          promptText = parts[0]
+          const phrasePart = parts[1] || ''
+          const phrase = phrasePart.substring(0, phrasePart.indexOf('"'))
+          setOpeningPhrase(phrase)
+        }
+        setAiDescription(promptText)
+
+        // Parse skills
+        const skillsData = p.skills || []
+        const newSelected = {}
+        const newValues = { ...skillValues }
+        const newCustom = []
+
+        skillsData.forEach(sk => {
+          const cleanLabel = sk.label.trim()
+          const preset = SKILL_PRESETS.find(sp => sp.label.trim() === cleanLabel)
+          if (preset) {
+            newSelected[preset.id] = true
+            newValues[preset.id] = sk.val
+          } else {
+            const customId = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+            newCustom.push({
+              id: customId,
+              label: cleanLabel,
+              val: sk.val,
+              color: sk.color || '#a78bfa'
+            })
+            newSelected[customId] = true
+            newValues[customId] = sk.val
+          }
+        })
+
+        setSelectedSkills(newSelected)
+        setSkillValues(newValues)
+        setCustomSkills(newCustom)
+      } catch (err) {
+        showAlert('Не удалось загрузить детектива: ' + err.message)
+      }
+    }
+
+    loadDetective()
+  }, [editId])
 
   const triggerHaptic = (style = 'light') => {
     try {
@@ -284,21 +350,36 @@ export default function DetectiveCreate() {
         ? `${aiDescription.trim()}\n\nТвоя коронная приветственная фраза при начале допроса: "${openingPhrase.trim()}". Начни диалог именно с неё.`
         : aiDescription.trim()
 
-      await api.createPersona({
-        name: name.trim(),
-        description: description.trim(),
-        ai_description: finalPrompt,
-        photo_url: photoUrl,
-        emojis: emojis.trim() || '🕵️‍♂️, 🎁, ✨',
-        is_public: isPublic,
-        specialty: specialty.trim() || 'Секретное расследование 🕵️‍♂️',
-        skills: skillsData
-      })
+      if (editId) {
+        // Edit mode
+        await api.updatePersona(editId, {
+          name: name.trim(),
+          description: description.trim(),
+          ai_description: finalPrompt,
+          photo_url: photoUrl,
+          emojis: emojis.trim() || '🕵️‍♂️, 🎁, ✨',
+          is_public: isPublic,
+          specialty: specialty.trim() || 'Секретное расследование 🕵️‍♂️',
+          skills: skillsData
+        })
+        try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch { }
+        await showAlert('✨ Детектив успешно обновлен!')
+      } else {
+        // Creation mode
+        await api.createPersona({
+          name: name.trim(),
+          description: description.trim(),
+          ai_description: finalPrompt,
+          photo_url: photoUrl,
+          emojis: emojis.trim() || '🕵️‍♂️, 🎁, ✨',
+          is_public: isPublic,
+          specialty: specialty.trim() || 'Секретное расследование 🕵️‍♂️',
+          skills: skillsData
+        })
+        try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch { }
+        await showAlert('✨ Детектив успешно создан и добавлен в вашу карусель!')
+      }
 
-      // Try playing a success haptic
-      try { window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success') } catch { }
-      
-      await showAlert('✨ Детектив успешно создан и добавлен в вашу карусель!')
       navigate('/new-case', { replace: true })
     } catch (err) {
       await showAlert(err.message)
@@ -353,7 +434,7 @@ export default function DetectiveCreate() {
           ‹
         </button>
         <span className="new-header-title" style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text)' }}>
-          Создать детектива
+          {editId ? 'Изменить детектива' : 'Создать детектива'}
         </span>
         <div style={{ width: 36 }} />
       </div>
@@ -758,44 +839,53 @@ export default function DetectiveCreate() {
                   )
                 })}
 
-                {/* Add Custom Skill field with clear cross */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', position: 'relative', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
-                    <input 
-                      className="input"
-                      placeholder="Свой навык (например: Мемы 💾)..."
-                      maxLength={20}
-                      value={newSkillLabel}
-                      onChange={e => setNewSkillLabel(e.target.value)}
-                      style={{ fontSize: '12.5px', padding: '10px 32px 10px 12px', width: '100%', boxSizing: 'border-box' }}
-                    />
-                    {newSkillLabel && (
-                      <button
-                        type="button"
-                        onClick={() => { triggerHaptic(); setNewSkillLabel(''); }}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--text-secondary)',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          padding: '4px'
-                        }}
-                      >
-                        ✕
-                      </button>
-                    )}
+                {/* Custom Skill adding section with Marquee placeholder support */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                  {/* Scrolling helper marquee for Custom Skill suggestions */}
+                  <div className="marquee-wrapper" style={{ background: 'rgba(255,255,255,0.015)', padding: '6px 0', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                    <div className="animate-marquee" style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                      Свой навык (например: Мемы 💾, Обаяние ✨, Упорство 🎯, Харизма 🏴‍☠️, Скрытность 🤫) • Свой навык (например: Мемы 💾, Обаяние ✨, Упорство 🎯, Харизма 🏴‍☠️, Скрытность 🤫)
+                    </div>
                   </div>
-                  <button 
-                    type="button"
-                    onClick={handleAddCustomSkill}
-                    className="btn btn--secondary btn--small"
-                    style={{ width: 'auto', flexShrink: 0, padding: '10px 16px', borderRadius: '12px', margin: 0 }}
-                  >
-                    ＋ Добавить
-                  </button>
+
+                  <div style={{ display: 'flex', gap: '8px', position: 'relative', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
+                      <input 
+                        className="input"
+                        placeholder="Введите название вашего навыка..."
+                        maxLength={20}
+                        value={newSkillLabel}
+                        onChange={e => setNewSkillLabel(e.target.value)}
+                        style={{ fontSize: '12.5px', padding: '10px 32px 10px 12px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                      {newSkillLabel && (
+                        <button
+                          type="button"
+                          onClick={() => { triggerHaptic(); setNewSkillLabel(''); }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-secondary)',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            padding: '4px'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={handleAddCustomSkill}
+                      className="btn btn--secondary btn--small"
+                      style={{ width: 'auto', flexShrink: 0, padding: '10px 16px', borderRadius: '12px', margin: 0 }}
+                    >
+                      ＋ Добавить
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -811,7 +901,7 @@ export default function DetectiveCreate() {
                 <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%' }}>
                   <textarea
                     className="input"
-                    placeholder="Как детектив будет себя вести? Опишите его роль, характер, стиль общения, тон голоса, используемые словечки и манеры для ИИ..."
+                    placeholder="Как детектив будет себя вести? Опишите его роль, характер, style общения, тон голоса, используемые словечки и манеры для ИИ..."
                     maxLength={2000}
                     rows={5}
                     value={aiDescription}
@@ -1056,7 +1146,7 @@ export default function DetectiveCreate() {
                   </div>
 
                   <button
-                    type="button"
+                    type="button" // CRITICAL FIX: Add explicit type="button" to prevent auto form submit!
                     onClick={handleGenerateAvatar}
                     disabled={generating || !aiPrompt.trim()}
                     className="btn btn--primary"
@@ -1179,7 +1269,7 @@ export default function DetectiveCreate() {
                 fontWeight: '800'
               }}
             >
-              {submitting ? '⏳ Создание детектива...' : '✨ Сохранить детектива!'}
+              {submitting ? '⏳ Сохранение...' : (editId ? '✨ Сохранить изменения!' : '✨ Создать детектива!')}
             </button>
           )}
         </div>

@@ -79,7 +79,8 @@ export default function DetectiveLibrary() {
   })
 
   return (
-    <div className="page page-profile-bg" style={{ paddingBottom: '90px' }}>
+    <div className="page page-profile-bg" style={{ padding: 0 }}>
+      <div className="settings-new-container" style={{ paddingBottom: '90px' }}>
       
       {/* Page Header */}
       <div className="settings-new-header" style={{ marginBottom: '16px', background: 'transparent' }}>
@@ -328,6 +329,7 @@ export default function DetectiveLibrary() {
             </div>
           ))
         )}
+      </div>
       </div>
     </div>
   )

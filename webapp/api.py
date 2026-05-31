@@ -571,6 +571,40 @@ async def upload_avatar_endpoint(file: UploadFile = File(...), user_id: int = De
         logging.error(f"Failed to upload avatar: {e}")
         raise HTTPException(status_code=500, detail="Ошибка загрузки изображения")
 
+@app.get("/api/personas/{det_id}")
+async def get_persona_endpoint(det_id: int, user_id: int = Depends(get_current_user)):
+    p = await db.get_detective_by_id(det_id)
+    if not p or (p.get('creator_id') and p.get('creator_id') != user_id):
+        raise HTTPException(status_code=404, detail="Detective not found")
+    return p
+
+@app.put("/api/personas/{det_id}")
+async def update_persona_endpoint(det_id: int, data: CustomDetectiveCreate, user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+    
+    await db.update_custom_detective(
+        user_id=user_id,
+        detective_id=det_id,
+        name=data.name.strip()[:32],
+        description=data.description.strip()[:200],
+        ai_description=data.ai_description.strip()[:2000],
+        photo_url=data.photo_url,
+        emojis=data.emojis or '🕵️‍♂️, 🎁, ✨, 🤫, 🔍',
+        is_public=data.is_public,
+        specialty=data.specialty or 'Секретное расследование 🕵️‍♂️',
+        skills=data.skills
+    )
+    return {"ok": True}
+
+@app.delete("/api/personas/{det_id}")
+async def delete_persona_endpoint(det_id: int, user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+    
+    await db.delete_custom_detective(user_id, det_id)
+    return {"ok": True}
+
 @app.post("/api/settings/custom-detectives")
 async def toggle_custom_detectives_endpoint(user_id: int = Depends(get_current_user)):
     if not await db.is_premium(user_id):

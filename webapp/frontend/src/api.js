@@ -122,9 +122,16 @@ const api = {
 
   // Personas
   getPersonas: () => request('/api/personas'),
+  getPersona: (id) => request(`/api/personas/${id}`),
   getPublicPersonas: () => request('/api/personas/public'),
   createPersona: (data) => request('/api/personas', {
     method: 'POST', body: JSON.stringify(data)
+  }),
+  updatePersona: (id, data) => request(`/api/personas/${id}`, {
+    method: 'PUT', body: JSON.stringify(data)
+  }),
+  deletePersona: (id) => request(`/api/personas/${id}`, {
+    method: 'DELETE'
   }),
   addPersonaToLibrary: (id) => request(`/api/personas/${id}/add`, { method: 'POST' }),
   removePersonaFromLibrary: (id) => request(`/api/personas/${id}/remove`, { method: 'DELETE' }),

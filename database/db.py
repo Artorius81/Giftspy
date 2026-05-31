@@ -1150,6 +1150,63 @@ async def create_custom_detective(creator_id: int, name: str, description: str, 
     return result.data[0]['id']
 
 
+async def delete_custom_detective(creator_id: int, detective_id: int):
+    """Удаляет собственного кастомного детектива из Supabase."""
+    await asyncio.to_thread(
+        lambda: _client.table('detectives')
+            .delete()
+            .eq('creator_id', creator_id)
+            .eq('id', detective_id)
+            .execute()
+    )
+
+
+async def update_custom_detective(user_id: int, detective_id: int, name: str, description: str, ai_description: str, photo_url: str, emojis: str, is_public: bool, specialty: str, skills: list):
+    """Обновляет собственного кастомного детектива в Supabase."""
+    await asyncio.to_thread(
+        lambda: _client.table('detectives')
+            .update({
+                'name': name,
+                'description': description,
+                'ai_description': ai_description,
+                'photo_url': photo_url,
+                'emojis': emojis,
+                'is_public': is_public,
+                'specialty': specialty,
+                'skills': skills
+            })
+            .eq('creator_id', user_id)
+            .eq('id', detective_id)
+            .execute()
+    )
+
+
+async def get_detective_by_id(detective_id: int):
+    """Возвращает одного детектива по ID."""
+    result = await asyncio.to_thread(
+        lambda: _client.table('detectives')
+            .select('*')
+            .eq('id', detective_id)
+            .execute()
+    )
+    if result.data:
+        r = result.data[0]
+        return {
+            "id": r['id'],
+            "name": r['name'],
+            "desc": r.get('description') or '',
+            "photo": r.get('photo_url') or '',
+            "emojis": r.get('emojis') or '🕵️‍♂️, 🎁, ✨, 🤫, 🔍',
+            "ai_description": r.get('ai_description') or '',
+            "creator_id": r.get('creator_id'),
+            "is_public": bool(r.get('is_public', False)),
+            "is_approved": bool(r.get('is_approved', True)),
+            "specialty": r.get('specialty') or 'Секретное расследование 🕵️‍♂️',
+            "skills": r.get('skills') or []
+        }
+    return None
+
+
 async def get_user_custom_detectives_enabled(user_id) -> bool:
     """Проверяет, включен ли конструктор детективов у пользователя."""
     await _ensure_user(user_id)

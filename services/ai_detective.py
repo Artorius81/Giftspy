@@ -465,9 +465,9 @@ class AIDetectiveService:
                 logging.error(f"Google Imagen 3 generation failed: {e}. Falling back to DALL-E 3...")
                 provider = "dall-e-3"  # Резервный переход
                 
-        # OpenAI DALL-E (dall-e-3 или dall-e-2)
-        model = "dall-e-3" if provider == "dall-e-3" else "dall-e-2"
-        size = "1024x1024" if model == "dall-e-3" else "512x512"
+        # OpenAI DALL-E (dall-e-3 или dall-e-2) mapped to ProxyAPI gpt-image models
+        model = "gpt-image-2" if provider == "dall-e-3" else "gpt-image-1"
+        size = "1024x1024"
         
         try:
             response = await asyncio.to_thread(
@@ -477,11 +477,18 @@ class AIDetectiveService:
                 n=1,
                 size=size
             )
-            image_url = response.data[0].url
-            if not image_url:
-                raise Exception("Empty image URL returned from OpenAI")
+            
+            # ProxyAPI returns base64_json by default. If b64_json is returned, decode and return it directly
+            b64_data = getattr(response.data[0], 'b64_json', None)
+            if b64_data:
+                import base64
+                return base64.b64decode(b64_data)
                 
-            # Скачиваем изображение по ссылке
+            image_url = getattr(response.data[0], 'url', None)
+            if not image_url:
+                raise Exception("Empty image returned from OpenAI (neither b64_json nor url found)")
+                
+            # Скачиваем изображение по ссылке (fallback)
             async with httpx.AsyncClient() as httpx_client:
                 img_res = await httpx_client.get(image_url, timeout=30.0)
                 if img_res.status_code == 200:
