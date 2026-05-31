@@ -128,10 +128,16 @@ export default function Home() {
 
   const getGreeting = () => {
     const hr = new Date().getHours()
-    if (hr < 6) return 'Доброй ночи'
-    if (hr < 12) return 'Доброе утро'
-    if (hr < 18) return 'Добрый день'
-    return 'Добрый вечер'
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {}
+    const fullName = `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim()
+    const name = profile?.nickname || fullName || tgUser.first_name || tgUser.username || 'Детектив'
+    
+    let greetingText = 'Добрый вечер'
+    if (hr < 6) greetingText = 'Доброй ночи'
+    else if (hr < 12) greetingText = 'Доброе утро'
+    else if (hr < 18) greetingText = 'Добрый день'
+    
+    return `${greetingText}, ${name}`
   }
 
   return (

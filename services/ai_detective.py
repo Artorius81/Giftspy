@@ -225,7 +225,10 @@ class AIDetectiveService:
              return None
 
     async def extract_gifts_with_ai(self, report_text: str) -> list:
-        """Извлекает и категоризирует подарки из отчета с помощью отдельного LLM-запроса."""
+        """Извлекает и категоризирует подарки из отчета с помощью отдельного LLM-запроса с каскадом резервных вариантов."""
+        if not report_text:
+            return []
+
         prompt = f"""
 Проанализируй следующий отчёт сыщика и извлеки из него все предложенные идеи подарков (из блока 'Найденные идеи подарков').
 Для каждой идеи определи наиболее подходящую категорию.
@@ -237,19 +240,133 @@ class AIDetectiveService:
 Вот отчет:
 {report_text}
 """
+        response_text = None
+
+        # Шаг 1: Пробуем OpenAI gpt-4o-mini (самый стабильный JSON)
         try:
+            logging.info("Attempting gift extraction using gpt-4o-mini...")
             response = await asyncio.to_thread(
-               self.client.models.generate_content,
-               model=self.model,
-               contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
-               config=types.GenerateContentConfig(temperature=0.1)
+                self.openai_client.chat.completions.create,
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1
             )
-            import json
-            text = response.text.replace('```json', '').replace('```', '').strip()
-            return json.loads(text)
+            response_text = response.choices[0].message.content
         except Exception as e:
-            logging.error(f"Error extracting gifts with AI: {e}")
-            return []
+            logging.warning(f"Gift extraction failed with gpt-4o-mini: {e}. Trying deepseek via OpenRouter...")
+
+        # Шаг 2: Пробуем OpenRouter deepseek-v4 (deepseek/deepseek-chat)
+        if not response_text:
+            try:
+                logging.info("Attempting gift extraction using deepseek via OpenRouter...")
+                response = await asyncio.to_thread(
+                    self.openrouter_client.chat.completions.create,
+                    model="deepseek/deepseek-chat",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1
+                )
+                response_text = response.choices[0].message.content
+            except Exception as e:
+                logging.warning(f"Gift extraction failed with deepseek: {e}. Trying Gemini SDK...")
+
+        # Шаг 3: Пробуем Gemini SDK
+        if not response_text:
+            try:
+                logging.info("Attempting gift extraction using gemini-2.5-flash...")
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+                    config=types.GenerateContentConfig(temperature=0.1)
+                )
+                response_text = response.text
+            except Exception as e:
+                logging.error(f"All LLM gift extraction calls failed: {e}")
+
+        # Парсинг ответа ИИ
+        if response_text:
+            try:
+                import json
+                import re
+                text = response_text.strip()
+                match = re.search(r'\[\s*\[.*\]\s*\]', text, re.DOTALL)
+                if match:
+                    text = match.group(0)
+                else:
+                    text = text.replace('```json', '').replace('```', '').strip()
+                gifts = json.loads(text)
+                if isinstance(gifts, list) and all(isinstance(g, list) and len(g) >= 2 for g in gifts):
+                    logging.info(f"Successfully extracted {len(gifts)} gifts via LLM")
+                    return gifts
+            except Exception as e:
+                logging.error(f"Failed to parse LLM response for gifts: {e}. Response was: {response_text}")
+
+        # Шаг 4: Резервный ручной парсинг отчета регулярными выражениями
+        logging.info("Falling back to manual regex parsing of report text for gifts...")
+        manual_gifts = self.extract_gifts_manually(report_text)
+        logging.info(f"Manually parsed {len(manual_gifts)} gifts from report text")
+        return manual_gifts
+
+    def extract_gifts_manually(self, report_text: str) -> list:
+        """Извлекает идеи подарков из текста отчета с помощью регулярных выражений."""
+        import re
+        gifts = []
+        if not report_text:
+            return gifts
+
+        # Ищем блок подарков
+        headers = ["Найденные идеи подарков", "Идеи подарков", "Найденные подарки"]
+        start_idx = -1
+        for h in headers:
+            start_idx = report_text.find(h)
+            if start_idx != -1:
+                start_idx += len(h)
+                break
+
+        if start_idx == -1:
+            lines = report_text.splitlines()
+        else:
+            remaining_text = report_text[start_idx:]
+            end_idx = len(remaining_text)
+            next_headers = ["Вердикт детектива", "🕵️‍♂️", "🎯", "🧩", "Статус"]
+            for nh in next_headers:
+                pos = remaining_text.find(nh)
+                if 0 <= pos < end_idx:
+                    end_idx = pos
+            lines = remaining_text[:end_idx].splitlines()
+
+        for line in lines:
+            line = line.strip()
+            # Буллеты: -, *, • или цифры с точкой/скобкой
+            if line.startswith(('-', '*', '•')) or (line and line[0].isdigit() and ('.' in line or ')' in line)):
+                parts = re.split(r'^[-*•\d.)\s]+', line)
+                if len(parts) > 1 and parts[1].strip():
+                    gift_desc = parts[1].strip()
+                    # Очищаем скобки и технические символы
+                    gift_desc = re.sub(r'\]$', '', gift_desc).strip()
+                    if len(gift_desc) > 3:
+                        category = self.categorize_gift_by_keywords(gift_desc)
+                        gifts.append([category, gift_desc])
+        return gifts
+
+    def categorize_gift_by_keywords(self, desc: str) -> str:
+        """Классифицирует подарок по ключевым словам в категории."""
+        desc_lower = desc.lower()
+        categories = {
+            "Книги": ["книга", "книг", "роман", "энциклопедия", "поэзия", "литература"],
+            "Техника": ["гаджет", "наушник", "телефон", "клавиатура", "мышь", "монитор", "смартфон", "планшет", "ноутбук", "компьютер", "техник", "часы", "смарт", "зарядка", "пауэрбанк"],
+            "Одежда": ["одежд", "футболка", "худи", "свитшот", "куртка", "носки", "кроссовки", "кеды", "обувь", "ремень", "шапка", "шарф"],
+            "Украшения": ["украшен", "кольцо", "серьги", "браслет", "кулон", "цепочка", "ожерелье"],
+            "Еда": ["еда", "шоколад", "кофе", "чай", "сладости", "конфеты", "торт", "напиток", "вино", "бокал", "вкусняшки"],
+            "Впечатления": ["билет", "сертификат", "мастер-класс", "квест", "полет", "путешествие", "экскурсия", "концерт", "театр", "кино", "спа", "массаж"],
+            "Для дома": ["дом", "светильник", "лампа", "плед", "подушка", "посуда", "кружка", "декор", "цветы", "растение", "увлажнитель"],
+            "Хобби": ["хобби", "гитара", "музыка", "рисование", "краски", "холст", "настольная игра", "спорт", "абонемент", "фитнес", "йога", "конструктор", "лего", "lego"]
+        }
+        for cat, keywords in categories.items():
+            for kw in keywords:
+                if kw in desc_lower:
+                    return cat
+        return "Другое"
 
     def _call_gemini(self, chat_context: dict) -> str:
         model = chat_context.get("model", self.model)
