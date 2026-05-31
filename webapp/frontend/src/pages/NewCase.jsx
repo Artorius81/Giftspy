@@ -253,6 +253,19 @@ export default function NewCase() {
   const personas = personasData || []
   const cases = casesData || []
 
+  const [submitting, setSubmitting] = useState(false)
+  const [activePersonaIdx, setActivePersonaIdx] = useState(0)
+  const [filterMyOnly, setFilterMyOnly] = useState(false)
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
+  const [libraryPersonas, setLibraryPersonas] = useState([])
+  const [libraryLoading, setLibraryLoading] = useState(false)
+  const [isDraggingTrack, setIsDraggingTrack] = useState(false)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [transitionEnabled, setTransitionEnabled] = useState(true)
+  const isSwipingLocked = useRef(false)
+
+  const [targetDisplayName, setTargetDisplayName] = useState('')
+
   const displayPersonas = (() => {
     const filtered = personas.filter(p => {
       if (filterMyOnly) {
@@ -274,19 +287,6 @@ export default function NewCase() {
     }
     return list;
   })();
-
-  const [submitting, setSubmitting] = useState(false)
-  const [activePersonaIdx, setActivePersonaIdx] = useState(0)
-  const [filterMyOnly, setFilterMyOnly] = useState(false)
-  const [showLibraryModal, setShowLibraryModal] = useState(false)
-  const [libraryPersonas, setLibraryPersonas] = useState([])
-  const [libraryLoading, setLibraryLoading] = useState(false)
-  const [isDraggingTrack, setIsDraggingTrack] = useState(false)
-  const [dragOffset, setDragOffset] = useState(0)
-  const [transitionEnabled, setTransitionEnabled] = useState(true)
-  const isSwipingLocked = useRef(false)
-
-  const [targetDisplayName, setTargetDisplayName] = useState('')
 
   const [form, setForm] = useState({
     target: searchParams.get('target') || '',
