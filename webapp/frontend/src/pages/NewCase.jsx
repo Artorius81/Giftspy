@@ -239,7 +239,6 @@ export default function NewCase() {
 
   const [step, setStep] = useState(0)
   const [collapsed, setCollapsed] = useState({})
-  const [showDossierModal, setShowDossierModal] = useState(false)
 
   const toggleGroup = (target) => {
     setCollapsed(prev => ({ ...prev, [target]: !prev[target] }))
@@ -464,45 +463,34 @@ export default function NewCase() {
                     flex: 'none'
                   }}
                 >
-                  <div className="persona-carousel-card">
+                  <div className="persona-carousel-card" style={{ position: 'relative' }}>
                     <img src={p.photo} alt={p.name} className="persona-carousel-photo" decoding="async" draggable="false" />
                     {isPremiumLocked && (
                       <div style={{
                         position: 'absolute',
-                        inset: 0,
-                        background: 'rgba(15, 15, 20, 0.65)',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(15, 15, 20, 0.82)',
+                        border: '1px solid rgba(255, 215, 0, 0.35)',
+                        borderRadius: '8px',
+                        padding: '3px 6px',
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backdropFilter: 'blur(3px)',
-                        borderRadius: 'inherit'
+                        gap: '3px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 215, 0, 0.1)',
+                        backdropFilter: 'blur(5px)',
+                        pointerEvents: 'none',
+                        zIndex: 2
                       }}>
-                        <div style={{
-                          width: '56px',
-                          height: '56px',
-                          borderRadius: '50%',
-                          background: 'radial-gradient(circle, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.02) 100%)',
-                          border: '1px solid rgba(255,215,0,0.35)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 0 15px rgba(255,215,0,0.2)',
-                          marginBottom: '8px'
-                        }}>
-                          <span style={{ fontSize: '26px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>👑</span>
-                        </div>
+                        <span style={{ fontSize: '11px', lineHeight: '1' }}>👑</span>
                         <span style={{
-                          fontSize: '9px',
+                          fontSize: '8px',
                           fontWeight: 900,
                           color: '#ffd700',
-                          letterSpacing: '1px',
+                          letterSpacing: '0.5px',
                           textTransform: 'uppercase',
-                          background: 'rgba(255,215,0,0.12)',
-                          padding: '2px 8px',
-                          borderRadius: '8px',
-                          border: '1px solid rgba(255,215,0,0.25)',
-                          boxShadow: '0 0 10px rgba(255,215,0,0.05)'
+                          lineHeight: '1'
                         }}>Премиум</span>
                       </div>
                     )}
@@ -637,27 +625,9 @@ export default function NewCase() {
                 height: '52px',
                 overflowY: 'auto',
                 scrollbarWidth: 'none',
-                WebkitOverflowScrolling: 'touch',
-                position: 'relative'
+                WebkitOverflowScrolling: 'touch'
               }} className="custom-scroll">
                 {p.desc}
-                <span 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerHaptic();
-                    setShowDossierModal(true);
-                  }}
-                  style={{
-                    color: 'var(--accent)',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    marginLeft: '6px',
-                    textDecoration: 'underline',
-                    display: 'inline-block'
-                  }}
-                >
-                  Раскрыть
-                </span>
               </div>
 
               {/* Skills Progress Section */}
@@ -680,193 +650,6 @@ export default function NewCase() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Gorgeous Glassmorphic Dossier Modal Overlay */}
-        {showDossierModal && personas[activePersonaIdx] && (() => {
-          const p = personas[activePersonaIdx];
-          const stats = getDetectiveStats(p.name);
-          const isLocked = (p.id ? p.id !== 1 : activePersonaIdx !== 0) && !profile?.is_premium;
-          return (
-            <div style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              background: 'rgba(10, 10, 15, 0.82)',
-              backdropFilter: 'blur(12px) saturate(180%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              animation: 'fadeIn 0.25s ease-out'
-            }} onClick={() => setShowDossierModal(false)}>
-              <style>{`
-                @keyframes fadeIn {
-                  from { opacity: 0; }
-                  to { opacity: 1; }
-                }
-                @keyframes slideUp {
-                  from { transform: translateY(30px) scale(0.95); opacity: 0; }
-                  to { transform: translateY(0) scale(1); opacity: 1; }
-                }
-              `}</style>
-              <div style={{
-                width: '100%',
-                maxWidth: '360px',
-                background: 'linear-gradient(135deg, rgba(25, 25, 35, 0.95) 0%, rgba(15, 15, 20, 0.98) 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '24px',
-                padding: '24px',
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-                position: 'relative',
-                overflow: 'hidden',
-                color: 'var(--text)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
-              }} onClick={(e) => e.stopPropagation()}>
-                {/* Decorative gradient overlay */}
-                <div style={{
-                  position: 'absolute',
-                  top: '-10%',
-                  left: '-10%',
-                  width: '50%',
-                  height: '50%',
-                  background: 'radial-gradient(circle, rgba(108, 92, 231, 0.15) 0%, transparent 70%)',
-                  pointerEvents: 'none'
-                }} />
-
-                {/* Close button */}
-                <button 
-                  onClick={() => setShowDossierModal(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: '50%',
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--text)',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    transition: 'all 0.2s',
-                    padding: 0
-                  }}
-                >
-                  ✕
-                </button>
-
-                {/* Header section with detective picture and details */}
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <img 
-                    src={p.photo} 
-                    alt={p.name} 
-                    style={{
-                      width: '76px',
-                      height: '76px',
-                      borderRadius: '16px',
-                      border: '2px solid rgba(255, 255, 255, 0.1)',
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                      objectFit: 'cover'
-                    }}
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0, color: 'var(--text)' }}>{p.name}</h2>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <span style={{
-                        fontSize: '9px',
-                        fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: '8px',
-                        background: isLocked ? 'rgba(255, 215, 0, 0.12)' : 'rgba(46, 204, 113, 0.12)',
-                        color: isLocked ? '#ffd700' : '#2ecc71',
-                        border: isLocked ? '1px solid rgba(255, 215, 0, 0.25)' : '1px solid rgba(46, 204, 113, 0.25)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}>
-                        {isLocked ? 'Премиум' : 'Бесплатно'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emojis & Specialty */}
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.04)',
-                  borderRadius: '12px',
-                  padding: '10px 14px',
-                  fontSize: '12px'
-                }}>
-                  <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '2px' }}>
-                    Специализация:
-                  </div>
-                  <div style={{ color: 'var(--text)' }}>
-                    {stats.specialty.replace('🔒 ', '').replace('🔒', '')}
-                  </div>
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Атрибуты: <span style={{ letterSpacing: '2px' }}>{p.emojis}</span>
-                  </div>
-                </div>
-
-                {/* Full Description & AI Instruction Preview */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Досье детектива
-                  </div>
-                  <div style={{
-                    fontSize: '13px',
-                    color: 'var(--text)',
-                    lineHeight: '1.5',
-                    background: 'rgba(0, 0, 0, 0.15)',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    maxHeight: '160px',
-                    overflowY: 'auto',
-                    border: '1px solid rgba(255, 255, 255, 0.03)'
-                  }} className="custom-scroll">
-                    <p style={{ margin: '0 0 10px 0', color: 'var(--text-secondary)' }}>{p.desc}</p>
-                    {p.ai_description && (
-                      <>
-                        <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', margin: '8px 0' }} />
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>
-                          🧠 ИНСТРУКЦИЯ ИИ:
-                        </div>
-                        <p style={{ margin: 0, fontStyle: 'italic', fontSize: '11.5px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4' }}>
-                          {p.ai_description}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Select / Close Button */}
-                <button 
-                  onClick={() => setShowDossierModal(false)}
-                  style={{
-                    background: 'var(--accent)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    color: 'white',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    boxShadow: '0 4px 12px rgba(108, 92, 231, 0.3)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Закрыть досье
-                </button>
               </div>
             </div>
           );
