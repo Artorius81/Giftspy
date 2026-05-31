@@ -996,7 +996,7 @@ async def update_user_notifications(user_id, field, value):
 async def get_personas():
     """Возвращает актуальный список детективов из БД."""
     result = await asyncio.to_thread(
-        lambda: _client.table('detectives').select('id, name, description, photo_url, emojis').order('id').execute()
+        lambda: _client.table('detectives').select('id, name, description, photo_url, emojis, ai_description').order('id').execute()
     )
     personas = []
     for r in result.data:
@@ -1005,6 +1005,7 @@ async def get_personas():
             "name": r['name'],
             "desc": r['description'],
             "photo": r['photo_url'],
-            "emojis": r['emojis']
+            "emojis": r['emojis'],
+            "ai_description": r.get('ai_description', '')
         })
     return personas

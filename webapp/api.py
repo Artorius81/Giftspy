@@ -468,7 +468,8 @@ async def list_personas():
             "name": p["name"],
             "desc": p["desc"],
             "photo": p["photo"],
-            "emojis": p.get("emojis", "")
+            "emojis": p.get("emojis", ""),
+            "ai_description": p.get("ai_description", "")
         }
         for i, p in enumerate(personas)
     ]

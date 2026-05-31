@@ -100,10 +100,16 @@ class AIDetectiveService:
          personas = await db.get_personas()
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
+         
+         # Use the immersive AI description if available, otherwise fallback to name
+         persona_ai_desc = persona_data.get('ai_description') if persona_data else None
+         if not persona_ai_desc:
+             persona_ai_desc = persona
+             
          custom_prompt = SYSTEM_PROMPT_TEMPLATE.format(
              holiday=holiday,
              context=context,
-             persona=persona,
+             persona=persona_ai_desc,
              budget=budget,
              emojis=emojis
          )
@@ -114,10 +120,16 @@ class AIDetectiveService:
          personas = await db.get_personas()
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
+         
+         # Use the immersive AI description if available, otherwise fallback to name
+         persona_ai_desc = persona_data.get('ai_description') if persona_data else None
+         if not persona_ai_desc:
+             persona_ai_desc = persona
+             
          custom_prompt = SYSTEM_PROMPT_TEMPLATE.format(
              holiday=holiday,
              context=context,
-             persona=persona,
+             persona=persona_ai_desc,
              budget=budget,
              emojis=emojis
          )
