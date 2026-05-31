@@ -141,7 +141,12 @@ export default function Store() {
       </div>
 
       {/* VIP Premium Perks card */}
-      <div className="store-premium-vip-card">
+      <div className="store-premium-vip-card" style={{
+        background: 'linear-gradient(135deg, rgba(25, 25, 35, 0.65) 0%, rgba(15, 15, 20, 0.85) 100%)',
+        border: '1px solid rgba(255, 215, 0, 0.25)',
+        boxShadow: '0 8px 32px rgba(255, 215, 0, 0.05)',
+        backdropFilter: 'blur(10px)'
+      }}>
         <div className="store-premium-glow-circle" />
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
@@ -152,18 +157,26 @@ export default function Store() {
           </div>
         </div>
         
-        <ul className="store-vip-list">
+        <ul className="store-vip-list" style={{ gap: '10px' }}>
           <li className="store-vip-item">
             <span className="store-vip-item-icon">🔮</span>
-            <span style={{ color: 'var(--text-secondary)' }}><b>Безлимитные расследования</b> (без списания баланса)</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Безлимитные дела</b> (расследования без списания баланса)</span>
           </li>
           <li className="store-vip-item">
             <span className="store-vip-item-icon">🕵️‍♂️</span>
-            <span style={{ color: 'var(--text-secondary)' }}><b>Шпионский режим</b> (просмотр допроса ИИ-детектива)</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Шпионский режим</b> (просмотр диалога ИИ-детектива в реальном времени)</span>
+          </li>
+          <li className="store-vip-item">
+            <span className="store-vip-item-icon">🤖</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Выбор ИИ моделей</b> (выбирайте GPT-4o, Claude 4.6, Claude Opus и др.)</span>
+          </li>
+          <li className="store-vip-item">
+            <span className="store-vip-item-icon">🎩</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Доступ ко всем детективам</b> (полный список из 8 харизматичных сыщиков)</span>
           </li>
           <li className="store-vip-item">
             <span className="store-vip-item-icon">⚡</span>
-            <span style={{ color: 'var(--text-secondary)' }}><b>Приоритетная скорость</b> и мгновенные отчеты</span>
+            <span style={{ color: 'var(--text-secondary)' }}><b>Приоритетная скорость</b> и мгновенные отчеты расследований</span>
           </li>
         </ul>
       </div>
@@ -172,13 +185,47 @@ export default function Store() {
       <div className="store-product-grid">
         {PRODUCTS.map(p => {
           const isPremium = p.id === 'prem_1'
+          
+          // Render custom icon JSX
+          let iconJsx = <span style={{ fontSize: '26px' }}>{p.icon}</span>;
+          if (p.id === 'inv_3') {
+            iconJsx = (
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px' }}>
+                <span style={{ fontSize: '28px', transform: 'translate(-2px, -2px)' }}>🔍</span>
+                <span style={{
+                  position: 'absolute',
+                  bottom: '-2px',
+                  right: '-2px',
+                  background: 'var(--accent, #8b5cf6)',
+                  color: '#ffffff',
+                  fontSize: '10px',
+                  fontWeight: '900',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid var(--card-bg, #15151f)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+                  lineHeight: '1'
+                }}>3</span>
+              </div>
+            );
+          } else if (p.id === 'inv_1') {
+            iconJsx = <span style={{ fontSize: '26px' }}>🔍</span>;
+          } else if (p.id === 'prem_1') {
+            iconJsx = <span style={{ fontSize: '26px', filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.45))' }}>👑</span>;
+          }
+
           return (
             <div
               key={p.id}
               onClick={() => handleBuy(p.id)}
-              className={`store-product-card ${isPremium ? 'premium-item' : ''}`}
+              className={`store-product-card ${isPremium ? 'premium-item royal-premium-card-gradient' : ''}`}
               style={{
                 opacity: buying === p.id ? 0.6 : 1,
+                cursor: 'pointer'
               }}
             >
               {p.badge && (
@@ -202,8 +249,8 @@ export default function Store() {
               )}
               
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <div className="store-product-icon-wrapper">
-                  {p.icon}
+                <div className="store-product-icon-wrapper" style={{ flexShrink: 0 }}>
+                  {iconJsx}
                 </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -215,10 +262,20 @@ export default function Store() {
               <div className="store-product-footer">
                 <span className="store-product-price-label">Стоимость</span>
                 <button 
-                  className="store-product-buy-btn"
+                  className={isPremium ? 'store-product-buy-btn premium-shimmer-btn' : 'store-product-buy-btn'}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleBuy(p.id);
+                  }}
+                  style={isPremium ? {
+                    padding: '10px 22px',
+                    fontSize: '14px'
+                  } : {
+                    background: 'rgba(255,255,255,0.05)',
+                    color: 'var(--text)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: 'none',
+                    fontWeight: 700
                   }}
                 >
                   {buying === p.id ? '⏳ Покупка...' : p.price}

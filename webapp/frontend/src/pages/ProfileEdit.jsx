@@ -332,41 +332,34 @@ export default function ProfileEdit() {
           </div>
         ) : (
           <div
-            className="profile-order-card"
+            className="profile-order-card royal-premium-card-gradient"
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 14,
               margin: 0,
-              padding: '16px 18px',
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(236, 72, 153, 0.08) 100%)',
-              border: '1px solid rgba(139, 92, 246, 0.15)'
+              padding: '18px 20px',
+              borderRadius: '22px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <span style={{ fontSize: 26 }}>👑</span>
+              <span style={{ fontSize: 28, filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.35))' }}>👑</span>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Получите Giftspy Premium</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>
-                  Безлимитные расследования, шпионский режим, умные рекомендации и приоритетная поддержка!
+                <div style={{ fontWeight: 850, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.2px' }}>Получите Giftspy Premium</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.45 }}>
+                  Безлимитные расследования, шпионский режим, выбор ИИ моделей, доступ ко всем детективам и приоритет!
                 </div>
               </div>
             </div>
             <button
-              className="btn-send-detective"
+              className="premium-shimmer-btn"
               onClick={() => navigate('/store')}
               style={{
                 margin: 0,
                 width: '100%',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 14,
-                padding: '10px 0',
-                borderRadius: '12px',
-                border: 'none',
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
-                cursor: 'pointer'
+                padding: '12px 0',
+                borderRadius: '14px',
+                fontSize: '13px'
               }}
             >
               Активировать Premium

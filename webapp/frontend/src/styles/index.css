@@ -6561,3 +6561,75 @@ body:has(.profile-sheet-backdrop) .bottom-nav {
   max-height: 1000px;
 }
 
+/* ================= PREMIUM SHIMMERING BUTTONS & GLOW EFFECTS ================= */
+.premium-shimmer-btn {
+  background: linear-gradient(135deg, #ffd700 0%, #b8860b 50%, #ffd700 100%);
+  background-size: 200% auto;
+  color: #0f0f14 !important;
+  border: none;
+  font-weight: 850;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  animation: shineGold 3s infinite linear;
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-shimmer-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 30%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.35);
+  transform: rotate(30deg);
+  transition: none;
+  animation: lightSweep 4s infinite ease-in-out;
+}
+
+.premium-shimmer-btn:active {
+  transform: translateY(2px) scale(0.975);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+/* Cohesive Royal Shimmer for Premium Cards/Banners */
+.royal-premium-card-gradient {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(236, 72, 153, 0.12) 100%) !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  position: relative;
+}
+
+[data-theme="light"] .royal-premium-card-gradient {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.18) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.04) !important;
+}
+
+/* Shimmer Keyframe Animations */
+@keyframes shineGold {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes lightSweep {
+  0% { left: -60%; }
+  15% { left: 140%; }
+  100% { left: 140%; }
+}
+
+.store-vip-item-icon {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+[data-theme="light"] .store-vip-item-icon {
+  background: rgba(139, 92, 246, 0.06) !important;
+}

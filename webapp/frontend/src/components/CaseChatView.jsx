@@ -176,13 +176,66 @@ export default function CaseChatView({ caseId, spyMode, isPremium, caseStatus, t
   // === Premium/Spy mode gates ===
   if (!isPremium) {
     return (
-      <div className="chat-view">
-        <div className="empty-state">
-          <div className="empty-state__icon">👑</div>
-          <div className="empty-state__title">Премиум-функция</div>
-          <div className="empty-state__desc">Шпионский режим и перехват управления доступны только с подпиской Премиум</div>
-          <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={() => navigate('/store')}>
-            🛍 Купить Премиум
+      <div className="chat-view" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '320px', padding: '24px', boxSizing: 'border-box' }}>
+        <div className="empty-state royal-premium-card-gradient" style={{
+          borderRadius: '24px',
+          padding: '36px 24px',
+          textAlign: 'center',
+          maxWidth: '320px',
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '14px',
+          backdropFilter: 'blur(12px)'
+        }}>
+          <div className="empty-state__icon" style={{
+            fontSize: '48px',
+            lineHeight: '1',
+            marginBottom: '4px',
+            filter: 'drop-shadow(0 0 12px rgba(255, 215, 0, 0.4))',
+            animation: 'pulseGlow 2s infinite ease-in-out'
+          }}>👑</div>
+          
+          <style>{`
+            @keyframes pulseGlow {
+              0% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.2)); }
+              50% { transform: scale(1.08); filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.45)); }
+              100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.2)); }
+            }
+          `}</style>
+          
+          <div className="empty-state__title" style={{
+            fontSize: '19px',
+            fontWeight: '900',
+            color: 'var(--text)',
+            letterSpacing: '0.3px'
+          }}>Премиум-функция</div>
+          
+          <div className="empty-state__desc" style={{
+            fontSize: '13px',
+            color: 'var(--text-secondary)',
+            lineHeight: '1.5',
+            margin: '0 0 12px 0'
+          }}>
+            Следите за расследованием в реальном времени и управляйте диалогом с помощью <b>Шпионского режима</b>
+          </div>
+          
+          <button 
+            className="premium-shimmer-btn" 
+            onClick={() => navigate('/store')}
+            style={{
+              padding: '13px 28px',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
+            <span>🛍</span> Активировать Премиум
           </button>
         </div>
       </div>
