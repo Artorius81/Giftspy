@@ -31,9 +31,9 @@ export default function DetectiveCreate() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const editId = searchParams.get('edit')
-  
+
   const fileInputRef = useRef(null)
-  
+
   // Step Wizard State
   const [formStep, setFormStep] = useState(1)
   const [step4Ready, setStep4Ready] = useState(false)
@@ -58,7 +58,7 @@ export default function DetectiveCreate() {
   const [emojis, setEmojis] = useState('🕵️‍♂️, 🎁, ✨')
   const [openingPhrase, setOpeningPhrase] = useState('')
   const [isPublic, setIsPublic] = useState(false)
-  
+
   // Custom skills states
   const [selectedSkills, setSelectedSkills] = useState({
     deduction: true,
@@ -74,24 +74,24 @@ export default function DetectiveCreate() {
     wisdom: 90,
     directness: 85
   })
-  
+
   // Custom skill adding
   const [customSkills, setCustomSkills] = useState([])
   const [newSkillLabel, setNewSkillLabel] = useState('')
-  
+
   // Avatar states
   const [avatarType, setAvatarType] = useState('ai') // 'ai' or 'upload'
   const [photoUrl, setPhotoUrl] = useState(detectiveImg) // default photo url
   const [isAvatarSet, setIsAvatarSet] = useState(false)
-  
+
   // AI Generation states
   const [aiPrompt, setAiPrompt] = useState('')
   const [selectedGenerator, setSelectedGenerator] = useState('gpt-image-2')
   const [generating, setGenerating] = useState(false)
-  
+
   // Upload states
   const [uploading, setUploading] = useState(false)
-  
+
   // Final submit state
   const [submitting, setSubmitting] = useState(false)
 
@@ -120,7 +120,7 @@ export default function DetectiveCreate() {
   // Load detective details if editing
   useEffect(() => {
     if (!editId) return
-    
+
     const loadDetective = async () => {
       try {
         const p = await api.getPersona(editId)
@@ -131,7 +131,7 @@ export default function DetectiveCreate() {
         setIsPublic(p.is_public || false)
         setPhotoUrl(p.photo || detectiveImg)
         setIsAvatarSet(!!p.photo)
-        
+
         // Parse opening phrase if embedded
         let promptText = p.ai_description || ''
         const phraseMarker = '\n\nТвоя коронная приветственная фраза при начале допроса: "'
@@ -193,7 +193,7 @@ export default function DetectiveCreate() {
     setSurpriseLoading(true)
     try {
       const data = await api.getSurpriseDetective()
-      
+
       // Fill the basic text fields
       setName(data.name || '')
       setDescription(data.description || '')
@@ -201,13 +201,13 @@ export default function DetectiveCreate() {
       setSpecialty(data.specialty || 'Секретное расследование 🕵️‍♂️')
       setEmojis(data.emojis || '🕵️‍♂️, 🎁, ✨')
       setOpeningPhrase(data.opening_phrase || '')
-      
+
       // Handle skills configuration
       if (data.skills && data.skills.length > 0) {
         const newSelected = {}
         const newValues = { ...skillValues }
         const newCustom = []
-        
+
         data.skills.forEach((sk, idx) => {
           const customId = `custom_surprise_${Date.now()}_${idx}`
           newCustom.push({
@@ -219,33 +219,20 @@ export default function DetectiveCreate() {
           newSelected[customId] = true
           newValues[customId] = sk.val || 90
         })
-        
+
         setCustomSkills(newCustom)
         setSelectedSkills(newSelected)
         setSkillValues(newValues)
       }
-      
-      // Auto-trigger avatar generation using the generated prompt
+
+      // Populate avatar prompt but do NOT trigger generation automatically
       if (data.avatar_prompt) {
         setAiPrompt(data.avatar_prompt)
         setAvatarType('ai')
-        
-        await showAlert('✨ Личность детектива придумана! Запускаем автоматическую генерацию его ИИ-аватара в фоне (она будет готова, когда вы перейдете к последнему шагу)...');
-        
-        setGenerating(true)
-        try {
-          const promptText = `A premium 3D isometric stylized character avatar of a detective. ${data.avatar_prompt.trim()}. Game profile icon, dark atmospheric background, highly detailed rendering.`
-          const avatarResult = await api.generateAvatar(promptText, 'gpt-image-2')
-          setPhotoUrl(avatarResult.photo_url)
-          setIsAvatarSet(true)
-        } catch (avatarErr) {
-          console.error("Avatar generation failed:", avatarErr)
-        }
-        setGenerating(false)
-      } else {
-        await showAlert('🎉 Уникальный детектив полностью готов! Пройдите по шагам, чтобы оценить его характер и настроить внешний вид.')
       }
-      
+
+      await showAlert('🎉 Уникальный детектив полностью готов! Пройдите по шагам, чтобы оценить его характер и сгенерировать ИИ-аватар на последнем этапе.')
+
     } catch (err) {
       await showAlert('Ошибка при создании детектива: ' + err.message)
     }
@@ -256,12 +243,12 @@ export default function DetectiveCreate() {
   const handleToggleSkill = (skillId) => {
     triggerHaptic()
     const activeCount = Object.values(selectedSkills).filter(Boolean).length
-    
+
     if (!selectedSkills[skillId] && activeCount >= 3) {
       showAlert('Вы можете активировать не более 3 характеристик одновременно!')
       return
     }
-    
+
     setSelectedSkills(prev => ({
       ...prev,
       [skillId]: !prev[skillId]
@@ -284,7 +271,7 @@ export default function DetectiveCreate() {
       showAlert('Вы можете активировать не более 3 характеристик одновременно!')
       return
     }
-    
+
     triggerHaptic('medium')
     const customId = `custom_${Date.now()}`
     const newSkill = {
@@ -293,7 +280,7 @@ export default function DetectiveCreate() {
       val: 90,
       color: '#a78bfa'
     }
-    
+
     setCustomSkills(prev => [...prev, newSkill])
     setSelectedSkills(prev => ({ ...prev, [customId]: true }))
     setSkillValues(prev => ({ ...prev, [customId]: 90 }))
@@ -321,7 +308,7 @@ export default function DetectiveCreate() {
       await showAlert('Пожалуйста, опишите внешность детектива')
       return
     }
-    
+
     triggerHaptic('medium')
     setGenerating(true)
     try {
@@ -393,7 +380,7 @@ export default function DetectiveCreate() {
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (formStep < 4) {
       handleNextStep()
       return
@@ -405,7 +392,7 @@ export default function DetectiveCreate() {
 
     setSubmitting(true)
     triggerHaptic('medium')
-    
+
     try {
       // Build skills data array
       const skillsData = []
@@ -429,8 +416,8 @@ export default function DetectiveCreate() {
           })
         }
       })
-      
-      const finalPrompt = openingPhrase.trim() 
+
+      const finalPrompt = openingPhrase.trim()
         ? `${aiDescription.trim()}\n\nТвоя коронная приветственная фраза при начале допроса: "${openingPhrase.trim()}". Начни диалог именно с неё.`
         : aiDescription.trim()
 
@@ -473,7 +460,7 @@ export default function DetectiveCreate() {
 
   return (
     <div className="page page-profile-bg" style={{ paddingBottom: '90px' }}>
-      
+
       <style>{`
         @keyframes marquee {
           0% { transform: translate3d(0, 0, 0); }
@@ -502,8 +489,8 @@ export default function DetectiveCreate() {
 
       {/* Page Header */}
       <div className="new-header" style={{ paddingBottom: '8px', borderBottom: 'none', background: 'transparent' }}>
-        <button 
-          className="wishlist-header-btn" 
+        <button
+          className="wishlist-header-btn"
           onClick={() => {
             if (formStep > 1) {
               triggerHaptic();
@@ -511,7 +498,7 @@ export default function DetectiveCreate() {
             } else {
               navigate(-1);
             }
-          }} 
+          }}
           style={{ width: 36, height: 36 }}
           aria-label="Назад"
         >
@@ -583,7 +570,7 @@ export default function DetectiveCreate() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: isActive 
+                  background: isActive
                     ? 'linear-gradient(135deg, #a78bfa 0%, #6c5ce7 100%)'
                     : isCompleted
                       ? 'rgba(52, 211, 153, 0.12)'
@@ -619,7 +606,7 @@ export default function DetectiveCreate() {
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
-        
+
         {/* STEP 1: BASIC INFORMATION */}
         {formStep === 1 && (
           <div className="fade-in-step" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -809,7 +796,7 @@ export default function DetectiveCreate() {
           <div className="fade-in-step" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="card no-active-scale" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <label style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '15px' }}>📈 Настройка характеристик (выберите до 3)</label>
-              
+
               {/* Sliding instruction warning text */}
               <div className="marquee-wrapper" style={{ background: 'rgba(255,255,255,0.02)', padding: '6px 0', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
                 <div className="animate-marquee" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
@@ -828,14 +815,14 @@ export default function DetectiveCreate() {
                       borderRadius: '12px',
                       padding: '10px 14px'
                     }}>
-                      <div 
+                      <div
                         onClick={() => handleToggleSkill(sp.id)}
                         style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}
                       >
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={isActive}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           style={{
                             width: '18px',
                             height: '18px',
@@ -848,10 +835,10 @@ export default function DetectiveCreate() {
 
                       {isActive && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="100" 
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
                             value={skillValues[sp.id]}
                             onChange={(e) => handleSkillValChange(sp.id, e.target.value)}
                             style={{
@@ -881,14 +868,14 @@ export default function DetectiveCreate() {
                       padding: '10px 14px'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div 
+                        <div
                           onClick={() => handleToggleSkill(cs.id)}
                           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', flex: 1 }}
                         >
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={isActive}
-                            onChange={() => {}}
+                            onChange={() => { }}
                             style={{
                               width: '18px',
                               height: '18px',
@@ -898,7 +885,7 @@ export default function DetectiveCreate() {
                           />
                           <span style={{ fontWeight: 650, fontSize: '13.5px', color: isActive ? 'var(--text)' : 'var(--text-secondary)' }}>{cs.label}</span>
                         </div>
-                        
+
                         <button
                           type="button"
                           onClick={(e) => {
@@ -925,10 +912,10 @@ export default function DetectiveCreate() {
 
                       {isActive && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="100" 
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
                             value={skillValues[cs.id]}
                             onChange={(e) => handleSkillValChange(cs.id, e.target.value)}
                             style={{
@@ -958,7 +945,7 @@ export default function DetectiveCreate() {
 
                   <div style={{ display: 'flex', gap: '8px', position: 'relative', alignItems: 'center' }}>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
-                      <input 
+                      <input
                         className="input"
                         placeholder="Введите название вашего навыка..."
                         maxLength={20}
@@ -985,7 +972,7 @@ export default function DetectiveCreate() {
                         </button>
                       )}
                     </div>
-                    <button 
+                    <button
                       type="button"
                       onClick={handleAddCustomSkill}
                       className="btn btn--secondary btn--small"
@@ -1090,7 +1077,7 @@ export default function DetectiveCreate() {
           <div className="fade-in-step" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="card no-active-scale" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <label style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '15px' }}>🖼️ Аватар детектива</label>
-              
+
               {/* Avatar Preview */}
               <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0 6px 0' }}>
                 <div style={{
@@ -1120,9 +1107,9 @@ export default function DetectiveCreate() {
                       </span>
                     </div>
                   ) : null}
-                  <img 
-                    src={photoUrl} 
-                    alt="Detective Avatar Preview" 
+                  <img
+                    src={photoUrl}
+                    alt="Detective Avatar Preview"
                     style={{
                       width: '100%',
                       height: '100%',
@@ -1302,7 +1289,7 @@ export default function DetectiveCreate() {
                   >
                     📂 Выбрать файл на устройстве
                   </button>
-                  
+
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1346,7 +1333,7 @@ export default function DetectiveCreate() {
               ⬅ Назад
             </button>
           )}
-          
+
           {formStep < 4 ? (
             <button
               type="button"
