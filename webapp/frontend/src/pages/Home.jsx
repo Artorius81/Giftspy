@@ -104,7 +104,7 @@ export default function Home() {
   const allCases = cases || []
   const activeCases = allCases.filter(c => !['done', 'delivered', 'cancelled', 'error'].includes(c.status))
   const completedCount = allCases.filter(c => ['done', 'delivered'].includes(c.status)).length
-  const targetsCount = targetsData ? targetsData.length : 0
+  const targetsCount = targetsData ? targetsData.filter(t => t.id !== profile?.self_target_id).length : 0
 
   const triggerHaptic = () => {
     try {
@@ -116,7 +116,7 @@ export default function Home() {
 
   // Filter and sort targets that have birthdays filled in
   const upcomingBirthdays = (targetsData || [])
-    .filter(t => t.birthday)
+    .filter(t => t.birthday && t.id !== profile?.self_target_id)
     .map(t => {
       const daysLeft = getDaysUntilBirthday(t.birthday)
       return { ...t, daysLeft }
