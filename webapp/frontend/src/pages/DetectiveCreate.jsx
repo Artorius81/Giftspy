@@ -225,13 +225,26 @@ export default function DetectiveCreate() {
         setSkillValues(newValues)
       }
       
-      // Populate avatar prompt but do NOT trigger generation automatically
+      // Auto-trigger avatar generation using the generated prompt
       if (data.avatar_prompt) {
         setAiPrompt(data.avatar_prompt)
         setAvatarType('ai')
+        
+        await showAlert('✨ Личность детектива придумана! Запускаем автоматическую генерацию его ИИ-аватара в фоне (она будет готова, когда вы перейдете к последнему шагу)...');
+        
+        setGenerating(true)
+        try {
+          const promptText = `A premium 3D isometric stylized character avatar of a detective. ${data.avatar_prompt.trim()}. Game profile icon, dark atmospheric background, highly detailed rendering.`
+          const avatarResult = await api.generateAvatar(promptText, 'gpt-image-2')
+          setPhotoUrl(avatarResult.photo_url)
+          setIsAvatarSet(true)
+        } catch (avatarErr) {
+          console.error("Avatar generation failed:", avatarErr)
+        }
+        setGenerating(false)
+      } else {
+        await showAlert('🎉 Уникальный детектив полностью готов! Пройдите по шагам, чтобы оценить его характер и настроить внешний вид.')
       }
-      
-      await showAlert('🎉 Уникальный детектив полностью готов! Пройдите по шагам, чтобы оценить его характер и сгенерировать ИИ-аватар на последнем этапе.')
       
     } catch (err) {
       await showAlert('Ошибка при создании детектива: ' + err.message)
