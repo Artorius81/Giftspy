@@ -95,7 +95,7 @@ export default function CaseDetail() {
           <span className="icon">‹</span>
         </button>
         <div className="chat-header__title">
-          {caseData.display_name} · №{caseData.case_number || caseData.id}
+          Досье
         </div>
         <div style={{ width: 40 }} />
       </div>
