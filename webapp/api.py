@@ -106,6 +106,10 @@ class CaseCreate(BaseModel):
 class TestCaseCreate(BaseModel):
     persona: str
     target_username: str
+    holiday: Optional[str] = "Тестовое расследование 🧪"
+    context: Optional[str] = None
+    budget: Optional[str] = "Любой"
+    ai_model: Optional[str] = "deepseek-v4"
 
 
 class WishlistItemCreate(BaseModel):
@@ -964,11 +968,11 @@ async def create_test_self_case(data: TestCaseCreate, user_id: int = Depends(get
     case_id = await db.add_case(
         customer_id=user_id,
         target=target_username,
-        holiday="Тестовое расследование 🧪",
-        context="Вы тестируете детектива на себе. Попробуйте пообщаться с ним, поотвечать на вопросы или отказаться от каких-то предложений. Убедитесь, что детектив доведёт дело до 3 конкретных идей подарков!",
+        holiday=data.holiday or "Тестовое расследование 🧪",
+        context=data.context or "Вы тестируете детектива на себе. Попробуйте пообщаться с ним, поотвечать на вопросы или отказаться от каких-то предложений. Убедитесь, что детектив доведёт дело до 3 конкретных идей подарков!",
         persona=data.persona,
-        budget="Любой",
-        ai_model="deepseek-v4"
+        budget=data.budget or "Любой",
+        ai_model=data.ai_model or "deepseek-v4"
     )
     
     # Auto-save target if not exists

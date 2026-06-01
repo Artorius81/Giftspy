@@ -298,6 +298,8 @@ export default function NewCase() {
     ai_model: 'deepseek-v4',
   })
 
+  const [isTestCase, setIsTestCase] = useState(false)
+
   // Persist chosen persona
   useEffect(() => {
     if (form.persona) {
@@ -974,6 +976,7 @@ export default function NewCase() {
                 return;
               }
               triggerHaptic();
+              setIsTestCase(false);
               setStep(2);
             }}
             style={{
@@ -1057,7 +1060,7 @@ export default function NewCase() {
     if (username) {
       if (!username.startsWith('@')) username = '@' + username;
       const confirmTest = await showConfirm(
-        `🕵️‍♂️ Вы можете протестировать детектива на себе абсолютно бесплатно!\n\nДетектив ${activePersona.name} начнет секретное расследование в чате с вашим Telegram-аккаунтом ${username}.\n\nХотите запустить тест?`
+        `🕵️‍♂️ Вы можете протестировать детектива на себе абсолютно бесплатно!\n\nДетектив ${activePersona.name} начнет секретное расследование в чате с вашим Telegram-аккаунтом ${username}.\n\nПерейти к выбору повода и указанию зацепок для детектива?`
       );
       if (!confirmTest) return;
     } else {
@@ -1069,37 +1072,40 @@ export default function NewCase() {
       if (!username.startsWith('@')) username = '@' + username;
     }
 
-    setSubmitting(true);
-    try {
-      await api.createTestCase({
-        persona: activePersona.name,
-        target_username: username
-      });
-      
-      await showAlert(`🎉 Тестовое расследование успешно запущено!\n\nДетектив ${activePersona.name} сейчас выйдет на связь в вашем Telegram. Зайдите в чат с ним и пообщайтесь!`);
-      
-      const updated = await api.getCases();
-      mutateCases(updated);
-      
-      navigate('/', { replace: true });
-    } catch (err) {
-      await showAlert(err.message);
-    }
-    setSubmitting(false);
+    setIsTestCase(true);
+    setForm(prev => ({
+      ...prev,
+      target: username,
+      persona: activePersona.name
+    }));
+    setTargetDisplayName('Вы (Тест)');
+    setStep(3); // Go straight to step 3 (Holiday)
   };
 
   const handleSubmit = async () => {
     setSubmitting(true)
     const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'deepseek-v4'
     try {
-      await api.createCase({
-        target: form.target,
-        holiday: form.holiday || 'Без повода',
-        context: form.context || 'Нет данных',
-        persona: form.persona,
-        budget: form.budget || 'Не указан',
-        ai_model: activeModel,
-      })
+      if (isTestCase) {
+        await api.createTestCase({
+          persona: form.persona,
+          target_username: form.target,
+          holiday: form.holiday || 'Тестовое расследование 🧪',
+          context: form.context || 'Вы тестируете детектива на себе. Попробуйте пообщаться с ним, поотвечать на вопросы или отказаться от каких-то предложений. Убедитесь, что детектив доведёт дело до 3 конкретных идей подарков!',
+          budget: form.budget || 'Любой',
+          ai_model: activeModel
+        })
+        await showAlert(`🎉 Тестовое расследование успешно запущено!\n\nДетектив ${form.persona} сейчас выйдет на связь в вашем Telegram. Зайдите в чат с ним и пообщайтесь!`)
+      } else {
+        await api.createCase({
+          target: form.target,
+          holiday: form.holiday || 'Без повода',
+          context: form.context || 'Нет данных',
+          persona: form.persona,
+          budget: form.budget || 'Не указан',
+          ai_model: activeModel,
+        })
+      }
 
       // Reset form and return to dashboard
       setForm({
@@ -1110,6 +1116,7 @@ export default function NewCase() {
         budget: '',
         ai_model: 'deepseek-v4',
       })
+      setIsTestCase(false)
       setTargetDisplayName('')
       setStep(0)
 
@@ -1136,6 +1143,9 @@ export default function NewCase() {
             className="wishlist-header-btn"
             onClick={() => {
               if (step === 2) {
+                setStep(0);
+              } else if (step === 3 && isTestCase) {
+                setIsTestCase(false);
                 setStep(0);
               } else {
                 setStep(step - 1);

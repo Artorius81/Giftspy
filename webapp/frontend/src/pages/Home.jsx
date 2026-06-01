@@ -213,8 +213,8 @@ export default function Home() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '48px',
-                height: '70px',
-                borderRadius: '10px',
+                height: '48px',
+                borderRadius: '12px',
                 background: 'rgba(255,255,255,0.03)',
                 display: 'flex',
                 alignItems: 'center',
@@ -223,17 +223,21 @@ export default function Home() {
                 flexShrink: 0,
                 border: '1px solid var(--card-border)'
               }}>
-                <img 
-                  src={activeCase.persona_photo || detectiveImg} 
-                  alt={activeCase.persona} 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: activeCase.persona_photo ? 'cover' : 'contain', 
-                    padding: activeCase.persona_photo ? '0' : '6px',
-                    boxSizing: 'border-box'
-                  }} 
-                />
+                {activeCase.target_photo && activeCase.target_photo !== 'None' ? (
+                  <img 
+                    src={activeCase.target_photo} 
+                    alt={activeCase.display_name} 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover'
+                    }} 
+                  />
+                ) : (
+                  <span style={{ fontSize: '24px' }}>
+                    {getTargetEmoji(activeCase.target_db_id)}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
                 <span style={{ 
@@ -324,8 +328,8 @@ export default function Home() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '48px',
-                height: '70px',
-                borderRadius: '10px',
+                height: '48px',
+                borderRadius: '12px',
                 background: 'rgba(255,255,255,0.03)',
                 display: 'flex',
                 alignItems: 'center',
@@ -334,17 +338,21 @@ export default function Home() {
                 flexShrink: 0,
                 border: '1px solid var(--card-border)'
               }}>
-                <img 
-                  src={lastCompleted.persona_photo || detectiveImg} 
-                  alt={lastCompleted.persona} 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: lastCompleted.persona_photo ? 'cover' : 'contain', 
-                    padding: lastCompleted.persona_photo ? '0' : '6px',
-                    boxSizing: 'border-box'
-                  }} 
-                />
+                {lastCompleted.target_photo && lastCompleted.target_photo !== 'None' ? (
+                  <img 
+                    src={lastCompleted.target_photo} 
+                    alt={lastCompleted.display_name} 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover'
+                    }} 
+                  />
+                ) : (
+                  <span style={{ fontSize: '24px' }}>
+                    {getTargetEmoji(lastCompleted.target_db_id)}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
                 <span style={{ 

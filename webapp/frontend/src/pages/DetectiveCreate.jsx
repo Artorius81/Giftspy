@@ -86,7 +86,7 @@ export default function DetectiveCreate() {
   
   // AI Generation states
   const [aiPrompt, setAiPrompt] = useState('')
-  const [selectedGenerator, setSelectedGenerator] = useState('gemini-3-pro-image-preview')
+  const [selectedGenerator, setSelectedGenerator] = useState('gpt-image-2')
   const [generating, setGenerating] = useState(false)
   
   // Upload states
@@ -647,7 +647,7 @@ export default function DetectiveCreate() {
                       boxShadow: '0 4px 12px rgba(167, 139, 250, 0.1)'
                     }}
                   >
-                    {surpriseLoading ? '⏳ Секреты...' : '✨ Удиви меня'}
+                    {surpriseLoading ? '⏳ Создаём...' : '✨ Удиви меня'}
                   </button>
                 </div>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
@@ -1116,7 +1116,7 @@ export default function DetectiveCreate() {
                     }}>
                       <div className="spinner" style={{ width: '28px', height: '28px' }} />
                       <span style={{ fontSize: '11px', color: '#fff', fontWeight: 'bold' }}>
-                        {generating ? 'Рисуем ИИ...' : 'Загрузка...'}
+                        {generating ? 'Генерируем...' : 'Загрузка...'}
                       </span>
                     </div>
                   ) : null}
@@ -1160,7 +1160,7 @@ export default function DetectiveCreate() {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  🎨 Генератор ИИ
+                  🎨 Сгенерировать
                 </button>
                 <button
                   type="button"
@@ -1266,7 +1266,7 @@ export default function DetectiveCreate() {
                     className="btn btn--primary"
                     style={{ padding: '12px', margin: 0 }}
                   >
-                    {generating ? '🎨 Генерируем...' : '🔮 Нарисовать аватар ИИ'}
+                    {generating ? '🎨 Генерируем...' : '🔮 Сгенерировать'}
                   </button>
                 </div>
               )}
