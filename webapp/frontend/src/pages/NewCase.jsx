@@ -248,7 +248,7 @@ export default function NewCase() {
   const { data: targetsData, loading: tLoading } = useData('targets', api.getTargets)
   const { data: personasData, loading: pLoading, mutate: mutatePersonas } = useData('personas', api.getPersonas)
   const { data: casesData, loading: cLoading, mutate: mutateCases } = useData('cases', api.getCases)
-  const { data: profile } = useData('profile', api.getProfile)
+  const { data: profile, mutate: mutateProfile } = useData('profile', api.getProfile)
 
   const targets = targetsData || []
   const personas = personasData || []
@@ -1122,6 +1122,13 @@ export default function NewCase() {
 
       const updated = await api.getCases()
       mutateCases(updated)
+
+      try {
+        const updatedProfile = await api.getProfile()
+        mutateProfile(updatedProfile)
+      } catch (err) {
+        console.error("Failed to mutate profile:", err)
+      }
 
       navigate('/', { replace: true })
     } catch (err) {

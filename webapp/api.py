@@ -123,9 +123,27 @@ class WishlistItemCreate(BaseModel):
 
 @app.get("/api/profile")
 async def get_profile(user_id: int = Depends(get_current_user)):
-    balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
-    notif = await db.get_user_notifications(user_id)
-    has_tested_detective = await db.has_user_tested_detective(user_id)
+    try:
+        balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.get_user_profile for user {user_id}: {e}")
+        balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = 1, None, 0, 0, None, False, None, None, None
+
+    try:
+        notif = await db.get_user_notifications(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.get_user_notifications for user {user_id}: {e}")
+        notif = {
+            "notify_birthdays": True,
+            "notify_dialogue": True,
+            "notify_reports": True
+        }
+
+    try:
+        has_tested_detective = await db.has_user_tested_detective(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.has_user_tested_detective for user {user_id}: {e}")
+        has_tested_detective = False
     
     # Compute is_premium based on date check
     is_premium = False
@@ -135,11 +153,30 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         except (ValueError, TypeError):
             pass
             
-    self_target_id = await db.get_or_create_self_target(user_id)
-    wishlist = await db.get_wishlist_grouped(self_target_id)
-    
-    model_selector_enabled = await db.get_user_model_selector_enabled(user_id)
-    custom_detectives_enabled = await db.get_user_custom_detectives_enabled(user_id)
+    try:
+        self_target_id = await db.get_or_create_self_target(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.get_or_create_self_target for user {user_id}: {e}")
+        self_target_id = None
+
+    wishlist = []
+    if self_target_id is not None:
+        try:
+            wishlist = await db.get_wishlist_grouped(self_target_id)
+        except Exception as e:
+            logging.error(f"Error in db.get_wishlist_grouped for self_target {self_target_id}: {e}")
+
+    try:
+        model_selector_enabled = await db.get_user_model_selector_enabled(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.get_user_model_selector_enabled for user {user_id}: {e}")
+        model_selector_enabled = False
+
+    try:
+        custom_detectives_enabled = await db.get_user_custom_detectives_enabled(user_id)
+    except Exception as e:
+        logging.error(f"Error in db.get_user_custom_detectives_enabled for user {user_id}: {e}")
+        custom_detectives_enabled = False
     
     return {
         "user_id": user_id,
@@ -981,8 +1018,11 @@ async def create_test_self_case(data: TestCaseCreate, user_id: int = Depends(get
         await db.add_target(user_id, target_username)
         
     # Mark as tested
-    await db.set_user_tested_detective(user_id, True)
-    
+    try:
+        await db.set_user_tested_detective(user_id, True)
+    except Exception as e:
+        logging.error(f"Failed to set has_tested_detective: {e}")
+        
     return {"id": case_id}
 
 

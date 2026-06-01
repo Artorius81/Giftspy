@@ -426,16 +426,20 @@ async def _ensure_user(user_id):
 
 async def get_user_profile(user_id):
     """Returns (balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo_file_id)"""
-    await _ensure_user(user_id)
-    
-    user_result = await asyncio.to_thread(
-        lambda: _client.table('users')
-            .select('balance, premium_until, nickname, spy_mode, birthday, description, photo_file_id')
-            .eq('id', user_id)
-            .execute()
-    )
-    
-    row = user_result.data[0] if user_result.data else {}
+    try:
+        await _ensure_user(user_id)
+        
+        user_result = await asyncio.to_thread(
+            lambda: _client.table('users')
+                .select('balance, premium_until, nickname, spy_mode, birthday, description, photo_file_id')
+                .eq('id', user_id)
+                .execute()
+        )
+        row = user_result.data[0] if user_result.data else {}
+    except Exception as e:
+        logging.error(f"Failed to fetch user profile row: {e}")
+        row = {}
+        
     balance = row.get('balance', 1)
     premium_until = row.get('premium_until')
     nickname = row.get('nickname')
@@ -444,16 +448,21 @@ async def get_user_profile(user_id):
     description = row.get('description')
     photo = row.get('photo_file_id')
     
-    cases_result = await asyncio.to_thread(
-        lambda: _client.table('cases')
-            .select('status')
-            .eq('customer_id', user_id)
-            .execute()
-    )
-    
-    successful = sum(1 for c in cases_result.data if c['status'] in ('done', 'delivered'))
-    active = sum(1 for c in cases_result.data if c['status'] in ('pending', 'started', 'in_progress', 'manual_mode'))
-    
+    successful = 0
+    active = 0
+    try:
+        cases_result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('status')
+                .eq('customer_id', user_id)
+                .execute()
+        )
+        if cases_result.data:
+            successful = sum(1 for c in cases_result.data if c['status'] in ('done', 'delivered'))
+            active = sum(1 for c in cases_result.data if c['status'] in ('pending', 'started', 'in_progress', 'manual_mode'))
+    except Exception as e:
+        logging.error(f"Failed to fetch cases for user profile stats: {e}")
+        
     return balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo
 
 
