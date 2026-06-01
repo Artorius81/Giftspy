@@ -1091,7 +1091,7 @@ export default function NewCase() {
           persona: form.persona,
           target_username: form.target,
           holiday: form.holiday || 'Тестовое расследование 🧪',
-          context: form.context || 'Вы тестируете детектива на себе. Попробуйте пообщаться с ним, поотвечать на вопросы или отказаться от каких-то предложений. Убедитесь, что детектив доведёт дело до 3 конкретных идей подарков!',
+          context: form.context || '',
           budget: form.budget || 'Любой',
           ai_model: activeModel
         })
