@@ -23,19 +23,20 @@ async def my_cases(message: Message):
     for case in cases:
         case_id, target, status = case
         display_name = await resolve_target_display_name(customer_id, target)
+        case_num = db.get_case_number(case_id)
         
         status_map = {
             'pending': '🟡 Ожидание', 'started': '🔵 Начато',
             'in_progress': '🔵 Допрос', 'manual_mode': '🕹️ Перехват'
         }
-        parts.append(f"▪️ №{case_id} | {display_name} — {status_map.get(status, '?')}")
+        parts.append(f"▪️ №{case_num} | {display_name} — {status_map.get(status, '?')}")
         
         if status == 'pending':
-            kb_rows.append([InlineKeyboardButton(text=f"❌ Отменить №{case_id}", callback_data=f"cancel_case_{case_id}")])
+            kb_rows.append([InlineKeyboardButton(text=f"❌ Отменить №{case_num}", callback_data=f"cancel_case_{case_id}")])
         elif status == 'in_progress':
-            kb_rows.append([InlineKeyboardButton(text=f"🕹️ Перехватить №{case_id}", callback_data=f"pause_ai_{case_id}")])
+            kb_rows.append([InlineKeyboardButton(text=f"🕹️ Перехватить №{case_num}", callback_data=f"pause_ai_{case_id}")])
         elif status == 'manual_mode':
-            kb_rows.append([InlineKeyboardButton(text=f"🕵🏻 Вернуть детективу №{case_id}", callback_data=f"resume_ai_{case_id}")])
+            kb_rows.append([InlineKeyboardButton(text=f"🕵🏻 Вернуть детективу №{case_num}", callback_data=f"resume_ai_{case_id}")])
 
     kb = InlineKeyboardMarkup(inline_keyboard=kb_rows) if kb_rows else None
     await message.answer("\n".join(parts), parse_mode="Markdown", reply_markup=kb)
@@ -64,9 +65,10 @@ async def pause_ai(callback: CallbackQuery):
     case = await db.get_case_by_id(case_id)
     target = case[2] if case else "цель"
     display_name = await resolve_target_display_name(customer_id, target)
+    case_num = db.get_case_number(case_id)
     
     await callback.message.edit_text(
-        f"🕹️ **Управление перехвачено!** Дело №{case_id}\n\n"
+        f"🕹️ **Управление перехвачено!** Дело №{case_num}\n\n"
         f"Ваши сообщения будут пересланы **{display_name}**.\n"
         "Используйте кнопку ниже для возврата управления детективу 👇",
         parse_mode="Markdown",
@@ -83,13 +85,23 @@ async def pause_ai(callback: CallbackQuery):
 @router.message(F.text.startswith("🕵🏻 Вернуть детективу"))
 async def resume_ai_from_menu(message: Message):
     try:
-        case_id = int(message.text.split("#")[1].replace(")", "").strip())
-    except (IndexError, ValueError):
+        case_id_str = message.text.split("#")[1].replace(")", "").strip()
+    except IndexError:
         await message.answer("❌ Не удалось определить номер дела.", reply_markup=main_menu)
         return
     
     customer_id = message.from_user.id
-    case = await db.get_case_by_id(case_id)
+    
+    if case_id_str.isdigit():
+        case_id = int(case_id_str)
+        case = await db.get_case_by_id(case_id)
+    else:
+        case = await db.get_case_by_number(case_id_str)
+        if case:
+            case_id = case[0]
+        else:
+            case_id = None
+
     if not case or case[1] != customer_id:
         await message.answer("❌ Дело не найдено.", reply_markup=main_menu)
         return

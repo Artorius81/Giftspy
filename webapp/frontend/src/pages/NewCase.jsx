@@ -1405,7 +1405,7 @@ export default function NewCase() {
                                         </div>
                                         <div style={{ minWidth: 0, flex: 1 }}>
                                           <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            Дело №{c.id}
+                                            Дело №{c.case_number || c.id}
                                             {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
                                           </div>
                                           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>

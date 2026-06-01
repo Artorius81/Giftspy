@@ -38,6 +38,7 @@ class Case(Base):
     report = Column(Text)
     spy_message_id = Column(BigInteger, default=None)
     ai_model = Column(Text, default='deepseek-v4')
+    case_number = Column(Text, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     chats = relationship("ChatHistory", back_populates="case", cascade="all, delete-orphan")

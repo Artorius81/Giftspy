@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS cases (
     report TEXT,
     spy_message_id BIGINT DEFAULT NULL,
     ai_model TEXT DEFAULT 'deepseek-v4',
+    case_number TEXT DEFAULT NULL,
     completed_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

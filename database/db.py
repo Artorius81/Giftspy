@@ -30,6 +30,25 @@ async def init_db():
         logging.error(f"Failed to run auto-migration: {e}")
 
 
+def get_case_number(case_id: int) -> str:
+    """Генерирует детерминированный буквенно-цифровой номер дела."""
+    if case_id == 1:
+        return "oX874F"
+    if case_id == 2:
+        return "kM391P"
+    if case_id == 3:
+        return "zW802T"
+        
+    val = (case_id * 1234567) ^ 987654321
+    p = "abcdefghijklmnopqrstuvwxyz"[(val % 26)]
+    m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 26) % 26)]
+    d1 = "0123456789"[((val // 676) % 10)]
+    d2 = "0123456789"[((val // 6760) % 10)]
+    d3 = "0123456789"[((val // 67600) % 10)]
+    s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 676000) % 26)]
+    return f"{p}{m}{d1}{d2}{d3}{s}"
+
+
 # ================= CASES =================
 
 async def add_case(customer_id, target, holiday, context, persona, budget, ai_model='deepseek-v4'):
@@ -44,7 +63,18 @@ async def add_case(customer_id, target, holiday, context, persona, budget, ai_mo
             'ai_model': ai_model
         }).execute()
     )
-    return result.data[0]['id']
+    case_id = result.data[0]['id']
+    
+    # Save the generated case number to DB
+    case_num = get_case_number(case_id)
+    await asyncio.to_thread(
+        lambda: _client.table('cases')
+            .update({'case_number': case_num})
+            .eq('id', case_id)
+            .execute()
+    )
+    
+    return case_id
 
 
 async def get_pending_cases():
@@ -204,6 +234,30 @@ async def get_case_by_id(case_id):
         return (r['id'], r['customer_id'], r['target'], r['holiday'], r['context'],
                 r['persona'], r['budget'], r['status'], r['report'], r.get('created_at'), r.get('completed_at'))
     return None
+
+
+async def get_case_by_number(case_number: str):
+    try:
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, customer_id, target, holiday, context, persona, budget, status, report, created_at, completed_at')
+                .eq('case_number', case_number)
+                .execute()
+        )
+    except Exception:
+        # Fallback if completed_at column doesn't exist yet
+        result = await asyncio.to_thread(
+            lambda: _client.table('cases')
+                .select('id, customer_id, target, holiday, context, persona, budget, status, report, created_at')
+                .eq('case_number', case_number)
+                .execute()
+        )
+    if result.data:
+        r = result.data[0]
+        return (r['id'], r['customer_id'], r['target'], r['holiday'], r['context'],
+                r['persona'], r['budget'], r['status'], r['report'], r.get('created_at'), r.get('completed_at'))
+    return None
+
 
 
 # ================= SPY MESSAGE TRACKING =================

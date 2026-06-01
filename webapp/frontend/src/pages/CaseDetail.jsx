@@ -95,7 +95,7 @@ export default function CaseDetail() {
           <span className="icon">‹</span>
         </button>
         <div className="chat-header__title">
-          {caseData.display_name} · №{caseData.id}
+          {caseData.display_name} · №{caseData.case_number || caseData.id}
         </div>
         <div style={{ width: 40 }} />
       </div>
@@ -106,7 +106,7 @@ export default function CaseDetail() {
           {/* Case Header Card */}
           <div className="card no-active-scale" style={{ background: 'var(--gradient-card)' }}>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>
-              📁 Дело №{caseData.id}
+              📁 Дело №{caseData.case_number || caseData.id}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
               <div>🎯 <strong>Цель:</strong> {caseData.display_name}</div>

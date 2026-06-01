@@ -16,9 +16,10 @@ main_menu = ReplyKeyboardMarkup(
 
 # Меню для ручного режима — добавляем кнопку возврата ИИ
 def get_manual_mode_menu(case_id: int) -> ReplyKeyboardMarkup:
+    case_num = db.get_case_number(case_id)
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=f"🕵🏻 Вернуть детективу (дело #{case_id})")],
+            [KeyboardButton(text=f"🕵🏻 Вернуть детективу (дело #{case_num})")],
             [KeyboardButton(text="🔍 Начать новое дело")],
             [KeyboardButton(text="📁 Картотека досье"), KeyboardButton(text="🏠 Мой профиль")]
         ],

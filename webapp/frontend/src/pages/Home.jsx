@@ -182,31 +182,27 @@ export default function Home() {
             onClick={() => { triggerHaptic(); navigate(`/dossier/${activeCase.id}`); }}
           >
             {/* Header Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="pulse-dot" style={{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                backgroundColor: '#10b981',
+                display: 'inline-block',
+                flexShrink: 0
+              }} />
               <span style={{ 
                 fontSize: '13px', 
                 fontWeight: '800', 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.6px',
-                color: '#a78bfa' // Beautiful premium lavender, NOT pink!
+                color: '#a78bfa',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}>
-                В процессе • Дело №{activeCase.case_number || `oX${activeCase.id * 100}`}
+                В процессе • Дело №{activeCase.case_number || activeCase.id}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="pulse-dot" style={{ 
-                  width: '8px', 
-                  height: '8px', 
-                  borderRadius: '50%', 
-                  backgroundColor: '#10b981',
-                  display: 'inline-block'
-                }} />
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                  {activeCase.status === 'pending' ? 'В режиме ожидания' :
-                   activeCase.status === 'started' ? 'Расследование началось' :
-                   activeCase.status === 'in_progress' ? 'Детектив ведет допрос' :
-                   activeCase.status === 'manual_mode' ? 'Ручной перехват активен' : 'В процессе'}
-                </span>
-              </div>
             </div>
 
             {/* Middle Row with Detective Photo on the left, Target & Detective name on the right */}
@@ -276,7 +272,12 @@ export default function Home() {
                 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                <span>Статус ведения допроса</span>
+                <span>
+                  {activeCase.status === 'pending' ? 'В режиме ожидания' :
+                   activeCase.status === 'started' ? 'Расследование началось' :
+                   activeCase.status === 'in_progress' ? 'Детектив ведет допрос' :
+                   activeCase.status === 'manual_mode' ? 'Ручной перехват активен' : 'В процессе'}
+                </span>
                 <span>{getInterrogationProgress(activeCase)}%</span>
               </div>
             </div>
@@ -300,28 +301,27 @@ export default function Home() {
             onClick={() => { triggerHaptic(); navigate(`/dossier/${lastCompleted.id}`); }}
           >
             {/* Header Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                backgroundColor: '#34d399',
+                display: 'inline-block',
+                flexShrink: 0
+              }} />
               <span style={{ 
                 fontSize: '13px', 
                 fontWeight: '800', 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.6px',
-                color: '#34d399' // Premium emerald green
+                color: '#34d399',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}>
-                Завершено • Дело №{lastCompleted.case_number || `oX${lastCompleted.id * 100}`}
+                Завершено • Дело №{lastCompleted.case_number || lastCompleted.id}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ 
-                  width: '8px', 
-                  height: '8px', 
-                  borderRadius: '50%', 
-                  backgroundColor: '#34d399',
-                  display: 'inline-block'
-                }} />
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                  Досье собрано!
-                </span>
-              </div>
             </div>
 
             {/* Middle Row with Detective Photo on the left, Target & Detective name on the right */}
@@ -390,7 +390,7 @@ export default function Home() {
                 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                <span>Статус ведения допроса</span>
+                <span style={{ color: '#34d399' }}>Досье собрано!</span>
                 <span>100%</span>
               </div>
             </div>

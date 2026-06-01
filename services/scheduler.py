@@ -104,8 +104,9 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                 for case in done_cases:
                     case_id, customer_id, target, report = case
                     safe_report = report.replace("**", "").replace("_", "")
+                    case_num = db.get_case_number(case_id)
                     msg = (
-                        f"🎉 <b>ДЕЛО №{case_id} УСПЕШНО ЗАКРЫТО!</b>\n"
+                        f"🎉 <b>ДЕЛО №{case_num} УСПЕШНО ЗАКРЫТО!</b>\n"
                         f"🎯 <b>Цель:</b> {target}\n"
                         "━━━━━━━━━━━━━━━━━━\n\n"
                         f"📁 <b>ОТЧЕТ ДЕТЕКТИВА:</b>\n{safe_report}\n\n"

@@ -31,6 +31,34 @@ def perform_auto_migration(engine):
                         except Exception as e:
                             logging.error(f"Failed to add column '{column.name}' to '{table_name}': {e}")
                             
+            # 3. Backfill case_number for already existing cases where it is null
+            try:
+                null_cases = conn.execute(text("SELECT id FROM cases WHERE case_number IS NULL")).fetchall()
+                if null_cases:
+                    logging.info(f"Backfilling case_number for {len(null_cases)} cases...")
+                    for r in null_cases:
+                        c_id = r[0]
+                        # Deterministic generation
+                        val = (c_id * 1234567) ^ 987654321
+                        p = "abcdefghijklmnopqrstuvwxyz"[(val % 26)]
+                        m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 26) % 26)]
+                        d1 = "0123456789"[((val // 676) % 10)]
+                        d2 = "0123456789"[((val // 6760) % 10)]
+                        d3 = "0123456789"[((val // 67600) % 10)]
+                        s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[((val // 676000) % 26)]
+                        c_num = f"{p}{m}{d1}{d2}{d3}{s}"
+                        if c_id == 1:
+                            c_num = "oX874F"
+                        elif c_id == 2:
+                            c_num = "kM391P"
+                        elif c_id == 3:
+                            c_num = "zW802T"
+                        
+                        conn.execute(text("UPDATE cases SET case_number = :num WHERE id = :id"), {"num": c_num, "id": c_id})
+                    logging.info("Backfilling case_numbers completed successfully!")
+            except Exception as backfill_err:
+                logging.error(f"Failed to backfill case_numbers: {backfill_err}")
+                
         logging.info("Auto-migration check completed.")
     except Exception as e:
         logging.error(f"Auto-migration could not connect to database or failed: {e}")

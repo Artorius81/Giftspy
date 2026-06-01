@@ -71,8 +71,9 @@ async def show_target_dossier(callback: CallbackQuery):
         names = {'pending': 'Ожид.', 'started': 'Начато', 'in_progress': 'Допрос', 'manual_mode': 'Перехват', 'done': 'Готово', 'delivered': 'Готово', 'cancelled': 'Отмена', 'error': 'Ошибка'}
         icon = icons.get(status, '⚪')
         name = names.get(status, status)
+        case_num = db.get_case_number(case_id)
         keyboard_builder.append([InlineKeyboardButton(
-            text=f"{icon} №{case_id} — {name}",
+            text=f"{icon} №{case_num} — {name}",
             callback_data=f"case_detail_{case_id}"
         )])
     
@@ -146,7 +147,8 @@ async def show_case_detail(callback: CallbackQuery):
     
     status_names = {'pending': '🟡 Ожидание', 'started': '🔵 Начато', 'in_progress': '🔵 Допрос', 'manual_mode': '🛑 Перехват', 'done': '✅ Готово', 'delivered': '✅ Доставлено', 'cancelled': '❌ Отменено'}
     
-    msg = f"📁 **Дело №{case_id}**\n🎯 {display_name} | 🎉 {holiday}\n🎭 {persona}\nСтатус: {status_names.get(status, status)}\n"
+    case_num = db.get_case_number(case_id)
+    msg = f"📁 **Дело №{case_num}**\n🎯 {display_name} | 🎉 {holiday}\n🎭 {persona}\nСтатус: {status_names.get(status, status)}\n"
     
     if status in ['done', 'delivered'] and report:
         safe_report = report.replace("**", "").replace("_", "")
@@ -338,7 +340,8 @@ async def remind_back(callback: CallbackQuery):
     holiday, persona, status, report = case[3], case[5], case[7], case[8]
     
     status_names = {'pending': '🟡 Ожидание', 'started': '🔵 Начато', 'in_progress': '🔵 Допрос', 'manual_mode': '🛑 Перехват', 'done': '✅ Готово', 'delivered': '✅ Доставлено', 'cancelled': '❌ Отменено'}
-    msg = f"📁 **Дело №{case_id}**\n🎯 {display_name} | 🎉 {holiday}\n🎭 {persona}\nСтатус: {status_names.get(status, status)}\n"
+    case_num = db.get_case_number(case_id)
+    msg = f"📁 **Дело №{case_num}**\n🎯 {display_name} | 🎉 {holiday}\n🎭 {persona}\nСтатус: {status_names.get(status, status)}\n"
     
     if status in ['done', 'delivered'] and report:
         safe_report = report.replace("**", "").replace("_", "")
@@ -461,8 +464,9 @@ async def delete_case_confirm(callback: CallbackQuery):
         [InlineKeyboardButton(text="🗑 Да, удалить", callback_data=f"delete_case_{case_id}"),
          InlineKeyboardButton(text="⬅️ Нет", callback_data=f"case_detail_{case_id}")]
     ])
+    case_num = db.get_case_number(case_id)
     await callback.message.edit_text(
-        f"⚠️ Удалить дело №{case_id} на **{display_name}**?\n\n"
+        f"⚠️ Удалить дело №{case_num} на **{display_name}**?\n\n"
         "Это удалит историю чата, подарки и напоминания.",
         reply_markup=kb, parse_mode="Markdown"
     )
@@ -480,8 +484,9 @@ async def delete_case(callback: CallbackQuery):
     target = case[2]
     await db.delete_case(case_id)
     
+    case_num = db.get_case_number(case_id)
     await callback.message.edit_text(
-        f"✅ Дело №{case_id} удалено.",
+        f"✅ Дело №{case_num} удалено.",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🔙 К досье", callback_data=f"dossier_{target}")]
         ])

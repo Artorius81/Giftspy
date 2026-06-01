@@ -112,7 +112,7 @@ export default function Dossier() {
                           </div>
                           <div className="card__info">
                             <div className="card__name" style={{ fontSize: 14 }}>
-                              Дело №{c.id}
+                              Дело №{c.case_number || c.id}
                               {c.persona && <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 400, marginLeft: 6 }}>· {c.persona}</span>}
                             </div>
                             <div className="card__sub" style={{ fontSize: 12 }}>
