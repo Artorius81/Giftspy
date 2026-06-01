@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api'
-import { showAlert } from '../utils/popup'
+import { showAlert, showConfirm } from '../utils/popup'
 import detectiveImg from '../assets/detective.png'
 
 const SKILL_PRESETS = [
@@ -184,6 +184,72 @@ export default function DetectiveCreate() {
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style)
     } catch { }
+  }
+
+  const [surpriseLoading, setSurpriseLoading] = useState(false)
+
+  const handleSurpriseMe = async () => {
+    triggerHaptic('medium')
+    setSurpriseLoading(true)
+    try {
+      const data = await api.getSurpriseDetective()
+      
+      // Fill the basic text fields
+      setName(data.name || '')
+      setDescription(data.description || '')
+      setAiDescription(data.ai_description || '')
+      setSpecialty(data.specialty || 'Секретное расследование 🕵️‍♂️')
+      setEmojis(data.emojis || '🕵️‍♂️, 🎁, ✨')
+      setOpeningPhrase(data.opening_phrase || '')
+      
+      // Handle skills configuration
+      if (data.skills && data.skills.length > 0) {
+        const newSelected = {}
+        const newValues = { ...skillValues }
+        const newCustom = []
+        
+        data.skills.forEach((sk, idx) => {
+          const customId = `custom_surprise_${Date.now()}_${idx}`
+          newCustom.push({
+            id: customId,
+            label: sk.label,
+            val: sk.val || 90,
+            color: sk.color || '#a78bfa'
+          })
+          newSelected[customId] = true
+          newValues[customId] = sk.val || 90
+        })
+        
+        setCustomSkills(newCustom)
+        setSelectedSkills(newSelected)
+        setSkillValues(newValues)
+      }
+      
+      // Auto-trigger avatar generation using the generated prompt
+      if (data.avatar_prompt) {
+        setAiPrompt(data.avatar_prompt)
+        setAvatarType('ai')
+        
+        await showAlert('✨ Личность детектива придумана! Теперь запускаем генерацию его ИИ-аватара...');
+        
+        setGenerating(true)
+        try {
+          const promptText = `A premium 3D isometric stylized character avatar of a detective. ${data.avatar_prompt.trim()}. Game profile icon, dark atmospheric cyberpunk/noir background, highly detailed rendering.`
+          const avatarResult = await api.generateAvatar(promptText, selectedGenerator)
+          setPhotoUrl(avatarResult.photo_url)
+          setIsAvatarSet(true)
+        } catch (avatarErr) {
+          console.error("Avatar generation failed:", avatarErr)
+        }
+        setGenerating(false)
+      }
+      
+      await showAlert('🎉 Уникальный детектив полностью готов! Пройдите по шагам, чтобы оценить его характер и настройки.')
+      
+    } catch (err) {
+      await showAlert('Ошибка при создании детектива: ' + err.message)
+    }
+    setSurpriseLoading(false)
   }
 
   // Handle skill preset toggling
@@ -559,7 +625,31 @@ export default function DetectiveCreate() {
           <div className="fade-in-step" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="card no-active-scale" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="input-group">
-                <label style={{ color: 'var(--accent)', fontWeight: 700 }}>🕵️‍♂️ Имя детектива</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ color: 'var(--accent)', fontWeight: 700, margin: 0 }}>🕵️‍♂️ Имя детектива</label>
+                  <button
+                    type="button"
+                    onClick={handleSurpriseMe}
+                    disabled={surpriseLoading}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(244, 114, 182, 0.15) 100%)',
+                      border: '1px solid rgba(167, 139, 250, 0.3)',
+                      color: 'var(--text)',
+                      borderRadius: '16px',
+                      padding: '6px 14px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(167, 139, 250, 0.1)'
+                    }}
+                  >
+                    {surpriseLoading ? '⏳ Секреты...' : '✨ Удиви меня'}
+                  </button>
+                </div>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                   <input
                     className="input"

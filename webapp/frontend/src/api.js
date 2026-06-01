@@ -117,6 +117,9 @@ const api = {
   createCase: (data) => request('/api/cases', {
     method: 'POST', body: JSON.stringify(data)
   }),
+  createTestCase: (data) => request('/api/cases/test-self', {
+    method: 'POST', body: JSON.stringify(data)
+  }),
   cancelCase: (id) => request(`/api/cases/${id}/cancel`, { method: 'POST' }),
   deleteCase: (id) => request(`/api/cases/${id}`, { method: 'DELETE' }),
 
@@ -124,6 +127,7 @@ const api = {
   getPersonas: () => request('/api/personas'),
   getPersona: (id) => request(`/api/personas/${id}`),
   getPublicPersonas: () => request('/api/personas/public'),
+  getSurpriseDetective: () => request('/api/personas/surprise-me', { method: 'POST' }),
   createPersona: (data) => request('/api/personas', {
     method: 'POST', body: JSON.stringify(data)
   }),

@@ -167,44 +167,73 @@ async def _process_target_input(case, user_message, event):
                 return
 
             if "[ДЕЛО ЗАКРЫТО]" in ai_text:
-                clean_text = ai_text.replace("[ДЕЛО ЗАКРЫТО]", "").strip()
-                await event.respond(clean_text, parse_mode="Markdown")
-                await db.save_chat_message(case_id, 'ai', clean_text)
-
-                logging.info("📝 Формирую отчет...")
+                logging.info("📝 Проверка возможности закрытия дела №%s...", case_id)
                 report_text = await ai_service.generate_final_report(chat_session)
+                gifts = await ai_service.extract_gifts_with_ai(report_text) if report_text else []
 
-                if report_text:
-                    gifts = await ai_service.extract_gifts_with_ai(report_text)
-                    if gifts:
-                        saved_target = await db.find_target_by_identifier(customer_id, target)
-                        if not saved_target:
-                            target_id = await db.add_target(customer_id, target)
-                        else:
-                            target_id = saved_target[0]
+                # Проверяем, есть ли явный отказ в последнем сообщении цели
+                refusal_keywords = ["отстань", "не пиши", "хватит", "отвали", "блок", "спам", "прекрати", "уйди", "задолб", "надоел", "stop"]
+                is_refusal = any(kw in user_message.lower() for kw in refusal_keywords)
+
+                # Самолечение: если подарков нет и это не отказ — заставляем продолжить расспросы!
+                if len(gifts) == 0 and not is_refusal:
+                    logging.warning("⚠️ Детектив попытался закрыть дело №%s без подарков и без отказа. Блокируем закрытие!", case_id)
+                    from google.genai import types
+                    chat_session["messages"].append(types.Content(
+                        role="user", 
+                        parts=[types.Part.from_text(text="Системное сообщение: Ты не выведал ни одной конкретной идеи подарка, и собеседник не требовал прекратить диалог. Ты обязан продолжить расспросы! Задай другой наводящий вопрос о хобби, увлечениях или быте в стиле своего персонажа. Ни в коем случае не пиши '[ДЕЛО ЗАКРЫТО]'.")]
+                    ))
+                    continued_text = await asyncio.to_thread(ai_service._call_gemini, chat_session)
+                    if continued_text:
+                        continued_text = ai_service.clean_message_brackets(continued_text)
+                        ai_text = continued_text.replace("[ДЕЛО ЗАКРЫТО]", "").strip()
+                    else:
+                        ai_text = "Интересно. Расскажи мне об этом поподробнее?"
+
+                # Повторно проверяем, закрываем ли дело
+                if "[ДЕЛО ЗАКРЫТО]" in ai_text or (len(gifts) > 0 or is_refusal):
+                    clean_text = ai_text.replace("[ДЕЛО ЗАКРЫТО]", "").strip()
+                    await event.respond(clean_text, parse_mode="Markdown")
+                    await db.save_chat_message(case_id, 'ai', clean_text)
+
+                    if report_text:
+                        if gifts:
+                            saved_target = await db.find_target_by_identifier(customer_id, target)
+                            if not saved_target:
+                                target_id = await db.add_target(customer_id, target)
+                            else:
+                                target_id = saved_target[0]
+                            
+                            for category, description in gifts:
+                                await db.add_to_wishlist(target_id, description, category=category, added_by='ai', case_id=case_id)
+                            logging.info(f"🎁 Добавлено {len(gifts)} подарков в вишлист")
                         
-                        for category, description in gifts:
-                            await db.add_to_wishlist(target_id, description, category=category, added_by='ai', case_id=case_id)
-                        logging.info(f"🎁 Добавлено {len(gifts)} подарков в вишлист")
+                        await db.update_case_status(case_id, 'done', report_text)
+                    else:
+                        await db.update_case_status(case_id, 'done', report_text or '')
                     
-                    await db.update_case_status(case_id, 'done', report_text)
+                    # Открепляем и удаляем spy-сообщение
+                    if spy_mode:
+                        spy_msg_id = await db.get_spy_message_id(case_id)
+                        if spy_msg_id:
+                            try:
+                                await bot.unpin_chat_message(chat_id=customer_id, message_id=spy_msg_id)
+                            except Exception:
+                                pass
+                            try:
+                                await bot.delete_message(chat_id=customer_id, message_id=spy_msg_id)
+                            except Exception:
+                                pass
+                        
+                    logging.info(f"✅ Дело №{case_id} успешно закрыто!")
                 else:
-                    await db.update_case_status(case_id, 'done', report_text or '')
-                
-                # Открепляем и удаляем spy-сообщение
-                if spy_mode:
-                    spy_msg_id = await db.get_spy_message_id(case_id)
-                    if spy_msg_id:
-                        try:
-                            await bot.unpin_chat_message(chat_id=customer_id, message_id=spy_msg_id)
-                        except Exception:
-                            pass
-                        try:
-                            await bot.delete_message(chat_id=customer_id, message_id=spy_msg_id)
-                        except Exception:
-                            pass
+                    # Отправляем продолжение диалога
+                    await event.respond(ai_text, parse_mode="Markdown")
+                    await db.save_chat_message(case_id, 'ai', ai_text)
                     
-                logging.info(f"✅ Дело №{case_id} успешно закрыто!")
+                    has_premium = await db.is_premium(customer_id)
+                    if spy_mode and has_premium:
+                        await update_spy_message(case_id, customer_id, display_name, case[5])
 
             else:
                 await event.respond(ai_text, parse_mode="Markdown")

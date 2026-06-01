@@ -103,6 +103,11 @@ class CaseCreate(BaseModel):
     ai_model: Optional[str] = "deepseek-v4"
 
 
+class TestCaseCreate(BaseModel):
+    persona: str
+    target_username: str
+
+
 class WishlistItemCreate(BaseModel):
     target_id: int
     description: str
@@ -116,6 +121,7 @@ class WishlistItemCreate(BaseModel):
 async def get_profile(user_id: int = Depends(get_current_user)):
     balance, premium_until, successful, active, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
     notif = await db.get_user_notifications(user_id)
+    has_tested_detective = await db.has_user_tested_detective(user_id)
     
     # Compute is_premium based on date check
     is_premium = False
@@ -142,6 +148,7 @@ async def get_profile(user_id: int = Depends(get_current_user)):
         "spy_mode": spy_mode,
         "model_selector_enabled": model_selector_enabled,
         "custom_detectives_enabled": custom_detectives_enabled,
+        "has_tested_detective": has_tested_detective,
         "birthday": birthday,
         "description": description,
         "photo": photo,
@@ -932,6 +939,62 @@ async def yookassa_webhook(request: Request):
         logging.error(f"Failed to notify user {user_id}: {e}")
 
     return {"ok": True}
+
+
+@app.post("/api/cases/test-self")
+async def create_test_self_case(data: TestCaseCreate, user_id: int = Depends(get_current_user)):
+    # Check if they already used it
+    has_tested = await db.has_user_tested_detective(user_id)
+    if has_tested:
+        raise HTTPException(status_code=400, detail="Вы уже воспользовались бесплатным тестом.")
+    
+    target_username = data.target_username.strip()
+    if not target_username:
+        raise HTTPException(status_code=400, detail="Имя пользователя цели не может быть пустым.")
+        
+    if not target_username.startswith('@'):
+        target_username = '@' + target_username
+        
+    # Check no active case for this target
+    existing = await db.get_active_case_by_target(target_username)
+    if existing:
+        raise HTTPException(status_code=409, detail="У вас уже есть активное расследование по этой цели.")
+        
+    # Create the case
+    case_id = await db.add_case(
+        customer_id=user_id,
+        target=target_username,
+        holiday="Тестовое расследование 🧪",
+        context="Вы тестируете детектива на себе. Попробуйте пообщаться с ним, поотвечать на вопросы или отказаться от каких-то предложений. Убедитесь, что детектив доведёт дело до 3 конкретных идей подарков!",
+        persona=data.persona,
+        budget="Любой",
+        ai_model="deepseek-v4"
+    )
+    
+    # Auto-save target if not exists
+    saved = await db.find_target_by_identifier(user_id, target_username)
+    if not saved:
+        await db.add_target(user_id, target_username)
+        
+    # Mark as tested
+    await db.set_user_tested_detective(user_id, True)
+    
+    return {"id": case_id}
+
+
+@app.post("/api/personas/surprise-me")
+async def surprise_me_persona(user_id: int = Depends(get_current_user)):
+    if not await db.is_premium(user_id):
+        raise HTTPException(status_code=403, detail="Требуется Премиум подписка")
+        
+    try:
+        from services.ai_detective import AIDetectiveService
+        ai_service = AIDetectiveService()
+        result = await ai_service.generate_surprise_detective()
+        return result
+    except Exception as e:
+        logging.error(f"Failed to generate surprise detective: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации персонажа: {str(e)}")
 
 
 # ================= STARTUP =================

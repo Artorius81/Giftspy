@@ -954,12 +954,15 @@ export default function NewCase() {
           maxWidth: '320px',
           background: 'transparent',
           padding: '8px 0',
-          marginTop: '4px'
+          marginTop: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
         }}>
           <button
             className="btn btn--primary"
             onClick={async () => {
-              const activePersona = personas[activePersonaIdx];
+              const activePersona = displayPersonas[activePersonaIdx];
               const isLocked = activePersona && (activePersona.id ? activePersona.id !== 1 : activePersonaIdx !== 0) && !profile?.is_premium;
               if (isLocked) {
                 const confirmUnlock = await showConfirm(
@@ -984,6 +987,29 @@ export default function NewCase() {
           >
             🔍 Начать расследование
           </button>
+
+          {profile && !profile.has_tested_detective && displayPersonas[activePersonaIdx] && !displayPersonas[activePersonaIdx].isVirtual && (
+            <button
+              type="button"
+              className="btn"
+              onClick={handleTestSelf}
+              disabled={submitting}
+              style={{
+                width: '100%',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, rgba(108, 92, 231, 0.12) 100%)',
+                border: '1px solid rgba(108, 92, 231, 0.3)',
+                color: 'var(--accent)',
+                fontWeight: 700
+              }}
+            >
+              🧪 Протестировать на себе (Бесплатно)
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1020,6 +1046,47 @@ export default function NewCase() {
       console.error(e)
     }
   }
+
+  const handleTestSelf = async () => {
+    const activePersona = displayPersonas[activePersonaIdx];
+    if (!activePersona || activePersona.isVirtual) return;
+
+    triggerHaptic('medium');
+
+    let username = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || '';
+    if (username) {
+      if (!username.startsWith('@')) username = '@' + username;
+      const confirmTest = await showConfirm(
+        `🕵️‍♂️ Вы можете протестировать детектива на себе абсолютно бесплатно!\n\nДетектив ${activePersona.name} начнет секретное расследование в чате с вашим Telegram-аккаунтом ${username}.\n\nХотите запустить тест?`
+      );
+      if (!confirmTest) return;
+    } else {
+      const entered = window.prompt(
+        "Введите ваш публичный Telegram-юзернейм (например, @username), чтобы детектив мог написать вам в личные сообщения:"
+      );
+      if (!entered || !entered.trim()) return;
+      username = entered.trim();
+      if (!username.startsWith('@')) username = '@' + username;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.createTestCase({
+        persona: activePersona.name,
+        target_username: username
+      });
+      
+      await showAlert(`🎉 Тестовое расследование успешно запущено!\n\nДетектив ${activePersona.name} сейчас выйдет на связь в вашем Telegram. Зайдите в чат с ним и пообщайтесь!`);
+      
+      const updated = await api.getCases();
+      mutateCases(updated);
+      
+      navigate('/', { replace: true });
+    } catch (err) {
+      await showAlert(err.message);
+    }
+    setSubmitting(false);
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true)

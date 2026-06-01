@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     notify_reports BOOLEAN DEFAULT TRUE,
     model_selector_enabled BOOLEAN DEFAULT FALSE,
     custom_detectives_enabled BOOLEAN DEFAULT FALSE,
+    has_tested_detective BOOLEAN DEFAULT FALSE,
     registered_at TIMESTAMPTZ DEFAULT NOW()
 );
 

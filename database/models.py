@@ -21,6 +21,7 @@ class User(Base):
     photo_file_id = Column(Text, default=None)
     model_selector_enabled = Column(Boolean, default=False)
     custom_detectives_enabled = Column(Boolean, default=False)
+    has_tested_detective = Column(Boolean, default=False)
     registered_at = Column(DateTime, default=datetime.utcnow)
 
 class Case(Base):

@@ -1271,3 +1271,30 @@ async def upload_detective_avatar(user_id: int, file_bytes: bytes) -> str:
     import base64
     base64_str = base64.b64encode(file_bytes).decode('utf-8')
     return f"data:image/jpeg;base64,{base64_str}"
+
+
+async def has_user_tested_detective(user_id: int) -> bool:
+    """Checks if user already used their free test on themselves."""
+    await _ensure_user(user_id)
+    result = await asyncio.to_thread(
+        lambda: _client.table('users')
+            .select('has_tested_detective')
+            .eq('id', user_id)
+            .execute()
+    )
+    if result.data and 'has_tested_detective' in result.data[0]:
+        val = result.data[0]['has_tested_detective']
+        return bool(val) if val is not None else False
+    return False
+
+
+async def set_user_tested_detective(user_id: int, value: bool = True):
+    """Sets the has_tested_detective flag for the user."""
+    await _ensure_user(user_id)
+    await asyncio.to_thread(
+        lambda: _client.table('users')
+            .update({'has_tested_detective': value})
+            .eq('id', user_id)
+            .execute()
+    )
+

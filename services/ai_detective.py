@@ -41,6 +41,7 @@ SYSTEM_PROMPT_TEMPLATE = """
 5. ДОПРОС: Задавай по ОДНОМУ вопросу за раз. Жди ответа. Никогда не задавай 2+ вопросов в одном сообщении.
 6. НАСТОЙЧИВОСТЬ: Твоя задача — получить идеи подарков. Если собеседник отвергает какую-то идею (например: "мне не нужно ничего для гитары"), это НЕ отказ от общения. Обязательно смени тему и спроси про другие интересы, хобби, нужды или быт. ПРОДОЛЖАЙ задавать наводящие вопросы!
 7. ЗАКОНЧИТЬ ДЕЛО: ТОЛЬКО когда выведаешь КАК МИНИМУМ 3 реальные и конкретные идеи для подарка, попрощайся кратко и ДОБАВЬ тег [ДЕЛО ЗАКРЫТО] в конце. КАТЕГОРИЧЕСКИ ЗАПРЕЩАЕТСЯ закрывать дело, если ты не узнал ни одной идеи подарка!
+⚠️ ВАЖНО: Ответы цели вроде "мне ничего не нужно", "я не знаю", "у меня все есть" — это НЕ повод закрывать дело! Это стандартное скромное поведение. Ты обязан продолжить расследование, сменить тему (например: "Ну а как насчет твоих увлечений? Чем занимаешься в свободное время?") и найти зацепки. Закрывать дело при таких ответах КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО! Если диалог длится меньше 6 сообщений с каждой стороны, ты точно не успел собрать достаточно информации, продолжай диалог и задавай вопросы!
 8. ЭМОДЗИ: {emojis} — уместно, не в каждом сообщении, в стиле персонажа.
 9. ФОКУС: Говоришь ТОЛЬКО о подарках и том, что может стать идеей. На любые другие темы — меняй тему в стиле персонажа.
 10. ПОЛНЫЙ ОТКАЗ: Завершай расследование (с тегом [ДЕЛО ЗАКРЫТО]) без идей подарков ТОЛЬКО если собеседник прямо, наотрез и/или грубо требует прекратить диалог вообще ("отстань", "не пиши мне больше", "я не буду отвечать"). Отказ от конкретной вещи — это повод искать дальше, а не сдаваться!
@@ -66,9 +67,9 @@ REPORT_PROMPT = """Системное сообщение: Диалог заве�
 [2-3 емких официальных предложения о характере, образе жизни, привычках и увлечениях цели, составленные на основе беседы, строго в стиле твоего персонажа].
 
 🎁 Найденные идеи подарков:
-[Перечисли все конкретные идеи подарков, которые удалось выяснить в ходе беседы, с четкими примерами того, что именно можно подарить цели. Формулируй их как понятные развернутые варианты с дефисом, каждый с новой строки.
+[Перечисли ТОЛЬКО конкретные идеи подарков, которые удалось выяснить в ходе беседы, БЕЗ лишних слов, комментариев, объяснений, скобок и рассуждений. Каждая идея подарка должна состоять строго из краткого названия самой вещи. Формулируй кратко с дефисом, каждый с новой строки.
 Пример:
-- Механическая клавиатура (например, беспроводная Keychron K2 с тихими переключателями) — отлично подойдёт для его вечерней работы.]
+- Механическая беспроводная клавиатура Keychron K2]
 
 🕵️‍♂️ Вердикт детектива:
 [Финальное заключение детектива по итогам дела, строго в стиле твоего персонажа].
@@ -256,6 +257,31 @@ class AIDetectiveService:
              logging.error(f"Error generating final report: {e}")
              return None
 
+    def clean_gift_description(self, desc: str) -> str:
+        """Очищает описание подарка от дополнительных ИИ-комментариев и объяснений, оставляя только саму идею."""
+        if not desc:
+            return desc
+        
+        desc = desc.strip()
+        import re
+        # Удаляем поясняющий текст в скобках на конце
+        desc = re.sub(r'\s*\([^)]*\)\s*$', '', desc).strip()
+        desc = re.sub(r'\s*\[[^\]]*\]\s*$', '', desc).strip()
+        
+        # Разрезаем по разделителям-тире (с пробелами)
+        for separator in (' — ', ' – ', ' -- ', ' - '):
+            if separator in desc:
+                desc = desc.split(separator)[0].strip()
+                
+        # Отсекаем сложные придаточные предложения
+        for phrase in (', чтобы ', ', который ', ', например', ', отлично подойдет'):
+            if phrase in desc:
+                desc = desc.split(phrase)[0].strip()
+                
+        # Убираем знаки препинания на конце
+        desc = desc.rstrip('.!?,; ')
+        return desc
+
     async def extract_gifts_with_ai(self, report_text: str) -> list:
         """Извлекает и категоризирует подарки из отчета с помощью отдельного LLM-запроса с каскадом резервных вариантов."""
         if not report_text:
@@ -264,6 +290,11 @@ class AIDetectiveService:
         prompt = f"""
 Проанализируй следующий отчёт сыщика и извлеки из него все предложенные идеи подарков (из блока 'Найденные идеи подарков').
 Для каждой идеи определи наиболее подходящую категорию.
+
+⚠️ ВАЖНО: Описание подарка должно быть максимально лаконичным, содержать ТОЛЬКО саму идею (название вещи/услуги), без дополнительных комментариев, объяснений, скобок, восторженных отзывов или рассуждений о том, почему это хороший выбор.
+Например, вместо "Механическая клавиатура (например, беспроводная Keychron K2 с тихими переключателями) — отлично подойдёт для его вечерней работы" должно быть "Механическая беспроводная клавиатура Keychron K2".
+Вместо "Абонемент в бассейн, чтобы он мог расслабиться после работы" должно быть "Абонемент в бассейн".
+
 Ответь СТРОГО в формате JSON: списка списков [['Категория', 'Описание подарка'], ['Категория', 'Описание подарка']].
 Никакого дополнительного текста, только валидный JSON.
 
@@ -329,7 +360,11 @@ class AIDetectiveService:
                 gifts = json.loads(text)
                 if isinstance(gifts, list) and all(isinstance(g, list) and len(g) >= 2 for g in gifts):
                     logging.info(f"Successfully extracted {len(gifts)} gifts via LLM")
-                    return gifts
+                    # Clean up descriptions programmatically as post-processing
+                    cleaned_gifts = []
+                    for cat, desc in gifts:
+                        cleaned_gifts.append([cat.strip(), self.clean_gift_description(desc)])
+                    return cleaned_gifts
             except Exception as e:
                 logging.error(f"Failed to parse LLM response for gifts: {e}. Response was: {response_text}")
 
@@ -377,8 +412,9 @@ class AIDetectiveService:
                     # Очищаем скобки и технические символы
                     gift_desc = re.sub(r'\]$', '', gift_desc).strip()
                     if len(gift_desc) > 3:
-                        category = self.categorize_gift_by_keywords(gift_desc)
-                        gifts.append([category, gift_desc])
+                        cleaned_desc = self.clean_gift_description(gift_desc)
+                        category = self.categorize_gift_by_keywords(cleaned_desc)
+                        gifts.append([category, cleaned_desc])
         return gifts
 
     def categorize_gift_by_keywords(self, desc: str) -> str:
@@ -537,4 +573,83 @@ class AIDetectiveService:
         except Exception as e:
             logging.error(f"GPT Image generation failed: {e}")
             raise Exception(f"Ошибка ИИ-генерации аватара: {str(e)}")
+
+    async def generate_surprise_detective(self) -> dict:
+        """Генерирует случайного креативного детектива с использованием ИИ."""
+        prompt = """
+Сгенерируй совершенно случайного, невероятно креативного, уникального и харизматичного персонажа-детектива для сервиса Giftspy.
+Персонаж может быть кем угодно: от забавных животных (кот-детектив, филин-инспектор) до фантастических существ (робот с багами, кибер-ищейка, добрый призрак) или эксцентричных людей (викторианский джентльмен, сумасшедший ученый, пират).
+Он должен быть привлекательным и вызывать улыбку или интерес у пользователя.
+
+Верни СТРОГО JSON-объект со следующими полями без какого-либо дополнительного текста или markdown-разметки (не используй ```json ... ```):
+{
+  "name": "Имя детектива (до 32 символов)",
+  "description": "Краткое описание характера и стиля общения для карточки выбора (до 150 символов)",
+  "ai_description": "Подробная системная инструкция для ИИ о том, как вести себя, писать коротко (1-3 предложения), какой характер поддерживать. Не включай коронную фразу сюда.",
+  "specialty": "Уникальная специализация (до 40 символов, например: 'Кошачий гипноз 🐾')",
+  "emojis": "Список из 3-5 любимых эмодзи через запятую (например: '🐱, 🕵️‍♂️, 🐟, 🎁, ✨')",
+  "opening_phrase": "Коронная приветственная фраза, с которой детектив начнет диалог с целью (например: 'Мур-р... Здравствуйте! На связи Инспектор Мурлок...')",
+  "skills": [
+    {
+      "label": "Название характеристики 1 с эмодзи (например, 'Дедукция 🧠')",
+      "val": число от 80 до 100,
+      "color": "HEX-код цвета (например, '#6c5ce7')"
+    },
+    {
+      "label": "Название характеристики 2 с эмодзи",
+      "val": число от 80 до 100,
+      "color": "HEX-код цвета"
+    },
+    {
+      "label": "Название характеристики 3 с эмодзи",
+      "val": число от 80 до 100,
+      "color": "HEX-код цвета"
+    }
+  ],
+  "avatar_prompt": "Подробное описание внешности персонажа на английском языке для генератора изображений. Опиши его как: 'A premium 3D isometric stylized character avatar of... Game profile icon, dark atmospheric background, highly detailed rendering'"
+}
+
+Отвечай строго на русском языке (кроме поля avatar_prompt). Все текстовые поля должны быть заполнены качественно и с душой.
+"""
+        response_text = None
+        try:
+            response = await asyncio.to_thread(
+                self.openai_client.chat.completions.create,
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=1.0  # High temperature for maximum creativity!
+            )
+            response_text = response.choices[0].message.content
+        except Exception as e:
+            logging.warning(f"Surprise detective generation failed with gpt-4o-mini: {e}. Trying Gemini...")
+
+        if not response_text:
+            try:
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+                    config=types.GenerateContentConfig(temperature=1.0)
+                )
+                response_text = response.text
+            except Exception as e:
+                logging.error(f"Failed all calls for surprise detective: {e}")
+                raise e
+
+        if response_text:
+            try:
+                import json
+                import re
+                text = response_text.strip()
+                match = re.search(r'\{.*\}', text, re.DOTALL)
+                if match:
+                    text = match.group(0)
+                else:
+                    text = text.replace('```json', '').replace('```', '').strip()
+                data = json.loads(text)
+                return data
+            except Exception as e:
+                logging.error(f"Failed to parse surprise detective JSON: {e}. Response was: {response_text}")
+                raise e
+        raise Exception("Failed to generate creative detective persona")
 
