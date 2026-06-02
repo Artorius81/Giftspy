@@ -63,3 +63,23 @@ async def start_case_from_help(callback: CallbackQuery):
         parse_mode="Markdown"
     )
     await callback.answer()
+
+
+@router.message(F.text == "Перейти в приложение")
+async def open_webapp_handler(message: Message):
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    import config
+    
+    webapp_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть приложение 📱", web_app=WebAppInfo(url=config.WEBAPP_URL))]
+        ]
+    )
+    
+    await message.answer(
+        "Нажмите кнопку ниже, чтобы открыть **Mini App** Giftspy!\n\n"
+        "Там вы сможете запускать новые расследования, выбирать уникальных детективов, "
+        "управлять шпионским режимом и просматривать вишлисты ваших целей. 🚀",
+        reply_markup=webapp_kb,
+        parse_mode="Markdown"
+    )

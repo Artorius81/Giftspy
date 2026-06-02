@@ -9,7 +9,7 @@ import config
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Профиль"), KeyboardButton(text="Как это работает")],
-        [KeyboardButton(text="Перейти в приложение", web_app=WebAppInfo(url=config.WEBAPP_URL))]
+        [KeyboardButton(text="Перейти в приложение")]
     ],
     resize_keyboard=True
 )
