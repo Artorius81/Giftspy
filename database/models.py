@@ -37,7 +37,7 @@ class Case(Base):
     status = Column(Text, default='pending')
     report = Column(Text)
     spy_message_id = Column(BigInteger, default=None)
-    ai_model = Column(Text, default='deepseek-v4')
+    ai_model = Column(Text, default='gemini-3.5-flash')
     case_number = Column(Text, default=None)
     created_at = Column(DateTime, default=datetime.utcnow)
     

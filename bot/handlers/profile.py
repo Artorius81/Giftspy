@@ -7,49 +7,23 @@ from database import db
 
 router = Router()
 
-@router.message(F.text == "🏠 Мой профиль")
+@router.message(F.text.in_({"Профиль", "🏠 Мой профиль"}))
 async def show_profile(message: Message):
-    user_id = message.from_user.id
-    balance, premium_until, successful_cases, active_cases, nickname, spy_mode, birthday, description, photo = await db.get_user_profile(user_id)
-    display_name = nickname or message.from_user.first_name or "Агент"
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    import config
     
-    premium_text = ""
-    if premium_until:
-        from datetime import datetime
-        if datetime.fromisoformat(premium_until) > datetime.utcnow():
-            premium_text = "\n👑 **Статус:** Премиум"
+    webapp_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть приложение 📱", web_app=WebAppInfo(url=config.WEBAPP_URL))]
+        ]
+    )
     
-    parts = [
-        f"🕵️‍♂️ **{display_name}**",
-        f"ID: `{user_id}`{premium_text}",
-        f"━━━━━━━━━━━━━",
-        f"⭐️ Баланс: {balance} расследований",
-        f"✅ Закрыто дел: {successful_cases}",
-        f"🔵 В работе: {active_cases}",
-    ]
-    if birthday:
-        parts.append(f"🎂 ДР: {birthday}")
-    if description:
-        parts.append(f"📝 О себе: {description}")
-    
-    text = "\n".join(parts)
-    
-    if photo and photo != "None":
-        try:
-            if photo.startswith("http"):
-                from aiogram.types import URLInputFile
-                photo_obj = URLInputFile(photo)
-            else:
-                photo_obj = photo
-            await message.answer_photo(photo=photo_obj, caption=text, reply_markup=profile_kb, parse_mode="Markdown")
-            return
-        except Exception as e:
-            import logging
-            logging.warning(f"Failed to send profile photo: {e}")
-            # Fallback to text
-            pass
-
-    await message.answer(text, reply_markup=profile_kb, parse_mode="Markdown")
+    await message.answer(
+        "Для просмотра и настройки вашего профиля, управления балансом и активации премиум-функций, "
+        "пожалуйста, используйте наше **Mini App**. В приложении доступно намного больше интересного функционала! 🚀",
+        reply_markup=webapp_kb,
+        parse_mode="Markdown"
+    )
 
 
 # ================= ИЗМЕНИТЬ НИКНЕЙМ =================

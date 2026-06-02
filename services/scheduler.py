@@ -151,7 +151,7 @@ async def background_tasks_worker(bot: Bot, client: TelegramClient):
                         await db.update_case_status(case_id, 'started')
 
                         # Генерируем два сообщения "холодного старта"
-                        ai_model = _rest[0] if _rest else 'deepseek-v4'
+                        ai_model = _rest[0] if _rest else 'gemini-3.5-flash'
                         chat_session = await ai_service.create_new_chat(holiday, context, persona, budget, ai_model=ai_model, user_id=customer_id)
                         first_msgs = await ai_service.generate_first_messages(chat_session)
 

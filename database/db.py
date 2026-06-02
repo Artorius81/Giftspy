@@ -51,7 +51,7 @@ def get_case_number(case_id: int) -> str:
 
 # ================= CASES =================
 
-async def add_case(customer_id, target, holiday, context, persona, budget, ai_model='deepseek-v4'):
+async def add_case(customer_id, target, holiday, context, persona, budget, ai_model='gemini-3.5-flash'):
     result = await asyncio.to_thread(
         lambda: _client.table('cases').insert({
             'customer_id': customer_id,
@@ -85,7 +85,7 @@ async def get_pending_cases():
             .execute()
     )
     return [(r['id'], r['customer_id'], r['target'], r['holiday'], r['context'],
-             r['persona'], r['budget'], r['status'], r['report'], r.get('ai_model', 'deepseek-v4')) for r in result.data]
+             r['persona'], r['budget'], r['status'], r['report'], r.get('ai_model', 'gemini-3.5-flash')) for r in result.data]
 
 
 async def get_case_ai_model(case_id):
@@ -96,8 +96,8 @@ async def get_case_ai_model(case_id):
             .execute()
     )
     if result.data and 'ai_model' in result.data[0]:
-        return result.data[0]['ai_model'] or 'deepseek-v4'
-    return 'deepseek-v4'
+        return result.data[0]['ai_model'] or 'gemini-3.5-flash'
+    return 'gemini-3.5-flash'
 
 
 async def get_started_cases():

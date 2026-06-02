@@ -1,15 +1,15 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database import db
+import config
 
 # ================= БАЗА ДЕТЕКТИВОВ (ПЕРЕНЕСЕНО В БД) =================
 
 
 main_menu = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="🔍 Начать новое дело")],
-        [KeyboardButton(text="📁 Картотека досье"), KeyboardButton(text="🏠 Мой профиль")],
-        [KeyboardButton(text="👥 Мои цели"), KeyboardButton(text="❓ Как это работает?")]
+        [KeyboardButton(text="Профиль"), KeyboardButton(text="Как это работает")],
+        [KeyboardButton(text="Перейти в приложение", web_app=WebAppInfo(url=config.WEBAPP_URL))]
     ],
     resize_keyboard=True
 )

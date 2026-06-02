@@ -26,42 +26,27 @@ async def cmd_start(message: Message):
         
     await message.answer(welcome_text, reply_markup=main_menu, parse_mode="Markdown")
 
-@router.message(F.text == "❓ Как это работает?")
+@router.message(F.text.in_({"Как это работает", "❓ Как это работает?"}))
 async def help_info(message: Message):
-    help_text = (
-        "🕵️‍♂️ **Как работает Giftspy?**\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        
-        "1️⃣ **Заведите дело**\n"
-        "Укажите цель (юзернейм или телефон), повод для подарка "
-        "и пару зацепок об увлечениях человека.\n\n"
-        
-        "2️⃣ **Выберите детектива** 🎭\n"
-        "У нас 8 уникальных персонажей — от галантного "
-        "сэра до межгалактического инспектора. Каждый со своим стилем общения!\n\n"
-        
-        "3️⃣ **Детектив выходит на связь** 💬\n"
-        "Он напишет вашей цели, представится и за 3-4 вопроса "
-        "аккуратно выведает, о чём мечтает человек.\n\n"
-        
-        "4️⃣ **Получите досье** 📋\n"
-        "Готовый отчёт с конкретными идеями подарков, "
-        "разбитыми по категориям. Всё сохраняется в вишлисте!\n\n"
-        
-        "🔒 **Анонимность** — цель не узнает, кто заказчик\n"
-        "👁 **Шпионский режим** — следите за диалогом в реальном времени\n"
-        "🕹 **Перехват** — можете сами продолжить разговор\n\n"
-        
-        "━━━━━━━━━━━━━━━━━━\n"
-        "✨ _Мы берем на себя всю неловкость, а вы — лучший даритель!_"
-    )
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    import config
     
-    kb = InlineKeyboardMarkup(
+    webapp_kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🔍 Начать расследование", callback_data="start_new_case")]
+            [InlineKeyboardButton(text="Открыть приложение 📱", web_app=WebAppInfo(url=config.WEBAPP_URL))]
         ]
     )
-    await message.answer(help_text, parse_mode="Markdown", reply_markup=kb)
+    
+    await message.answer(
+        "🕵️‍♂️ **Как работает Giftspy?**\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "Наш детектив свяжется с вашей целью, анонимно и аккуратно выведает её тайные желания, "
+        "а затем составит для вас подробный отчёт с идеальными идеями для подарков!\n\n"
+        "Чтобы начать расследование, выбрать детектива, управлять шпионским режимом и получить досье, "
+        "пожалуйста, используйте наше **Mini App**. Там гораздо больше классного функционала и всё невероятно просто! 🚀",
+        reply_markup=webapp_kb,
+        parse_mode="Markdown"
+    )
 
 
 @router.callback_query(F.data == "start_new_case")

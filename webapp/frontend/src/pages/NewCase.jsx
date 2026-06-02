@@ -140,10 +140,10 @@ const BUDGET_OPTIONS = [
 const STEPS = ['detective', 'target', 'holiday', 'context', 'budget', 'confirm']
 
 const AI_MODELS = [
-  { id: 'deepseek-v4', name: 'DeepSeek V4', icon: '⚡️', desc: 'По умолчанию (Бесплатно). Быстрая и высокоинтеллектуальная базовая модель.' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'По умолчанию (Бесплатно). Быстрая и высокоинтеллектуальная базовая модель от Google.' },
+  { id: 'deepseek-v4', name: 'DeepSeek V4', icon: '🧠', desc: 'Высокоинтеллектуальная модель DeepSeek.' },
   { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', icon: '🚀', desc: 'Премиум DeepSeek. Максимальный интеллект для сложных расследований.' },
   { id: 'claude-4-6-opus', name: 'Claude 4.6 Opus', icon: '👑', desc: 'Премиум Anthropic. Безупречный детективный разум и глубокое понимание психологии.' },
-  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', icon: '⚡️', desc: 'Базовая лаконичная модель Google.' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: '🧠', desc: 'Флагман OpenAI. Превосходная логика, глубокий анализ и точность роли.' },
   { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', icon: '👑', desc: 'Премиум Anthropic. Мощный анализ эмоций и безупречный интеллект.' },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: '🚀', desc: 'Быстрый, экономичный ИИ от OpenAI.' },
@@ -295,7 +295,7 @@ export default function NewCase() {
     context: '',
     persona: localStorage.getItem('last_selected_persona') || '',
     budget: '',
-    ai_model: 'deepseek-v4',
+    ai_model: 'gemini-3.5-flash',
   })
 
   const [isTestCase, setIsTestCase] = useState(false)
@@ -1084,7 +1084,7 @@ export default function NewCase() {
 
   const handleSubmit = async () => {
     setSubmitting(true)
-    const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'deepseek-v4'
+    const activeModel = profile?.model_selector_enabled !== false ? form.ai_model : 'gemini-3.5-flash'
     try {
       if (isTestCase) {
         await api.createTestCase({
@@ -1114,7 +1114,7 @@ export default function NewCase() {
         context: '',
         persona: localStorage.getItem('last_selected_persona') || '',
         budget: '',
-        ai_model: 'deepseek-v4',
+        ai_model: 'gemini-3.5-flash',
       })
       setIsTestCase(false)
       setTargetDisplayName('')
@@ -1653,7 +1653,7 @@ export default function NewCase() {
               }} className="model-selector-horizontal">
                 {AI_MODELS.map(m => {
                   const isSelected = form.ai_model === m.id;
-                  const isLocked = m.id !== 'deepseek-v4' && !profile?.is_premium;
+                  const isLocked = m.id !== 'gemini-3.5-flash' && !profile?.is_premium;
                   return (
                     <div
                       key={m.id}

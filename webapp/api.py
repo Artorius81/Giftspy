@@ -100,7 +100,7 @@ class CaseCreate(BaseModel):
     context: str = "Нет данных"
     persona: str
     budget: str = "Не указан"
-    ai_model: Optional[str] = "deepseek-v4"
+    ai_model: Optional[str] = "gemini-3.5-flash"
 
 
 class TestCaseCreate(BaseModel):
@@ -109,7 +109,7 @@ class TestCaseCreate(BaseModel):
     holiday: Optional[str] = "Тестовое расследование 🧪"
     context: Optional[str] = None
     budget: Optional[str] = "Любой"
-    ai_model: Optional[str] = "deepseek-v4"
+    ai_model: Optional[str] = "gemini-3.5-flash"
 
 
 class WishlistItemCreate(BaseModel):
@@ -536,7 +536,7 @@ async def create_case(data: CaseCreate, user_id: int = Depends(get_current_user)
         raise HTTPException(status_code=409, detail="Active case already exists for this target")
     
     # Secure server-side check: only premium users can select custom models
-    selected_model = data.ai_model if has_premium else 'deepseek-v4'
+    selected_model = data.ai_model if has_premium else 'gemini-3.5-flash'
     
     if not has_premium:
         await db.deduct_balance(user_id)
@@ -1001,6 +1001,10 @@ async def create_test_self_case(data: TestCaseCreate, user_id: int = Depends(get
     if existing:
         raise HTTPException(status_code=409, detail="У вас уже есть активное расследование по этой цели.")
         
+    # Secure server-side check: only premium users can select custom models
+    has_premium = await db.is_premium(user_id)
+    selected_model = data.ai_model if has_premium else 'gemini-3.5-flash'
+
     # Create the case
     case_id = await db.add_case(
         customer_id=user_id,
@@ -1009,7 +1013,7 @@ async def create_test_self_case(data: TestCaseCreate, user_id: int = Depends(get
         context=data.context or "",
         persona=data.persona,
         budget=data.budget or "Любой",
-        ai_model=data.ai_model or "deepseek-v4"
+        ai_model=selected_model
     )
     
     # Auto-save target if not exists

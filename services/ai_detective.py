@@ -97,9 +97,9 @@ class AIDetectiveService:
             api_key=config.OPENROUTER_API_KEY,
             base_url="https://api.proxyapi.ru/openrouter/v1"
         )
-        self.model = "deepseek-v4"
+        self.model = "gemini-3.5-flash"
         
-    async def create_new_chat(self, holiday, context, persona, budget, ai_model="deepseek-v4", user_id=None):
+    async def create_new_chat(self, holiday, context, persona, budget, ai_model="gemini-3.5-flash", user_id=None):
          personas = await db.get_personas(user_id)
          persona_data = next((p for p in personas if p['name'] == persona), None)
          emojis = persona_data['emojis'] if persona_data else "🕵️‍♂️, 🎁, ✨, 🤫, 🔍"
@@ -506,32 +506,32 @@ class AIDetectiveService:
                 )
                 return response.choices[0].message.content
         except Exception as e:
-            logging.error(f"AI Call failed for model {model} (mapped: {api_model}): {e}. Attempting fallback to deepseek-v4...")
-            if model == "deepseek-v4":
+            logging.error(f"AI Call failed for model {model} (mapped: {api_model}): {e}. Attempting fallback to gemini-3.5-flash...")
+            if model == "gemini-3.5-flash":
                 raise e
             
-            # Seamless fallback to default DeepSeek V4 model (via deepseek/deepseek-chat)
-            openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+            # Seamless fallback to default Gemini 3.5 Flash model
             try:
-                response = self.openrouter_client.chat.completions.create(
-                    model="deepseek/deepseek-chat",
-                    messages=openai_msgs,
-                    temperature=0.8,
-                )
-                return response.choices[0].message.content
-            except Exception as fallback_err:
-                logging.error(f"Fallback to deepseek-v4 failed: {fallback_err}. Falling back to gemini-3.5-flash...")
-                # Ultimate fallback to gemini-3.5-flash as a last resort
-                try:
-                    response = self.client.models.generate_content(
-                        model="gemini-3.5-flash",
-                        contents=chat_context["messages"],
-                        config=types.GenerateContentConfig(
-                            system_instruction=chat_context["system"],
-                            temperature=0.8,
-                        )
+                response = self.client.models.generate_content(
+                    model="gemini-3.5-flash",
+                    contents=chat_context["messages"],
+                    config=types.GenerateContentConfig(
+                        system_instruction=chat_context["system"],
+                        temperature=0.8,
                     )
-                    return response.text
+                )
+                return response.text
+            except Exception as fallback_err:
+                logging.error(f"Fallback to gemini-3.5-flash failed: {fallback_err}. Falling back to deepseek-v4...")
+                # Ultimate fallback to deepseek-v4 as a last resort
+                try:
+                    openai_msgs = _to_openai_messages(chat_context["system"], chat_context["messages"])
+                    response = self.openrouter_client.chat.completions.create(
+                        model="deepseek/deepseek-chat",
+                        messages=openai_msgs,
+                        temperature=0.8,
+                    )
+                    return response.choices[0].message.content
                 except Exception as ultimate_err:
                     logging.error(f"Ultimate fallback failed: {ultimate_err}")
                     raise e
