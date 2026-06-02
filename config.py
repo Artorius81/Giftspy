@@ -4,16 +4,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ================= TELEGRAM API (Для Юзербота) =================
-TELEGRAM_API_ID = 32732137          # ЗАМЕНИ НА СВОЙ API_ID (цифры)
-TELEGRAM_API_HASH = '68bfc44cd76a71af6edcc72455e85c59'    # ЗАМЕНИ НА СВОЙ HASH (строка)
-USER_PHONE = '+79294279309'        # ТВОЙ НОМЕР ДЕТЕКТИВА (с плюсом)
+TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID", "0"))
+TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH")
+USER_PHONE = os.getenv("USER_PHONE")
 
 # ================= TELEGRAM BOT (Для Менеджера) =================
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8518236286:AAGGSHvEjvnkCl0ZlT_MbiIBXD1RgTQjgg4")   # ЗАМЕНИ НА ТОКЕН ОТ @BotFather
-BOT_USERNAME = os.getenv("BOT_USERNAME", "detectiveaiapp_bot")  # Юзернейм бота без @
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_USERNAME = os.getenv("BOT_USERNAME", "detectiveaiapp_bot")
 
 # ================= OPENROUTER API (ИИ) =================
-OPENROUTER_API_KEY = 'sk-zK4Ex3JBdMQ8D5YJ3XS2FOC0fXVbXSv2'
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # ================= GEMINI API =================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
